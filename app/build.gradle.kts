@@ -40,7 +40,7 @@ android {
     applicationVariants.all {
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
-            output.outputFileName = "MatheGuru-v${versionName}.apk"
+            output.outputFileName = "BarcodeAudiScanner-v${versionName}.apk"
         }
     }
 }

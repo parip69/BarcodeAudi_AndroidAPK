@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Mathe Guru",
-  "short_name": "Mathe Guru",
-  "description": "Installierbare Offline-Mathe-App.",
+  "name": "Barcode Audi Scanner",
+  "short_name": "Barcode Audi Scanner",
+  "description": "Premium Barcode Scanner mit Audi-Branding.",
   "lang": "de",
   "start_url": "./index.html",
   "scope": "./",
@@ -30,8 +30,8 @@
     }
   ],
   "categories": [
-    "education",
-    "productivity"
+    "productivity",
+    "utilities"
   ],
   "prefer_related_applications": false
 }
