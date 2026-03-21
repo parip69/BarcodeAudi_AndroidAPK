@@ -11,8 +11,8 @@ android {
         applicationId = "de.parip69.rechengurulgi"
         minSdk = 24
         targetSdk = 35
-        versionCode = 183
-        versionName = "183"
+        versionCode = 1
+        versionName = "1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

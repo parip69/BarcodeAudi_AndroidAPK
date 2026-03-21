@@ -4,7 +4,7 @@
     <color name="ic_launcher_background">#FF1A202C</color>
     <color name="status_bar">#FF202124</color>
     <color name="white">#FFFFFFFF</color>
-    <string name="app_name">Mathe Guru</string>
+    <string name="app_name">Barcode Audi Scanner</string>
     <style name="Theme.RechenGuruLGI" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:statusBarColor">@color/status_bar</item>
         <item name="android:navigationBarColor">@android:color/black</item>
