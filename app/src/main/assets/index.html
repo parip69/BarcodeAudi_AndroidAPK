@@ -1,7 +1,7 @@
-<!-- Version: 11 -->
+<!-- Version: 13 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="12">
+<html lang="de" data-app-version="13">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -4597,7 +4597,7 @@
           <input
             type="text"
             id="popupFileNameInput"
-            value="BarcodeAudi_ver_12"
+            value="BarcodeAudi_ver_13"
             style="width: 100%; padding: 10px; text-align: center"
           />
         </div>
@@ -4626,7 +4626,7 @@
           <input
             type="text"
             id="settingsPopupFileNameInput"
-            value="BarcodeSettings_ver_12"
+            value="BarcodeSettings_ver_13"
             style="width: 100%; padding: 10px; text-align: center"
           />
         </div>
@@ -5900,6 +5900,13 @@
           { mime: "application/json;charset=utf-8", useBlob: false },
         ];
 
+        // Native Android-Bridge nutzen, falls vorhanden
+        if (window.AndroidDownload && typeof window.AndroidDownload.saveTextFile === "function") {
+          window.AndroidDownload.saveTextFile(autoFilename, safeText);
+          alert("Datei im Download-Ordner gespeichert!");
+          return true;
+        }
+        // Fallback: Browser-Download
         for (const attempt of attempts) {
           try {
             const a = document.createElement("a");
@@ -11387,7 +11394,7 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter" data-app-version="12">
+    <footer id="appFooter" data-app-version="13">
       Entwickelt von: Bachner Gerhard (Parip69) - Ver. 12
     </footer>
 

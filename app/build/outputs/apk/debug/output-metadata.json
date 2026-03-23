@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 11,
-      "versionName": "11",
-      "outputFile": "BarcodeAudiScanner-v11.apk"
+      "versionCode": 13,
+      "versionName": "13",
+      "outputFile": "BarcodeAudi_ver_13.apk"
     }
   ],
   "elementType": "File",
