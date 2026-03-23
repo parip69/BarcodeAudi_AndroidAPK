@@ -1,7 +1,7 @@
-<!-- Version: 8 -->
-<!-- BarcodeScannerAudi - Ver. 8 -->
+<!-- Version: 11 -->
+<!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="8">
+<html lang="de" data-app-version="11">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -4597,7 +4597,7 @@
           <input
             type="text"
             id="popupFileNameInput"
-            value="BarcodeAudi_ver_8"
+            value="BarcodeAudi_ver_9"
             style="width: 100%; padding: 10px; text-align: center"
           />
         </div>
@@ -4626,7 +4626,7 @@
           <input
             type="text"
             id="settingsPopupFileNameInput"
-            value="BarcodeSettings_ver_8"
+            value="BarcodeSettings_ver_9"
             style="width: 100%; padding: 10px; text-align: center"
           />
         </div>
@@ -8485,6 +8485,21 @@ In den App-Namensraum importieren?`)
         });
       function handleSendOrShare(selectedBarcodes, fileName) {
         const barcodeText = selectedBarcodes.join("\n");
+        // 1. Native Android-Schnittstelle (falls vorhanden)
+        if (window.AndroidInterface && typeof window.AndroidInterface.shareTextFile === "function") {
+          try {
+            window.AndroidInterface.shareTextFile(fileName, barcodeText);
+            showToast("Barcodes erfolgreich geteilt (Android)!", "success");
+            return;
+          } catch (err) {
+            showToast("Android-Share fehlgeschlagen: " + (err && err.message ? err.message : err), "error");
+            console.warn("AndroidInterface.shareTextFile fehlgeschlagen", err);
+            return;
+          }
+        } else if (window.AndroidInterface) {
+          showToast("AndroidInterface.shareTextFile nicht verfügbar!", "error");
+        }
+        // 2. Web Share API (Browser, moderne WebViews)
         const blob = new Blob([barcodeText], {
           type: "text/plain",
         });
@@ -8493,9 +8508,8 @@ In den App-Namensraum importieren?`)
         });
         if (
           navigator.share &&
-          navigator.canShare({
-            files: [file],
-          })
+          navigator.canShare &&
+          navigator.canShare({ files: [file] })
         ) {
           navigator
             .share({
@@ -8516,6 +8530,21 @@ In den App-Namensraum importieren?`)
       }
       function handleDownload(selectedBarcodes, fileName) {
         const barcodeText = selectedBarcodes.join("\n");
+        // 1. Native Android-Schnittstelle (falls vorhanden)
+        if (window.AndroidInterface && typeof window.AndroidInterface.saveTextFile === "function") {
+          try {
+            window.AndroidInterface.saveTextFile(fileName, barcodeText);
+            showToast("Barcodes erfolgreich heruntergeladen (Android)!", "success");
+            return;
+          } catch (err) {
+            showToast("Android-Download fehlgeschlagen: " + (err && err.message ? err.message : err), "error");
+            console.warn("AndroidInterface.saveTextFile fehlgeschlagen", err);
+            return;
+          }
+        } else if (window.AndroidInterface) {
+          showToast("AndroidInterface.saveTextFile nicht verfügbar!", "error");
+        }
+        // 2. Standard-Download im Browser
         const blob = new Blob([barcodeText], {
           type: "text/plain",
         });
@@ -8544,6 +8573,22 @@ In den App-Namensraum importieren?`)
         const shareTitle = "Exportierte Settings";
         const shareText = "Hier sind meine exportierten Barcode-Einstellungen.";
 
+        // 1. Native Android-Schnittstelle (falls vorhanden)
+        if (window.AndroidInterface && typeof window.AndroidInterface.shareTextFile === "function") {
+          try {
+            window.AndroidInterface.shareTextFile(finalJsonFileName, safeJsonText);
+            showToast("Settings erfolgreich geteilt (Android)!", "success");
+            return true;
+          } catch (err) {
+            showToast("Android-Share fehlgeschlagen: " + (err && err.message ? err.message : err), "error");
+            console.warn("AndroidInterface.shareTextFile fehlgeschlagen", err);
+            return false;
+          }
+        } else if (window.AndroidInterface) {
+          showToast("AndroidInterface.shareTextFile nicht verfügbar!", "error");
+        }
+
+        // 2. Web Share API (Browser, moderne WebViews)
         const fileVariants = [
           new File(
             [new Blob([safeJsonText], { type: "text/plain;charset=utf-8" })],
@@ -8604,6 +8649,7 @@ In den App-Namensraum importieren?`)
           }
         }
 
+        // 3. Clipboard als Fallback
         if (navigator.clipboard) {
           try {
             await navigator.clipboard.writeText(safeJsonText);
@@ -8627,6 +8673,28 @@ In den App-Namensraum importieren?`)
           showToast("Keine Settings-Daten zum Download vorhanden!", "warning");
           return;
         }
+        // 1. Native Android-Schnittstelle (falls vorhanden)
+        if (window.AndroidInterface && typeof window.AndroidInterface.saveTextFile === "function") {
+          try {
+            window.AndroidInterface.saveTextFile(fileName, safeJsonText);
+            if (entryCount > 0) {
+              showToast(
+                `Selektiver Export abgeschlossen (${entryCount} Einträge, Android)!`,
+                "success",
+              );
+            } else {
+              showToast("Settings heruntergeladen (Android)!", "success");
+            }
+            return;
+          } catch (err) {
+            showToast("Android-Download fehlgeschlagen: " + (err && err.message ? err.message : err), "error");
+            console.warn("AndroidInterface.saveTextFile fehlgeschlagen", err);
+            return;
+          }
+        } else if (window.AndroidInterface) {
+          showToast("AndroidInterface.saveTextFile nicht verfügbar!", "error");
+        }
+        // 2. Standard-Download im Browser
         const ok = downloadTextFileRobust(fileName, safeJsonText);
         if (!ok) {
           alert(
@@ -11310,8 +11378,8 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter" data-app-version="8">
-      Entwickelt von: Bachner Gerhard (Parip69) - Ver. 8
+    <footer id="appFooter" data-app-version="9">
+      Entwickelt von: Bachner Gerhard (Parip69) - Ver. 9
     </footer>
 
     <script>

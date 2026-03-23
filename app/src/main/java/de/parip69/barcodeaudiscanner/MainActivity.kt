@@ -22,6 +22,44 @@ import de.parip69.barcodeaudiscanner.databinding.ActivityMainBinding
 import java.io.ByteArrayInputStream
 
 class MainActivity : AppCompatActivity() {
+    // Native Schnittstelle für Download/Senden
+    inner class AndroidInterface {
+        @android.webkit.JavascriptInterface
+        fun saveTextFile(fileName: String, content: String) {
+            try {
+                val downloads = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS)
+                val file = java.io.File(downloads, fileName)
+                file.writeText(content)
+                runOnUiThread {
+                    android.widget.Toast.makeText(this@MainActivity, "Datei gespeichert: ${file.absolutePath}", android.widget.Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    android.widget.Toast.makeText(this@MainActivity, "Fehler beim Speichern: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun shareTextFile(fileName: String, content: String) {
+            try {
+                val downloads = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS)
+                val file = java.io.File(downloads, fileName)
+                file.writeText(content)
+                val uri = androidx.core.content.FileProvider.getUriForFile(this@MainActivity, "${packageName}.provider", file)
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND)
+                intent.type = "text/plain"
+                intent.putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                intent.putExtra(android.content.Intent.EXTRA_SUBJECT, fileName)
+                intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                startActivity(android.content.Intent.createChooser(intent, "Teilen/Senden als Datei"))
+            } catch (e: Exception) {
+                runOnUiThread {
+                    android.widget.Toast.makeText(this@MainActivity, "Fehler beim Teilen: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 
     private lateinit var binding: ActivityMainBinding
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
@@ -86,6 +124,9 @@ class MainActivity : AppCompatActivity() {
             settings.allowFileAccessFromFileURLs = true
             settings.allowUniversalAccessFromFileURLs = true
         }
+
+        // Binde die AndroidInterface für Download/Senden ein
+        webView.addJavascriptInterface(AndroidInterface(), "AndroidInterface")
 
         webView.isVerticalScrollBarEnabled = false
         webView.isHorizontalScrollBarEnabled = false
