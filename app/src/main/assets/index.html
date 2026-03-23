@@ -5880,6 +5880,15 @@
       }
 
       function downloadTextFileRobust(filename, textContent) {
+        // Dateiname automatisch aus App-Version generieren, falls gewünscht
+        let autoFilename = filename;
+        if (!autoFilename || autoFilename === "" || autoFilename === "BarcodeAudi_ver_AUTO.txt") {
+          if (typeof getCurrentAppVersion === "function") {
+            autoFilename = `BarcodeAudi_ver_${getCurrentAppVersion()}.txt`;
+          } else {
+            autoFilename = "BarcodeAudi_ver.txt";
+          }
+        }
         const safeText =
           typeof textContent === "string"
             ? textContent
@@ -5894,8 +5903,8 @@
         for (const attempt of attempts) {
           try {
             const a = document.createElement("a");
-            a.download = filename;
-            a.setAttribute("download", filename);
+            a.download = autoFilename;
+            a.setAttribute("download", autoFilename);
             a.rel = "noopener";
             a.style.display = "none";
 
