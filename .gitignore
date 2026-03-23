@@ -1,11 +1,12 @@
 # Android / Gradle
-/.gradle/
-/.kotlin/
+.gradle/
+.kotlin/
 build/
 local.properties
 *.iml
 
 # IDE / Tools
-/.idea/
-/.vscode/
-/.agent/
+.idea/
+.vscode/
+
+# Agenten bleiben absichtlich im Projekt
