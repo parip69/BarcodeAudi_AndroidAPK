@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "RechenGuruLGI"
+rootProject.name = "BarcodeAudi"
 include(":app")
