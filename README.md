@@ -64,6 +64,12 @@ Mit diesen Skripten wird:
 - `versionName` angepasst
 - `data-app-version` in `app/src/main/assets/index.html` synchronisiert
 - anschliessend `assembleDebug` gestartet
+- nach erfolgreichem Build eine Archivkopie in `Privat/` erstellt
+
+Archiviert werden automatisch:
+
+- `Privat/BarcodeScannerAudi_ver_<Version>.html`
+- `Privat/BarcodeAudiScanner-v<Version>.apk`
 
 Windows Batch:
 

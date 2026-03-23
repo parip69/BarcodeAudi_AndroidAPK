@@ -4,6 +4,8 @@ $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $gradleFile = Join-Path $scriptRoot "app\build.gradle.kts"
 $indexFile = Join-Path $scriptRoot "app\src\main\assets\index.html"
 $gradlewBat = Join-Path $scriptRoot "gradlew.bat"
+$privatDir = Join-Path $scriptRoot "Privat"
+$apkOutputDir = Join-Path $scriptRoot "app\build\outputs\apk\debug"
 
 function Read-TextFilePreserveEncoding {
     param(
@@ -79,6 +81,49 @@ function Write-TextFilePreserveEncoding {
     }
 
     [System.IO.File]::WriteAllBytes($Path, $contentBytes)
+}
+
+function Copy-BuildArtifactsToPrivat {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Version
+    )
+
+    if (-not (Test-Path -LiteralPath $privatDir)) {
+        New-Item -ItemType Directory -Path $privatDir | Out-Null
+    }
+
+    if (-not (Test-Path -LiteralPath $indexFile)) {
+        throw "index.html nicht gefunden: $indexFile"
+    }
+
+    if (-not (Test-Path -LiteralPath $apkOutputDir)) {
+        throw "APK-Ausgabeordner nicht gefunden: $apkOutputDir"
+    }
+
+    $expectedApkFileName = "BarcodeAudi_ver_${Version}.apk"
+    $apkSourcePath = Join-Path $apkOutputDir $expectedApkFileName
+
+    if (-not (Test-Path -LiteralPath $apkSourcePath)) {
+        $latestApk = Get-ChildItem -LiteralPath $apkOutputDir -Filter "*.apk" -File -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+
+        if ($null -eq $latestApk) {
+            throw "Keine gebaute APK im Ordner gefunden: $apkOutputDir"
+        }
+
+        $apkSourcePath = $latestApk.FullName
+    }
+
+    $htmlArchivePath = Join-Path $privatDir ("BarcodeScannerAudi_ver_{0}.html" -f $Version)
+    $apkArchivePath = Join-Path $privatDir ("BarcodeAudiScanner-v{0}.apk" -f $Version)
+
+    Copy-Item -LiteralPath $indexFile -Destination $htmlArchivePath -Force
+    Copy-Item -LiteralPath $apkSourcePath -Destination $apkArchivePath -Force
+
+    Write-Host "[INFO] HTML nach Privat kopiert: $htmlArchivePath"
+    Write-Host "[INFO] APK nach Privat kopiert: $apkArchivePath"
 }
 
 if (-not (Test-Path -LiteralPath $gradleFile)) {
@@ -164,6 +209,13 @@ if (-not (Test-Path -LiteralPath $gradlewBat)) {
 $buildExitCode = $LASTEXITCODE
 
 if ($buildExitCode -eq 0) {
+    try {
+        Copy-BuildArtifactsToPrivat -Version $newVersion
+    } catch {
+        Write-Host "[FEHLER] Build war erfolgreich, aber die Archivkopien konnten nicht erstellt werden: $($_.Exception.Message)"
+        exit 1
+    }
+
     Write-Host "[SUCCESS] Build und Versionssync erfolgreich! Version: $newVersion"
     exit 0
 }
