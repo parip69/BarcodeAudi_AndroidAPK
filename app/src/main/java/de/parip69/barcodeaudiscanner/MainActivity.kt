@@ -1,6 +1,7 @@
 package de.parip69.barcodeaudiscanner
 
 import android.annotation.SuppressLint
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
@@ -100,6 +101,13 @@ class MainActivity : AppCompatActivity() {
     // Native Schnittstelle fuer Download/Senden/Export.
     inner class AndroidInterface {
         @android.webkit.JavascriptInterface
+        fun setBarcodeFullscreenRotationEnabled(enabled: Boolean) {
+            runOnUiThread {
+                this@MainActivity.setBarcodeFullscreenRotationEnabled(enabled)
+            }
+        }
+
+        @android.webkit.JavascriptInterface
         fun saveTextFile(fileName: String, content: String): Boolean {
             return saveBytesToDownloads(
                 fileName,
@@ -175,6 +183,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+    private var isBarcodeFullscreenRotationEnabled = false
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -196,6 +205,7 @@ class MainActivity : AppCompatActivity() {
                 or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
             )
 
+        setBarcodeFullscreenRotationEnabled(false)
         configureWebView(binding.webView)
         binding.webView.loadUrl("file:///android_asset/index.html")
 
@@ -212,6 +222,17 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    private fun setBarcodeFullscreenRotationEnabled(enabled: Boolean) {
+        if (isBarcodeFullscreenRotationEnabled == enabled) return
+
+        isBarcodeFullscreenRotationEnabled = enabled
+        requestedOrientation = if (enabled) {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")

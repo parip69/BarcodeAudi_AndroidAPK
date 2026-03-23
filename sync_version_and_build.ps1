@@ -86,27 +86,68 @@ if (-not (Test-Path -LiteralPath $gradleFile)) {
     exit 1
 }
 
-$gradleContent = Get-Content -Raw -LiteralPath $gradleFile
-$versionMatch = [regex]::Match($gradleContent, '(?m)^\s*versionName\s*=\s*"([^"]*)"')
-$version = if ($versionMatch.Success) { $versionMatch.Groups[1].Value.Trim() } else { "" }
+$gradleData = Read-TextFilePreserveEncoding -Path $gradleFile
+$gradleText = $gradleData.Text
 
-Write-Host "[INFO] Gelesene Version aus build.gradle.kts: ""$version"""
-if ([string]::IsNullOrWhiteSpace($version)) {
-    Write-Host "[FEHLER] Konnte keine Version aus build.gradle.kts lesen! Abbruch."
+$versionNameNumericMatch = [regex]::Match($gradleText, '(?m)^\s*versionName\s*=\s*"(\d+)"')
+$versionCodeNumericMatch = [regex]::Match($gradleText, '(?m)^\s*versionCode\s*=\s*(\d+)')
+
+$currentVersion = ""
+if ($versionNameNumericMatch.Success) {
+    $currentVersion = $versionNameNumericMatch.Groups[1].Value.Trim()
+} elseif ($versionCodeNumericMatch.Success) {
+    $currentVersion = $versionCodeNumericMatch.Groups[1].Value.Trim()
+}
+
+Write-Host "[INFO] Gelesene Version aus build.gradle.kts: ""$currentVersion"""
+if ([string]::IsNullOrWhiteSpace($currentVersion)) {
+    Write-Host "[FEHLER] Konnte keine numerische Version aus build.gradle.kts lesen! Abbruch."
     exit 1
 }
+
+$newVersionNumber = [int64]$currentVersion + 1
+$newVersion = $newVersionNumber.ToString()
+$updatedGradleText = $gradleText
+
+if ([regex]::IsMatch($updatedGradleText, '(?m)^\s*versionCode\s*=')) {
+    $updatedGradleText = [regex]::Replace(
+        $updatedGradleText,
+        '(?m)^(\s*versionCode\s*=\s*)\d+([^\r\n]*)',
+        ('${1}' + $newVersion + '${2}'),
+        1
+    )
+} else {
+    Write-Host "[WARNUNG] versionCode in build.gradle.kts nicht gefunden."
+}
+
+if ([regex]::IsMatch($updatedGradleText, '(?m)^\s*versionName\s*=')) {
+    $updatedGradleText = [regex]::Replace(
+        $updatedGradleText,
+        '(?m)^(\s*versionName\s*=\s*")([^"]*)(")([^\r\n]*)',
+        ('${1}' + $newVersion + '${3}${4}'),
+        1
+    )
+} else {
+    Write-Host "[WARNUNG] versionName in build.gradle.kts nicht gefunden."
+}
+
+if ($updatedGradleText -ne $gradleText) {
+    Write-TextFilePreserveEncoding -Path $gradleFile -Text $updatedGradleText -Encoding $gradleData.Encoding
+}
+
+Write-Host "[INFO] Neue Version fuer Build und index.html: ""$newVersion"""
 
 if (Test-Path -LiteralPath $indexFile) {
     $indexData = Read-TextFilePreserveEncoding -Path $indexFile
     $pattern = '<html lang="de" data-app-version="[^"]*"'
-    $replacement = '<html lang="de" data-app-version="' + $version + '"'
+    $replacement = '<html lang="de" data-app-version="' + $newVersion + '"'
 
     if ([regex]::IsMatch($indexData.Text, $pattern)) {
         $updatedText = [regex]::Replace($indexData.Text, $pattern, $replacement, 1)
         if ($updatedText -ne $indexData.Text) {
             Write-TextFilePreserveEncoding -Path $indexFile -Text $updatedText -Encoding $indexData.Encoding
         }
-        Write-Host "[INFO] data-app-version in index.html auf ""$version"" gesetzt."
+        Write-Host "[INFO] data-app-version in index.html auf ""$newVersion"" gesetzt."
     } else {
         Write-Host "[WARNUNG] data-app-version Marker in index.html nicht gefunden."
     }
@@ -123,7 +164,7 @@ if (-not (Test-Path -LiteralPath $gradlewBat)) {
 $buildExitCode = $LASTEXITCODE
 
 if ($buildExitCode -eq 0) {
-    Write-Host "[SUCCESS] Build und Versionssync erfolgreich! Version: $version"
+    Write-Host "[SUCCESS] Build und Versionssync erfolgreich! Version: $newVersion"
     exit 0
 }
 

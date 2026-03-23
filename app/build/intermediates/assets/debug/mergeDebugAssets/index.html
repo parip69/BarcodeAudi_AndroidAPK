@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="21">
+<html lang="de" data-app-version="23">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2800,6 +2800,9 @@
         box-sizing: border-box;
         opacity: 0;
         transition: opacity 0.5s ease;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
       #fullscreenOverlay.show {
@@ -2815,6 +2818,7 @@
         box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.3);
         position: relative;
         max-width: 100vh;
+        margin: 0 auto;
 
         /* WICHTIG: Damit der Schatten nicht abgeschnitten wird */
         overflow: visible;
@@ -2889,7 +2893,8 @@
       }
 
       #fullscreenOverlay svg {
-        width: 100vh;
+        width: 100%;
+        max-width: 100%;
         height: auto;
         position: relative; /* Position relativ, damit die Z-Index-Stapelung funktioniert */
         z-index: 10; /* Stelle sicher, dass SVGs über Hintergrund-Elementen liegen */
@@ -2924,15 +2929,40 @@
       }
 
       @media (orientation: landscape) {
-        #fullscreenContent.layout-multi {
-          width: 100vh;
-          height: calc(100vh - 120px);
-          max-height: calc(100vh - 120px);
+        #fullscreenOverlay {
+          justify-content: flex-start;
+          align-items: stretch;
+          padding-top: calc(env(safe-area-inset-top, 0px) + 64px);
+        }
 
-          display: grid;
-          grid-template-rows: 0.7fr auto 0.7fr;
-          align-items: center;
-          justify-items: center;
+        #fullscreenContent {
+          width: 100%;
+          max-width: 100%;
+        }
+
+        #fullscreenContent.layout-multi {
+          width: 100%;
+          height: auto;
+          max-height: none;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: flex-start;
+          gap: 20px;
+        }
+
+        #fullscreenContent.layout-duo {
+          width: 100%;
+          height: auto;
+          max-height: none;
+          justify-content: flex-start;
+          align-items: stretch;
+          gap: 20px;
+        }
+
+        #fullscreenContent.layout-duo #fullscreenMasterSection,
+        #fullscreenContent.layout-duo #fullscreenSlaveSection {
+          align-self: stretch;
         }
       }
 
@@ -6647,6 +6677,8 @@ In den App-Namensraum importieren?`)
       function closeFullscreenOverlay() {
         const overlay = document.getElementById("fullscreenOverlay");
         overlay.classList.remove("show");
+        setNativeBarcodeFullscreenRotation(false);
+        overlay.scrollTop = 0;
 
         const fullscreenContent = document.getElementById("fullscreenContent");
         fullscreenContent.classList.remove("layout-multi", "layout-duo");
@@ -7714,6 +7746,49 @@ In den App-Namensraum importieren?`)
       let currentNavigationIndex = -1;
       let fullscreenHistoryPushed = false;
 
+      function setNativeBarcodeFullscreenRotation(enabled) {
+        try {
+          if (
+            window.AndroidInterface &&
+            typeof window.AndroidInterface.setBarcodeFullscreenRotationEnabled ===
+              "function"
+          ) {
+            window.AndroidInterface.setBarcodeFullscreenRotationEnabled(
+              Boolean(enabled),
+            );
+          }
+        } catch (error) {
+          console.warn(
+            "Native Ausrichtung fuer Barcode-Vollbild konnte nicht gesetzt werden:",
+            error,
+          );
+        }
+      }
+
+      function shouldUseLandscapeFullscreenScroll() {
+        const overlay = document.getElementById("fullscreenOverlay");
+        const fsContainer = document.getElementById("fullscreenContent");
+        if (!overlay || !fsContainer) return false;
+        if (!overlay.classList.contains("show")) return false;
+        if (!window.matchMedia("(orientation: landscape)").matches) {
+          return false;
+        }
+        return (
+          fsContainer.classList.contains("layout-multi") ||
+          fsContainer.classList.contains("layout-duo")
+        );
+      }
+
+      function resetFullscreenOverlayScroll() {
+        const overlay = document.getElementById("fullscreenOverlay");
+        if (!overlay) return;
+        requestAnimationFrame(() => {
+          overlay.scrollTop = 0;
+        });
+      }
+
+      setNativeBarcodeFullscreenRotation(false);
+
       // Funktion, um einen weißen Hintergrund für Barcodes im Vollbildmodus zu gewährleisten
       function ensureWhiteBarcodeBackground(svgElem) {
         // Prüfe, ob das SVG bereits einen Hintergrund hat
@@ -7829,6 +7904,7 @@ In den App-Namensraum importieren?`)
           fullscreenHistoryPushed = true;
         }
         overlay.classList.add("show");
+        setNativeBarcodeFullscreenRotation(true);
         document.getElementById("fullscreenMasterSection").style.display =
           "block";
 
@@ -8012,6 +8088,7 @@ In den App-Namensraum importieren?`)
         }
 
         updateFullscreenLayoutMode();
+        resetFullscreenOverlayScroll();
       }
 
       function updateFullscreenLayoutMode() {
@@ -8081,6 +8158,7 @@ In den App-Namensraum importieren?`)
         // Vollbild-Overlay anzeigen
         const overlay = document.getElementById("fullscreenOverlay");
         overlay.classList.add("show");
+        setNativeBarcodeFullscreenRotation(true);
 
         // Blende den Master-Bereich aus (nicht benötigt)
         document.getElementById("fullscreenMasterSection").style.display =
@@ -8097,6 +8175,7 @@ In den App-Namensraum importieren?`)
           "none";
 
         updateFullscreenLayoutMode();
+        resetFullscreenOverlayScroll();
 
         // Stile aus den Hauptbarcode-Einstellungen auf den Fullscreen-Content anwenden
         const mainStyles = barcodeStyles["mainBarcode"];
@@ -8194,7 +8273,12 @@ In den App-Namensraum importieren?`)
             if (e.touches.length === 1) {
               startY = e.touches[0].clientY;
             }
-            if (overlay.classList.contains("show")) e.preventDefault();
+            if (
+              overlay.classList.contains("show") &&
+              !shouldUseLandscapeFullscreenScroll()
+            ) {
+              e.preventDefault();
+            }
           },
           {
             passive: false,
@@ -8204,7 +8288,10 @@ In den App-Namensraum importieren?`)
           "touchmove",
           (e) => {
             if (e.target === closeButton) return;
-            if (overlay.classList.contains("show")) {
+            if (
+              overlay.classList.contains("show") &&
+              !shouldUseLandscapeFullscreenScroll()
+            ) {
               e.preventDefault();
               e.stopPropagation();
             }
@@ -8218,6 +8305,7 @@ In den App-Namensraum importieren?`)
           (e) => {
             if (e.target === closeButton) return;
             if (!overlay.classList.contains("show")) return;
+            if (shouldUseLandscapeFullscreenScroll()) return;
             if (e.changedTouches.length === 1) {
               const endY = e.changedTouches[0].clientY;
               const diffY = endY - startY;
@@ -8236,8 +8324,10 @@ In den App-Namensraum importieren?`)
           document.body.style.position = "fixed";
           document.body.style.width = "100%";
           document.body.style.height = "100%";
-          overlay.style.overscrollBehavior = "none";
-          overlay.style.touchAction = "none";
+          overlay.style.overscrollBehavior = "contain";
+          overlay.style.touchAction = "pan-y pinch-zoom";
+          overlay.style.overflowY = "auto";
+          overlay.style.overflowX = "hidden";
         };
         const removeFullscreenStyles = () => {
           document.body.style.overflow = "";
@@ -8246,10 +8336,17 @@ In den App-Namensraum importieren?`)
           document.body.style.height = "";
           overlay.style.overscrollBehavior = "";
           overlay.style.touchAction = "";
+          overlay.style.overflowY = "";
+          overlay.style.overflowX = "";
         };
         overlay.addEventListener("transitionstart", () => {
           if (overlay.classList.contains("show")) {
             applyFullscreenStyles();
+          }
+        });
+        overlay.addEventListener("transitionend", () => {
+          if (!overlay.classList.contains("show")) {
+            removeFullscreenStyles();
           }
         });
         closeButton.addEventListener("click", () => {
