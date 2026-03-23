@@ -27,11 +27,36 @@ class MainActivity : AppCompatActivity() {
         @android.webkit.JavascriptInterface
         fun saveTextFile(fileName: String, content: String) {
             try {
-                val downloads = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS)
-                val file = java.io.File(downloads, fileName)
-                file.writeText(content)
+                val context = this@MainActivity
+                val resolver = context.contentResolver
+                val mimeType = "text/plain"
+                val fileDisplayName = fileName
+                val isQ = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                val uri = if (isQ) {
+                    // Android 10+ (Q): MediaStore nutzen
+                    val values = android.content.ContentValues().apply {
+                        put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileDisplayName)
+                        put(android.provider.MediaStore.Downloads.MIME_TYPE, mimeType)
+                        put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
+                    }
+                    val collection = android.provider.MediaStore.Downloads.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                    val itemUri = resolver.insert(collection, values)
+                    if (itemUri != null) {
+                        resolver.openOutputStream(itemUri)?.use { it.write(content.toByteArray()) }
+                        values.clear()
+                        values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0)
+                        resolver.update(itemUri, values, null, null)
+                    }
+                    itemUri
+                } else {
+                    // Vor Android 10: Direkt in den öffentlichen Download-Ordner schreiben
+                    val downloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                    val file = java.io.File(downloads, fileDisplayName)
+                    file.writeText(content)
+                    android.net.Uri.fromFile(file)
+                }
                 runOnUiThread {
-                    android.widget.Toast.makeText(this@MainActivity, "Datei gespeichert: ${file.absolutePath}", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(context, "Datei gespeichert: ${uri?.path ?: "unbekannt"}", android.widget.Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
                 runOnUiThread {
