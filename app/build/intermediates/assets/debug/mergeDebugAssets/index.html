@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="19">
+<html lang="de" data-app-version="21">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -4866,6 +4866,13 @@
         <button class="menu-button" onclick="openLocalStorageDeletionPopup()">
           💾 Lokale Daten / Settings
         </button>
+        <button
+          id="exportBundledIndexHtmlButton"
+          class="menu-button"
+          onclick="exportBundledIndexHtml()"
+        >
+          Index HTML exportieren
+        </button>
 
         <button class="menu-button" onclick="closeMenuOverlayMain()">
           ❌ Menü schließen
@@ -5115,27 +5122,112 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = 89;
+      const APP_VERSION_FALLBACK = "89";
+      const APP_NAME_FALLBACK = "Barcode Audi Scanner";
+
+      function getAndroidBridge() {
+        if (window.AndroidInterface) return window.AndroidInterface;
+        if (window.AndroidDownload) return window.AndroidDownload;
+        return null;
+      }
+
+      function supportsBundledIndexHtmlExport() {
+        const androidBridge = getAndroidBridge();
+        return Boolean(
+          androidBridge &&
+            typeof androidBridge.getBundledIndexHtml === "function" &&
+            typeof androidBridge.saveTextFile === "function",
+        );
+      }
+
+      function updateBundledIndexHtmlExportVisibility() {
+        const exportButton = document.getElementById(
+          "exportBundledIndexHtmlButton",
+        );
+        if (!exportButton) return;
+
+        const supported = supportsBundledIndexHtmlExport();
+        exportButton.hidden = !supported;
+        exportButton.style.display = supported ? "" : "none";
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        updateBundledIndexHtmlExportVisibility();
+      });
+
+      function sanitizeFilenamePart(value) {
+        return String(value || "")
+          .replace(/[<>:"/\\|?*\u0000-\u001f]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function getCurrentAppName() {
+        try {
+          const androidBridge = getAndroidBridge();
+          if (
+            androidBridge &&
+            typeof androidBridge.getAppDisplayName === "function"
+          ) {
+            const nativeName = String(
+              androidBridge.getAppDisplayName() || "",
+            ).trim();
+            if (nativeName) return nativeName;
+          }
+        } catch (error) {
+          console.warn("Nativer App-Name konnte nicht gelesen werden", error);
+        }
+
+        const metaName = String(
+          document
+            .querySelector('meta[name="application-name"]')
+            ?.getAttribute("content") ||
+            document
+              .querySelector('meta[name="apple-mobile-web-app-title"]')
+              ?.getAttribute("content") ||
+            APP_NAME_FALLBACK,
+        ).trim();
+
+        return metaName || APP_NAME_FALLBACK;
+      }
 
       function getCurrentAppVersion() {
+        try {
+          const androidBridge = getAndroidBridge();
+          if (
+            androidBridge &&
+            typeof androidBridge.getAppVersionName === "function"
+          ) {
+            const nativeVersion = String(
+              androidBridge.getAppVersionName() || "",
+            ).trim();
+            if (nativeVersion) return nativeVersion;
+          }
+        } catch (error) {
+          console.warn(
+            "Native Versionsnummer konnte nicht gelesen werden",
+            error,
+          );
+        }
+
         const footer = document.getElementById("appFooter");
         if (footer) {
           const dataVersion = String(
             footer.getAttribute("data-app-version") || "",
           ).trim();
-          if (/^\d+$/.test(dataVersion)) return Number(dataVersion);
+          if (dataVersion) return dataVersion;
 
           const footerText = String(footer.textContent || "");
-          const footerMatch = footerText.match(/\bVer\.\s*(\d+)\b/i);
-          if (footerMatch) return Number(footerMatch[1]);
+          const footerMatch = footerText.match(/\bVer\.\s*([0-9A-Za-z._-]+)\b/i);
+          if (footerMatch) return footerMatch[1];
         }
 
         const htmlVersion = String(
           document.documentElement?.getAttribute("data-app-version") || "",
         ).trim();
-        if (/^\d+$/.test(htmlVersion)) return Number(htmlVersion);
+        if (htmlVersion) return htmlVersion;
 
-        return APP_VERSION_FALLBACK;
+        return String(APP_VERSION_FALLBACK);
       }
 
       const APP_STORAGE_EXACT_KEYS = [
@@ -5373,10 +5465,37 @@
        * FUNKTIONEN FÜR DIE MENÜ‑OVERLAYS
        ******************************************/
       function openMenuOverlayMain() {
+        updateBundledIndexHtmlExportVisibility();
         document.getElementById("menuOverlayMain").classList.add("show");
       }
       function closeMenuOverlayMain() {
         document.getElementById("menuOverlayMain").classList.remove("show");
+      }
+      async function exportBundledIndexHtml() {
+        closeMenuOverlayMain();
+        if (!supportsBundledIndexHtmlExport()) {
+          showToast(
+            "Nur in der Android-App verfügbar. Im Browser ist die HTML-Datei bereits direkt vorhanden.",
+            "info",
+          );
+          return;
+        }
+        const fileName = buildHtmlExportFilename();
+
+        try {
+          const htmlText = await getBundledIndexHtmlText();
+          const portableHtml = embedPortableAppStateIntoHtml(htmlText);
+          const ok = downloadTextFileRobust(fileName, portableHtml);
+          if (!ok) {
+            showToast("Index-HTML konnte nicht exportiert werden.", "error");
+            return;
+          }
+
+          showToast(`Index-HTML exportiert: ${fileName}`, "success");
+        } catch (error) {
+          console.warn("HTML-Export fehlgeschlagen", error);
+          showToast("Index-HTML konnte nicht exportiert werden.", "error");
+        }
       }
       let subMenuCurrentBarcode = null;
       function openMenuOverlayDynamic(barcodeElement) {
@@ -5837,6 +5956,18 @@
         return `${buildLocalExportBaseName()}.json`;
       }
 
+      function buildHtmlExportBaseName() {
+        const safeAppName =
+          sanitizeFilenamePart(getCurrentAppName()) ||
+          sanitizeFilenamePart(APP_NAME_FALLBACK) ||
+          "BarcodeAudiScanner";
+        return `${safeAppName}_ver_${getCurrentAppVersion()}`;
+      }
+
+      function buildHtmlExportFilename() {
+        return `${buildHtmlExportBaseName()}.html`;
+      }
+
       function buildBarcodeExportBaseName() {
         return `BarcodeAudi_ver_${getCurrentAppVersion()}`;
       }
@@ -5867,6 +5998,86 @@
           selectedKeys: uniqueKeys,
           storage: storageData,
         };
+      }
+
+      function buildPortableHtmlStatePayload() {
+        const exportKeys = appStorage
+          .keys()
+          .filter((key) => !String(key).startsWith("__"));
+        return buildLocalExportPayload(exportKeys);
+      }
+
+      function serializePortableHtmlPayload(payload) {
+        return JSON.stringify(payload)
+          .replace(/</g, "\\u003C")
+          .replace(/>/g, "\\u003E")
+          .replace(/&/g, "\\u0026")
+          .replace(/\u2028/g, "\\u2028")
+          .replace(/\u2029/g, "\\u2029");
+      }
+
+      function embedPortableAppStateIntoHtml(htmlText) {
+        const safeHtmlText =
+          typeof htmlText === "string" ? htmlText : String(htmlText ?? "");
+        if (!safeHtmlText.trim()) return safeHtmlText;
+
+        const payload = buildPortableHtmlStatePayload();
+        if (!payload || !payload.storage) return safeHtmlText;
+
+        const storageKeys = Object.keys(payload.storage);
+        if (storageKeys.length === 0) return safeHtmlText;
+
+        const serializedPayload = serializePortableHtmlPayload(payload);
+        const bootstrapScript =
+          `<script>(function(){const payload=${serializedPayload};` +
+          `try{const storage=window.localStorage;if(!storage||!payload||!payload.storage)return;` +
+          `const namespace=String(payload.namespace||"");` +
+          `const markerKey=namespace+"__portableBootstrapApplied_"+String(payload.exportedAt||"snapshot");` +
+          `if(storage.getItem(markerKey)==="1")return;` +
+          `Object.entries(payload.storage).forEach(([key,value])=>{storage.setItem(namespace+key,String(value));});` +
+          `storage.setItem(markerKey,"1");` +
+          `}catch(error){console.warn("Portable Startdaten konnten nicht initialisiert werden.",error);}})();` +
+          `<\/script>`;
+
+        if (safeHtmlText.includes("</head>")) {
+          return safeHtmlText.replace(
+            "</head>",
+            `${bootstrapScript}\n</head>`,
+          );
+        }
+
+        if (safeHtmlText.includes("</body>")) {
+          return safeHtmlText.replace(
+            "</body>",
+            `${bootstrapScript}\n</body>`,
+          );
+        }
+
+        return `${safeHtmlText}\n${bootstrapScript}`;
+      }
+
+      async function getBundledIndexHtmlText() {
+        const androidBridge = getAndroidBridge();
+        if (
+          androidBridge &&
+          typeof androidBridge.getBundledIndexHtml === "function"
+        ) {
+          try {
+            const nativeHtml = String(
+              androidBridge.getBundledIndexHtml() || "",
+            );
+            if (nativeHtml.trim()) return nativeHtml;
+          } catch (error) {
+            console.warn("Gebuendelte index.html konnte nicht gelesen werden", error);
+          }
+        }
+
+        const currentUrl = window.location.href.split("#")[0].split("?")[0];
+        const response = await fetch(currentUrl, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.text();
       }
 
       function getSelectedLocalStorageSnapshot() {
@@ -5901,9 +6112,12 @@
         ];
 
         // Native Android-Bridge nutzen, falls vorhanden
-        if (window.AndroidDownload && typeof window.AndroidDownload.saveTextFile === "function") {
-          window.AndroidDownload.saveTextFile(autoFilename, safeText);
-          alert("Datei im Download-Ordner gespeichert!");
+        const androidBridge = getAndroidBridge();
+        if (
+          androidBridge &&
+          typeof androidBridge.saveTextFile === "function"
+        ) {
+          androidBridge.saveTextFile(autoFilename, safeText);
           return true;
         }
         // Fallback: Browser-Download

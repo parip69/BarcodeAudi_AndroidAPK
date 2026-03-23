@@ -7,13 +7,13 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.ConsoleMessage
+import android.webkit.MimeTypeMap
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
-import android.webkit.MimeTypeMap
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,65 +22,152 @@ import de.parip69.barcodeaudiscanner.databinding.ActivityMainBinding
 import java.io.ByteArrayInputStream
 
 class MainActivity : AppCompatActivity() {
-    // Native Schnittstelle für Download/Senden
+    private fun resolveMimeTypeForFileName(fileName: String, fallbackMimeType: String = "text/plain"): String {
+        val extension = fileName.substringAfterLast('.', "").lowercase()
+        if (extension.isEmpty()) return fallbackMimeType
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: fallbackMimeType
+    }
+
+    private fun saveBytesToDownloads(fileName: String, bytes: ByteArray, mimeType: String): Boolean {
+        return try {
+            val context = this@MainActivity
+            val resolver = context.contentResolver
+            val fileDisplayName = fileName.trim().ifEmpty { "export.txt" }
+            val isQ = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+            val uri = if (isQ) {
+                val values = android.content.ContentValues().apply {
+                    put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileDisplayName)
+                    put(android.provider.MediaStore.Downloads.MIME_TYPE, mimeType)
+                    put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
+                }
+                val collection = android.provider.MediaStore.Downloads.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                val itemUri = resolver.insert(collection, values)
+                    ?: throw IllegalStateException("Datei konnte im Download-Ordner nicht angelegt werden.")
+                resolver.openOutputStream(itemUri)?.use { it.write(bytes) }
+                    ?: throw IllegalStateException("Ausgabestream fuer den Download konnte nicht geoeffnet werden.")
+                values.clear()
+                values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0)
+                resolver.update(itemUri, values, null, null)
+                itemUri
+            } else {
+                val downloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                if (!downloads.exists()) downloads.mkdirs()
+                val file = java.io.File(downloads, fileDisplayName)
+                file.writeBytes(bytes)
+                android.net.Uri.fromFile(file)
+            }
+            runOnUiThread {
+                android.widget.Toast.makeText(
+                    context,
+                    "Datei gespeichert: ${uri?.path ?: "unbekannt"}",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
+            true
+        } catch (e: Exception) {
+            runOnUiThread {
+                android.widget.Toast.makeText(
+                    this@MainActivity,
+                    "Fehler beim Speichern: ${e.message}",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
+            false
+        }
+    }
+
+    private fun resolveAppDisplayName(): String {
+        return applicationInfo.loadLabel(packageManager).toString()
+    }
+
+    private fun resolveAppVersionName(): String {
+        return try {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(
+                    packageName,
+                    android.content.pm.PackageManager.PackageInfoFlags.of(0)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, 0)
+            }
+            packageInfo.versionName?.takeIf { it.isNotBlank() } ?: ""
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    // Native Schnittstelle fuer Download/Senden/Export.
     inner class AndroidInterface {
         @android.webkit.JavascriptInterface
-        fun saveTextFile(fileName: String, content: String) {
-            try {
-                val context = this@MainActivity
-                val resolver = context.contentResolver
-                val mimeType = "text/plain"
-                val fileDisplayName = fileName
-                val isQ = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-                val uri = if (isQ) {
-                    // Android 10+ (Q): MediaStore nutzen
-                    val values = android.content.ContentValues().apply {
-                        put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileDisplayName)
-                        put(android.provider.MediaStore.Downloads.MIME_TYPE, mimeType)
-                        put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
-                    }
-                    val collection = android.provider.MediaStore.Downloads.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL_PRIMARY)
-                    val itemUri = resolver.insert(collection, values)
-                    if (itemUri != null) {
-                        resolver.openOutputStream(itemUri)?.use { it.write(content.toByteArray()) }
-                        values.clear()
-                        values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0)
-                        resolver.update(itemUri, values, null, null)
-                    }
-                    itemUri
-                } else {
-                    // Vor Android 10: Direkt in den öffentlichen Download-Ordner schreiben
-                    val downloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
-                    val file = java.io.File(downloads, fileDisplayName)
-                    file.writeText(content)
-                    android.net.Uri.fromFile(file)
-                }
-                runOnUiThread {
-                    android.widget.Toast.makeText(context, "Datei gespeichert: ${uri?.path ?: "unbekannt"}", android.widget.Toast.LENGTH_LONG).show()
-                }
+        fun saveTextFile(fileName: String, content: String): Boolean {
+            return saveBytesToDownloads(
+                fileName,
+                content.toByteArray(Charsets.UTF_8),
+                resolveMimeTypeForFileName(fileName)
+            )
+        }
+
+        @android.webkit.JavascriptInterface
+        fun exportBundledIndexHtml(fileName: String): Boolean {
+            return try {
+                val htmlBytes = assets.open("index.html").use { it.readBytes() }
+                saveBytesToDownloads(fileName, htmlBytes, "text/html")
             } catch (e: Exception) {
                 runOnUiThread {
-                    android.widget.Toast.makeText(this@MainActivity, "Fehler beim Speichern: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        "Fehler beim HTML-Export: ${e.message}",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
                 }
+                false
             }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun getBundledIndexHtml(): String {
+            return try {
+                assets.open("index.html").bufferedReader(Charsets.UTF_8).use { it.readText() }
+            } catch (_: Exception) {
+                ""
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun getAppDisplayName(): String {
+            return resolveAppDisplayName()
+        }
+
+        @android.webkit.JavascriptInterface
+        fun getAppVersionName(): String {
+            return resolveAppVersionName()
         }
 
         @android.webkit.JavascriptInterface
         fun shareTextFile(fileName: String, content: String) {
             try {
-                val downloads = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS)
+                val downloads = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS) ?: filesDir
                 val file = java.io.File(downloads, fileName)
-                file.writeText(content)
-                val uri = androidx.core.content.FileProvider.getUriForFile(this@MainActivity, "${packageName}.provider", file)
+                file.writeText(content, Charsets.UTF_8)
+                val uri = androidx.core.content.FileProvider.getUriForFile(
+                    this@MainActivity,
+                    "${packageName}.provider",
+                    file
+                )
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND)
-                intent.type = "text/plain"
+                intent.type = resolveMimeTypeForFileName(fileName)
                 intent.putExtra(android.content.Intent.EXTRA_STREAM, uri)
                 intent.putExtra(android.content.Intent.EXTRA_SUBJECT, fileName)
                 intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 startActivity(android.content.Intent.createChooser(intent, "Teilen/Senden als Datei"))
             } catch (e: Exception) {
                 runOnUiThread {
-                    android.widget.Toast.makeText(this@MainActivity, "Fehler beim Teilen: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        "Fehler beim Teilen: ${e.message}",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         }
@@ -106,8 +193,8 @@ class MainActivity : AppCompatActivity() {
 
         window.decorView.systemUiVisibility = (
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        )
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            )
 
         configureWebView(binding.webView)
         binding.webView.loadUrl("file:///android_asset/index.html")
@@ -150,7 +237,7 @@ class MainActivity : AppCompatActivity() {
             settings.allowUniversalAccessFromFileURLs = true
         }
 
-        // Binde die AndroidInterface für Download/Senden ein
+        // Binde die AndroidInterface fuer Download/Senden ein.
         webView.addJavascriptInterface(AndroidInterface(), "AndroidInterface")
 
         webView.isVerticalScrollBarEnabled = false
