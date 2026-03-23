@@ -1,7 +1,7 @@
-<!-- Version: 16 -->
+<!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="16">
+<html lang="de" data-app-version="">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -11394,8 +11394,19 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter" data-app-version="16">
-      Entwickelt von: Bachner Gerhard (Parip69) - Ver.16
+    <footer id="appFooter">
+      Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion"></span>
+
+    <script>
+      // Setze die Versionsnummer im Footer und überall zentral
+      document.addEventListener("DOMContentLoaded", function () {
+        var version = document.documentElement.getAttribute("data-app-version") || "?";
+        var footerVersion = document.getElementById("footerVersion");
+        if (footerVersion) footerVersion.textContent = version;
+        // Optional: weitere Stellen automatisch ersetzen
+        // z.B. document.querySelectorAll('.version-text').forEach(el => el.textContent = version);
+      });
+    </script>
     </footer>
 
     <script>
