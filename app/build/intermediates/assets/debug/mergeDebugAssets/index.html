@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="23">
+<html lang="de" data-app-version="24">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2900,6 +2900,11 @@
         z-index: 10; /* Stelle sicher, dass SVGs über Hintergrund-Elementen liegen */
       }
 
+      #fullscreenOverlay .barcode-svg-dynamic {
+        max-height: none;
+        margin-bottom: 0;
+      }
+
       /* Close-Button (rotes Kreuz) */
       #closeOverlayButton {
         /* Muss immer klickbar sein (über allen SVGs/Containern) */
@@ -2964,6 +2969,42 @@
         #fullscreenContent.layout-duo #fullscreenSlaveSection {
           align-self: stretch;
         }
+      }
+
+      #fullscreenOverlay.landscape-stack {
+        scroll-snap-type: y proximity;
+      }
+
+      #fullscreenOverlay.landscape-stack #fullscreenContent.layout-multi,
+      #fullscreenOverlay.landscape-stack #fullscreenContent.layout-duo {
+        gap: 18px;
+      }
+
+      #fullscreenOverlay.landscape-stack #fullscreenMasterSection,
+      #fullscreenOverlay.landscape-stack #fullscreenExpirationSection,
+      #fullscreenOverlay.landscape-stack #fullscreenSlaveSection {
+        min-height: calc(
+          100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 120px
+        );
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        padding: 16px 0;
+        box-sizing: border-box;
+      }
+
+      #fullscreenOverlay.landscape-stack #fullscreenMasterLabel,
+      #fullscreenOverlay.landscape-stack #fullscreenExpirationLabel,
+      #fullscreenOverlay.landscape-stack #fullscreenSlaveLabel {
+        font-size: clamp(1.8rem, 3.4vw, 3rem);
+        margin-bottom: 18px;
+      }
+
+      #fullscreenOverlay.landscape-stack #fullscreenExpirationLabel {
+        white-space: normal;
       }
 
       .dynamic-input {
@@ -6679,6 +6720,8 @@ In den App-Namensraum importieren?`)
         overlay.classList.remove("show");
         setNativeBarcodeFullscreenRotation(false);
         overlay.scrollTop = 0;
+        resetFullscreenPinchZoom();
+        syncFullscreenLandscapeMode();
 
         const fullscreenContent = document.getElementById("fullscreenContent");
         fullscreenContent.classList.remove("layout-multi", "layout-duo");
@@ -7708,18 +7751,11 @@ In den App-Namensraum importieren?`)
             let languageMode = getLanguageMode();
             let displayExpiration =
               languageMode === "en" ? swapYZ(formattedDate) : formattedDate;
-            JsBarcode(expirationBarcodeElem, displayExpiration, {
-              format: "CODE128",
-              width: 5,
-              height: 150,
-              displayValue: true,
-              text: escapeNonPrintableChars(displayExpiration),
-              fontSize: 60,
-              margin: 15,
-              textMargin: 0,
-              background: "#ffffff",
-              lineColor: "#000000",
-            });
+            JsBarcode(
+              expirationBarcodeElem,
+              displayExpiration,
+              getFullscreenBarcodeRenderOptions(displayExpiration, true),
+            );
             const expirationLabelElem = document.getElementById(
               "fullscreenExpirationLabel",
             );
@@ -7785,6 +7821,42 @@ In den App-Namensraum importieren?`)
         requestAnimationFrame(() => {
           overlay.scrollTop = 0;
         });
+      }
+
+      function syncFullscreenLandscapeMode() {
+        const overlay = document.getElementById("fullscreenOverlay");
+        if (!overlay) return;
+        overlay.classList.toggle(
+          "landscape-stack",
+          shouldUseLandscapeFullscreenScroll(),
+        );
+      }
+
+      function resetFullscreenPinchZoom() {
+        const fullscreenContent = document.getElementById("fullscreenContent");
+        if (
+          fullscreenContent &&
+          typeof fullscreenContent.__resetPanZoom === "function"
+        ) {
+          fullscreenContent.__resetPanZoom();
+        }
+      }
+
+      function getFullscreenBarcodeRenderOptions(value, expiration = false) {
+        const isLandscape = window.matchMedia("(orientation: landscape)")
+          .matches;
+        return {
+          format: "CODE128",
+          width: isLandscape ? 6 : 5,
+          height: isLandscape ? (expiration ? 220 : 250) : 150,
+          displayValue: true,
+          text: escapeNonPrintableChars(value),
+          fontSize: isLandscape ? (expiration ? 68 : 76) : 60,
+          margin: isLandscape ? 0 : 15,
+          textMargin: isLandscape ? 8 : 0,
+          background: "#FFFFFF",
+          lineColor: "#000000",
+        };
       }
 
       setNativeBarcodeFullscreenRotation(false);
@@ -7925,18 +7997,11 @@ In den App-Namensraum importieren?`)
         }
         const displayCode =
           getLanguageMode() === "en" ? swapYZ(codePart) : codePart;
-        JsBarcode(masterBarcodeElem, displayCode, {
-          format: "CODE128",
-          width: 5,
-          height: 150,
-          displayValue: true,
-          text: escapeNonPrintableChars(displayCode),
-          fontSize: 60,
-          margin: 15,
-          textMargin: 0,
-          background: "#FFFFFF", // Fester weißer Hintergrund statt transparent
-          lineColor: "#000000",
-        });
+        JsBarcode(
+          masterBarcodeElem,
+          displayCode,
+          getFullscreenBarcodeRenderOptions(displayCode),
+        );
 
         // Sicherstellen, dass der Barcode einen weißen Hintergrund hat
         ensureWhiteBarcodeBackground(masterBarcodeElem);
@@ -7971,7 +8036,8 @@ In den App-Namensraum importieren?`)
           wrap.classList.add("expiry-wrapper");
           Object.assign(wrap.style, {
             position: "relative",
-            display: "inline-block",
+            display: "block",
+            width: "100%",
             pointerEvents: "none", // lässt Swipes/Klicks durch
           });
           masterBarcodeElem.parentNode.insertBefore(wrap, masterBarcodeElem);
@@ -8029,18 +8095,11 @@ In den App-Namensraum importieren?`)
             .textContent.split(": ")[1];
           const displayExp =
             getLanguageMode() === "en" ? swapYZ(expText) : expText;
-          JsBarcode(expirationBarcodeElem, displayExp, {
-            format: "CODE128",
-            width: 5,
-            height: 150,
-            displayValue: true,
-            text: escapeNonPrintableChars(displayExp),
-            fontSize: 60,
-            margin: 15,
-            textMargin: 0,
-            background: "#FFFFFF", // Fester weißer Hintergrund statt transparent
-            lineColor: "#000000",
-          });
+          JsBarcode(
+            expirationBarcodeElem,
+            displayExp,
+            getFullscreenBarcodeRenderOptions(displayExp, true),
+          );
 
           // Sicherstellen, dass der Barcode einen weißen Hintergrund hat
           ensureWhiteBarcodeBackground(expirationBarcodeElem);
@@ -8068,18 +8127,11 @@ In den App-Namensraum importieren?`)
           );
           const displaySlave =
             getLanguageMode() === "en" ? swapYZ(sCode) : sCode;
-          JsBarcode(slaveBarcodeElem, displaySlave, {
-            format: "CODE128",
-            width: 5,
-            height: 150,
-            displayValue: true,
-            text: escapeNonPrintableChars(displaySlave),
-            fontSize: 60,
-            margin: 15,
-            textMargin: 0,
-            background: "#FFFFFF", // Fester weißer Hintergrund statt transparent
-            lineColor: "#000000",
-          });
+          JsBarcode(
+            slaveBarcodeElem,
+            displaySlave,
+            getFullscreenBarcodeRenderOptions(displaySlave),
+          );
 
           // Sicherstellen, dass der Barcode einen weißen Hintergrund hat
           ensureWhiteBarcodeBackground(slaveBarcodeElem);
@@ -8088,6 +8140,7 @@ In den App-Namensraum importieren?`)
         }
 
         updateFullscreenLayoutMode();
+        resetFullscreenPinchZoom();
         resetFullscreenOverlayScroll();
       }
 
@@ -8123,6 +8176,7 @@ In den App-Namensraum importieren?`)
             fsContainer.classList.remove("layout-multi");
           }
         }
+        syncFullscreenLandscapeMode();
       }
 
       function showPrevBarcode() {
@@ -8175,6 +8229,7 @@ In den App-Namensraum importieren?`)
           "none";
 
         updateFullscreenLayoutMode();
+        resetFullscreenPinchZoom();
         resetFullscreenOverlayScroll();
 
         // Stile aus den Hauptbarcode-Einstellungen auf den Fullscreen-Content anwenden
@@ -8220,18 +8275,11 @@ In den App-Namensraum importieren?`)
           const expirationBarcodeElem = document.getElementById(
             "fullscreenExpirationBarcode",
           );
-          JsBarcode(expirationBarcodeElem, displayDate, {
-            format: "CODE128",
-            width: 5,
-            height: 150,
-            displayValue: true,
-            text: escapeNonPrintableChars(displayDate),
-            fontSize: 40,
-            margin: 0,
-            textMargin: 0,
-            background: "#FFFFFF", // Fester weißer Hintergrund statt transparent
-            lineColor: "#000000",
-          });
+          JsBarcode(
+            expirationBarcodeElem,
+            displayDate,
+            getFullscreenBarcodeRenderOptions(displayDate, true),
+          );
 
           // Nach der Barcode-Generierung sicherstellen, dass ein weißes Rechteck als Hintergrund existiert
           ensureWhiteBarcodeBackground(expirationBarcodeElem);
@@ -8349,6 +8397,8 @@ In den App-Namensraum importieren?`)
             removeFullscreenStyles();
           }
         });
+        window.addEventListener("resize", syncFullscreenLandscapeMode);
+        window.addEventListener("orientationchange", syncFullscreenLandscapeMode);
         closeButton.addEventListener("click", () => {
           closeFullscreenOverlay();
         });
@@ -11319,29 +11369,86 @@ In den App-Namensraum importieren?`)
 
     <script>
       function enablePinchZoom(targetElement) {
+        if (!targetElement || targetElement.__panZoomInitialized) return;
+
+        let scale = 1;
+        let translateX = 0;
+        let translateY = 0;
         let initialDistance = null;
-        let initialScale = 1;
+        let pinchStartScale = 1;
+        let panStartX = 0;
+        let panStartY = 0;
+        let panOriginX = 0;
+        let panOriginY = 0;
+        let isPanning = false;
+
         function getDistance(touch1, touch2) {
           const dx = touch1.clientX - touch2.clientX;
           const dy = touch1.clientY - touch2.clientY;
           return Math.sqrt(dx * dx + dy * dy);
         }
+
+        function getViewportRect() {
+          const overlay = document.getElementById("fullscreenOverlay");
+          return overlay
+            ? overlay.getBoundingClientRect()
+            : targetElement.parentElement.getBoundingClientRect();
+        }
+
+        function clampPan() {
+          const viewport = getViewportRect();
+          const maxX =
+            Math.max(0, (targetElement.offsetWidth * scale - viewport.width) / 2) +
+            48;
+          const maxY =
+            Math.max(
+              0,
+              (targetElement.offsetHeight * scale - viewport.height) / 2,
+            ) + 48;
+          translateX = Math.max(-maxX, Math.min(maxX, translateX));
+          translateY = Math.max(-maxY, Math.min(maxY, translateY));
+        }
+
+        function applyTransform() {
+          clampPan();
+          targetElement.style.transformOrigin = "center center";
+          targetElement.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+
+        function resetPanZoom() {
+          scale = 1;
+          translateX = 0;
+          translateY = 0;
+          initialDistance = null;
+          isPanning = false;
+          applyTransform();
+        }
+
+        targetElement.__panZoomInitialized = true;
+        targetElement.__resetPanZoom = resetPanZoom;
+        applyTransform();
+
         targetElement.addEventListener(
           "touchstart",
           function (e) {
+            const overlay = document.getElementById("fullscreenOverlay");
+            if (!overlay || !overlay.classList.contains("show")) return;
+
             if (e.touches.length === 2) {
               initialDistance = getDistance(e.touches[0], e.touches[1]);
-              const style = window.getComputedStyle(targetElement);
-              const transform = style.transform;
-              if (transform && transform !== "none") {
-                const values = transform.match(/matrix\((.+)\)/);
-                if (values) {
-                  const parts = values[1].split(",").map(parseFloat);
-                  initialScale = parts[0];
-                }
-              } else {
-                initialScale = 1;
-              }
+              pinchStartScale = scale;
+              isPanning = false;
+              e.preventDefault();
+              return;
+            }
+
+            if (e.touches.length === 1 && scale > 1.01) {
+              isPanning = true;
+              panStartX = e.touches[0].clientX;
+              panStartY = e.touches[0].clientY;
+              panOriginX = translateX;
+              panOriginY = translateY;
+              e.preventDefault();
             }
           },
           {
@@ -11351,23 +11458,63 @@ In den App-Namensraum importieren?`)
         targetElement.addEventListener(
           "touchmove",
           function (e) {
+            const overlay = document.getElementById("fullscreenOverlay");
+            if (!overlay || !overlay.classList.contains("show")) return;
+
             if (e.touches.length === 2 && initialDistance !== null) {
               e.preventDefault();
               const currentDistance = getDistance(e.touches[0], e.touches[1]);
-              let newScale = initialScale * (currentDistance / initialDistance);
-              newScale = Math.max(0.5, Math.min(newScale, 5));
-              targetElement.style.transform = `scale(${newScale})`;
+              scale = Math.max(
+                1,
+                Math.min(5, pinchStartScale * (currentDistance / initialDistance)),
+              );
+              if (scale <= 1.01) {
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+              }
+              applyTransform();
+              return;
+            }
+
+            if (e.touches.length === 1 && isPanning && scale > 1.01) {
+              e.preventDefault();
+              translateX = panOriginX + (e.touches[0].clientX - panStartX);
+              translateY = panOriginY + (e.touches[0].clientY - panStartY);
+              applyTransform();
             }
           },
           {
             passive: false,
           },
         );
-        targetElement.addEventListener("touchend", function (e) {
+
+        function handleTouchEnd(e) {
           if (e.touches.length < 2) {
             initialDistance = null;
           }
+          if (e.touches.length === 1 && scale > 1.01) {
+            isPanning = true;
+            panStartX = e.touches[0].clientX;
+            panStartY = e.touches[0].clientY;
+            panOriginX = translateX;
+            panOriginY = translateY;
+            return;
+          }
+          isPanning = false;
+          if (scale <= 1.01) {
+            resetPanZoom();
+          }
+        }
+
+        targetElement.addEventListener("touchend", handleTouchEnd, {
+          passive: false,
         });
+        targetElement.addEventListener("touchcancel", handleTouchEnd, {
+          passive: false,
+        });
+        window.addEventListener("resize", applyTransform);
+        window.addEventListener("orientationchange", applyTransform);
       }
 
       function exportLocalData() {
