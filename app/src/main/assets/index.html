@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="24">
+<html lang="de" data-app-version="26">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2475,6 +2475,14 @@
         overscroll-behavior: none;
       }
 
+      #exportOverlay,
+      #settingsPopup,
+      .popup-container,
+      #menuOverlayMain,
+      #menuOverlayDynamic {
+        overscroll-behavior: contain;
+      }
+
       .hiddenCode {
         display: none !important;
       }
@@ -2814,6 +2822,7 @@
         background: #fff;
         padding: 10px;
         border-radius: 10px;
+        box-sizing: border-box;
         /* Kein horizontaler/vertikaler Offset, hoher Blur- und Spread-Wert */
         box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.3);
         position: relative;
@@ -2893,16 +2902,15 @@
       }
 
       #fullscreenOverlay svg {
-        width: 100%;
-        max-width: 100%;
+        width: 100vh;
         height: auto;
         position: relative; /* Position relativ, damit die Z-Index-Stapelung funktioniert */
         z-index: 10; /* Stelle sicher, dass SVGs über Hintergrund-Elementen liegen */
       }
 
       #fullscreenOverlay .barcode-svg-dynamic {
-        max-height: none;
-        margin-bottom: 0;
+        max-height: 100px;
+        margin-bottom: 10px;
       }
 
       /* Close-Button (rotes Kreuz) */
@@ -2943,6 +2951,16 @@
         #fullscreenContent {
           width: 100%;
           max-width: 100%;
+        }
+
+        #fullscreenOverlay svg {
+          width: 100%;
+          max-width: 100%;
+        }
+
+        #fullscreenOverlay .barcode-svg-dynamic {
+          max-height: none;
+          margin-bottom: 0;
         }
 
         #fullscreenContent.layout-multi {
@@ -3005,6 +3023,15 @@
 
       #fullscreenOverlay.landscape-stack #fullscreenExpirationLabel {
         white-space: normal;
+      }
+
+      @media (orientation: portrait) {
+        #fullscreenContent,
+        #fullscreenContent.layout-multi,
+        #fullscreenContent.layout-duo {
+          width: calc(100% - 8px);
+          max-width: calc(100% - 8px);
+        }
       }
 
       .dynamic-input {
@@ -5535,12 +5562,86 @@
       /******************************************
        * FUNKTIONEN FÜR DIE MENÜ‑OVERLAYS
        ******************************************/
+      const appModalFocusLocks = new Set();
+
+      function applyAppModalFocusLock() {
+        const body = document.body;
+        const html = document.documentElement;
+        if (!body || !html) return;
+        if (body.dataset.appModalFocusLocked === "1") return;
+
+        const scrollY = window.scrollY || window.pageYOffset || 0;
+        body.dataset.appModalFocusLocked = "1";
+        body.dataset.appModalFocusScrollY = String(scrollY);
+        body.dataset.appModalPrevOverflow = body.style.overflow || "";
+        body.dataset.appModalPrevPosition = body.style.position || "";
+        body.dataset.appModalPrevTop = body.style.top || "";
+        body.dataset.appModalPrevLeft = body.style.left || "";
+        body.dataset.appModalPrevRight = body.style.right || "";
+        body.dataset.appModalPrevWidth = body.style.width || "";
+        html.dataset.appModalPrevOverflow = html.style.overflow || "";
+
+        html.style.overflow = "hidden";
+        body.style.overflow = "hidden";
+        body.style.position = "fixed";
+        body.style.top = `-${scrollY}px`;
+        body.style.left = "0";
+        body.style.right = "0";
+        body.style.width = "100%";
+      }
+
+      function releaseAppModalFocusLock() {
+        const body = document.body;
+        const html = document.documentElement;
+        if (!body || !html) return;
+        if (body.dataset.appModalFocusLocked !== "1") return;
+
+        const scrollY = parseInt(body.dataset.appModalFocusScrollY || "0", 10);
+
+        body.style.overflow = body.dataset.appModalPrevOverflow || "";
+        body.style.position = body.dataset.appModalPrevPosition || "";
+        body.style.top = body.dataset.appModalPrevTop || "";
+        body.style.left = body.dataset.appModalPrevLeft || "";
+        body.style.right = body.dataset.appModalPrevRight || "";
+        body.style.width = body.dataset.appModalPrevWidth || "";
+        html.style.overflow = html.dataset.appModalPrevOverflow || "";
+
+        delete body.dataset.appModalFocusLocked;
+        delete body.dataset.appModalFocusScrollY;
+        delete body.dataset.appModalPrevOverflow;
+        delete body.dataset.appModalPrevPosition;
+        delete body.dataset.appModalPrevTop;
+        delete body.dataset.appModalPrevLeft;
+        delete body.dataset.appModalPrevRight;
+        delete body.dataset.appModalPrevWidth;
+        delete html.dataset.appModalPrevOverflow;
+
+        window.scrollTo(0, Number.isFinite(scrollY) ? scrollY : 0);
+      }
+
+      function setAppModalFocusLock(key, active) {
+        if (!key) return;
+        if (active) {
+          appModalFocusLocks.add(key);
+        } else {
+          appModalFocusLocks.delete(key);
+        }
+
+        if (appModalFocusLocks.size > 0) {
+          applyAppModalFocusLock();
+        } else {
+          releaseAppModalFocusLock();
+        }
+      }
+
       function openMenuOverlayMain() {
         updateBundledIndexHtmlExportVisibility();
         document.getElementById("menuOverlayMain").classList.add("show");
+        setAppModalFocusLock("menuOverlayMain", true);
       }
       function closeMenuOverlayMain() {
         document.getElementById("menuOverlayMain").classList.remove("show");
+        setAppModalFocusLock("menuOverlayMain", false);
       }
       async function exportBundledIndexHtml() {
         closeMenuOverlayMain();
@@ -5572,9 +5673,11 @@
       function openMenuOverlayDynamic(barcodeElement) {
         subMenuCurrentBarcode = barcodeElement;
         document.getElementById("menuOverlayDynamic").classList.add("show");
+        setAppModalFocusLock("menuOverlayDynamic", true);
       }
       function closeMenuOverlayDynamic() {
         document.getElementById("menuOverlayDynamic").classList.remove("show");
+        setAppModalFocusLock("menuOverlayDynamic", false);
       }
       function openActualSettings() {
         closeMenuOverlayMain();
@@ -5726,16 +5829,20 @@
           top: "0",
           left: "0",
           width: "100%",
-          height: "100%",
+          height: "100dvh",
           backgroundColor: "rgba(0,0,0,0.8)",
           zIndex: "50000",
           overflowY: "auto",
           display: "flex",
           justifyContent: "center",
-          alignItems: "center",
-          padding: "20px",
+          alignItems: "flex-start",
+          padding: "calc(env(safe-area-inset-top, 0px) + 16px) 14px calc(env(safe-area-inset-bottom, 0px) + 40px)",
           boxSizing: "border-box",
         });
+        const closeLocalStorageDeleteOverlay = () => {
+          setAppModalFocusLock("localStorageDeleteOverlay", false);
+          overlay.remove();
+        };
 
         // Popup-Container
         const popup = document.createElement("div");
@@ -5754,14 +5861,18 @@
 
         Object.assign(popup.style, {
           background: "#fff",
-          padding: "20px",
+          padding: "18px 18px 28px",
           borderRadius: "10px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
           maxWidth: "400px",
           width: "100%",
-          maxHeight: "80vh",
+          maxHeight:
+            "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px)",
           overflowY: "auto",
+          overscrollBehavior: "contain",
+          scrollPaddingBottom: "100px",
           boxSizing: "border-box",
+          margin: "0 auto",
         });
 
         // Lesbarkeit wie im hellen Modus erzwingen (unabhängig vom Theme)
@@ -5836,6 +5947,7 @@
           justifyContent: "center",
           gap: "10px",
           marginTop: "10px",
+          marginBottom: "12px",
           boxSizing: "border-box",
         });
 
@@ -5899,7 +6011,7 @@
           showToast("Ausgewählte Daten wurden gelöscht!", "success");
 
           // Popup aktualisieren statt zu schließen
-          overlay.remove(); // Altes Popup entfernen
+          closeLocalStorageDeleteOverlay(); // Altes Popup entfernen
           setTimeout(() => {
             openLocalStorageDeletionPopup(); // Neues, aktualisiertes Popup öffnen
           }, 100);
@@ -5968,7 +6080,7 @@
               "Werkseinstellung: Alles gelöscht außer Hauptliste",
               "success",
             );
-            overlay.remove();
+            closeLocalStorageDeleteOverlay();
             setTimeout(() => {
               openLocalStorageDeletionPopup(); // neu laden
             }, 100);
@@ -5981,15 +6093,18 @@
         btnCancel.textContent = "Abbrechen";
         Object.assign(btnCancel.style, {
           display: "block",
-          margin: "20px auto 0", // oben 20px Abstand, zentriert
+          margin: "14px auto 0",
           padding: "10px 20px",
           backgroundColor: "#dc3545",
           color: "#fff",
           border: "none",
           borderRadius: "5px",
           cursor: "pointer",
+          position: "sticky",
+          bottom: "0",
+          zIndex: "1",
         });
-        btnCancel.onclick = () => overlay.remove();
+        btnCancel.onclick = () => closeLocalStorageDeleteOverlay();
 
         // Buttons in Container einfügen
         btnContainer.appendChild(btnSelectAll);
@@ -6002,6 +6117,7 @@
         popup.appendChild(btnCancel); // Cancel als letzter
         overlay.appendChild(popup);
         document.body.appendChild(overlay);
+        setAppModalFocusLock("localStorageDeleteOverlay", true);
       }
 
       /**
@@ -6313,6 +6429,7 @@
         }
 
         exportOverlay.classList.remove("hidden");
+        setAppModalFocusLock("settingsExportOverlay", true);
 
         requestAnimationFrame(() => {
           fileNameInput.focus();
@@ -8648,6 +8765,7 @@ In den App-Namensraum importieren?`)
       function closeExportOverlay() {
         const exportOverlay = document.getElementById("exportOverlay");
         exportOverlay.classList.remove("show");
+        setAppModalFocusLock("exportOverlay", false);
       }
       document.getElementById("exportButton").addEventListener("click", () => {
         showExportOverlay();
@@ -8727,6 +8845,7 @@ In den App-Namensraum importieren?`)
 
         // 4) Overlay anzeigen
         exportOverlay.classList.add("show");
+        setAppModalFocusLock("exportOverlay", true);
       }
 
       document
@@ -8751,6 +8870,7 @@ In den App-Namensraum importieren?`)
           const fileNameInput = document.getElementById("popupFileNameInput");
           fileNameInput.value = buildBarcodeExportBaseName();
           exportOverlay.classList.remove("hidden");
+          setAppModalFocusLock("customExportOverlay", true);
           requestAnimationFrame(() => {
             fileNameInput.focus();
             const len = fileNameInput.value.length;
@@ -8775,6 +8895,7 @@ In den App-Namensraum importieren?`)
           document
             .getElementById("customExportOverlay")
             .classList.add("hidden");
+          setAppModalFocusLock("customExportOverlay", false);
         });
       document
         .getElementById("popupDownloadButton")
@@ -8793,6 +8914,7 @@ In den App-Namensraum importieren?`)
           document
             .getElementById("customExportOverlay")
             .classList.add("hidden");
+          setAppModalFocusLock("customExportOverlay", false);
         });
       document
         .getElementById("popupCancelButton")
@@ -8800,11 +8922,13 @@ In den App-Namensraum importieren?`)
           document
             .getElementById("customExportOverlay")
             .classList.add("hidden");
+          setAppModalFocusLock("customExportOverlay", false);
           showToast("❌ Export abgebrochen");
         });
       function closeSettingsExportOverlay() {
         const exportOverlay = document.getElementById("settingsExportOverlay");
         exportOverlay.classList.add("hidden");
+        setAppModalFocusLock("settingsExportOverlay", false);
 
         const returnOverlayId = exportOverlay.dataset.returnOverlayId || "";
         if (returnOverlayId) {
@@ -9851,6 +9975,7 @@ In den App-Namensraum importieren?`)
         document.getElementById("settingsPopup").style.display = "flex";
         const ov = document.getElementById("settingsOverlay");
         if (ov) ov.style.display = "block";
+        setAppModalFocusLock("settingsPopup", true);
 
         updateSettingsPreview();
       }
@@ -9878,6 +10003,7 @@ In den App-Namensraum importieren?`)
         document.getElementById("settingsPopup").style.display = "none";
         const ov = document.getElementById("settingsOverlay");
         if (ov) ov.style.display = "none";
+        setAppModalFocusLock("settingsPopup", false);
 
         currentBarcode = null;
       }
