@@ -1,18 +1,22 @@
 [
     {
-        "merged": "de.parip69.barcodeaudiscanner.app-debug-37:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
-        "source": "de.parip69.barcodeaudiscanner.app-main-39:/mipmap-anydpi-v26/ic_launcher_round.xml"
+        "merged": "C:\\Users\\gerha\\.gradle\\daemon\\8.9\\de.parip69.barcodeaudiscanner.app-debug-37:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\gerha\\.gradle\\daemon\\8.9\\de.parip69.barcodeaudiscanner.app-main-39:\\layout\\activity_main.xml"
     },
     {
-        "merged": "de.parip69.barcodeaudiscanner.app-debug-37:/layout_activity_main.xml.flat",
-        "source": "de.parip69.barcodeaudiscanner.app-main-39:/layout/activity_main.xml"
+        "merged": "de.parip69.barcodeaudiscanner.app-debug-37:/xml_provider_paths.xml.flat",
+        "source": "de.parip69.barcodeaudiscanner.app-main-39:/xml/provider_paths.xml"
     },
     {
-        "merged": "de.parip69.barcodeaudiscanner.app-debug-37:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "de.parip69.barcodeaudiscanner.app-main-39:/mipmap-anydpi-v26/ic_launcher.xml"
+        "merged": "C:\\Users\\gerha\\.gradle\\daemon\\8.9\\de.parip69.barcodeaudiscanner.app-debug-37:\\mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "C:\\Users\\gerha\\.gradle\\daemon\\8.9\\de.parip69.barcodeaudiscanner.app-main-39:\\mipmap-anydpi-v26\\ic_launcher.xml"
     },
     {
-        "merged": "de.parip69.barcodeaudiscanner.app-debug-37:/drawable_ic_launcher_foreground.png.flat",
-        "source": "de.parip69.barcodeaudiscanner.app-main-39:/drawable/ic_launcher_foreground.png"
+        "merged": "C:\\Users\\gerha\\.gradle\\daemon\\8.9\\de.parip69.barcodeaudiscanner.app-debug-37:\\drawable_ic_launcher_foreground.png.flat",
+        "source": "C:\\Users\\gerha\\.gradle\\daemon\\8.9\\de.parip69.barcodeaudiscanner.app-main-39:\\drawable\\ic_launcher_foreground.png"
+    },
+    {
+        "merged": "C:\\Users\\gerha\\.gradle\\daemon\\8.9\\de.parip69.barcodeaudiscanner.app-debug-37:\\mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "C:\\Users\\gerha\\.gradle\\daemon\\8.9\\de.parip69.barcodeaudiscanner.app-main-39:\\mipmap-anydpi-v26\\ic_launcher_round.xml"
     }
 ]

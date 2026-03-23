@@ -4159,6 +4159,7 @@ de.parip69.barcodeaudiscanner:attr/motionDurationExtraLong3 = 0x7f0302f6
 de.parip69.barcodeaudiscanner:attr/maxNumber = 0x7f0302e1
 de.parip69.barcodeaudiscanner:color/m3_ref_palette_dynamic_neutral_variant6 = 0x7f0500c3
 de.parip69.barcodeaudiscanner:color/m3_primary_text_disable_only = 0x7f05009b
+de.parip69.barcodeaudiscanner:xml/provider_paths = 0x7f120000
 de.parip69.barcodeaudiscanner:dimen/notification_large_icon_width = 0x7f060311
 de.parip69.barcodeaudiscanner:attr/values = 0x7f030472
 de.parip69.barcodeaudiscanner:attr/maxLines = 0x7f0302e0
