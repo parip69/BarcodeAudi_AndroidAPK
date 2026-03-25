@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="31">
+<html lang="de" data-app-version="32">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2653,7 +2653,7 @@
       }
 
       .hidden {
-        display: none;
+        display: none !important;
       }
 
       html.app-viewport-overlay-open,
@@ -4437,7 +4437,8 @@
               </li>
               <li>
                 <strong>Lokale Daten (🗑️):</strong>
-                „Exportieren/Importieren“ = selektiv •
+                „Exportieren“ = selektiv •
+                „Komplett importieren“ = ersetzt alle lokalen Daten auf einmal •
                 <code>🔄 Werkseinstellung</code> = löscht alles außer der
                 Hauptliste (<code>barcodes</code>)
               </li>
@@ -4507,7 +4508,8 @@
             <strong>Datenverwaltung:</strong>
             <ul>
               <li>
-                Exportieren, Importieren, Cache bearbeiten (über einen Editor)
+                Selektiv exportieren, komplett importieren, Cache bearbeiten
+                (über einen Editor)
               </li>
               <li>
                 „💾 Lokale Daten / Settings“: Öffnet ein Popup mit einer Liste
@@ -5319,6 +5321,14 @@
         "mainBarcodeHidden",
       ];
       const APP_STORAGE_PREFIX_KEYS = ["groupOrdering_", "languageMode_"];
+      const LOCAL_STORAGE_IMPORT_METADATA_KEYS = new Set([
+        "app",
+        "version",
+        "namespace",
+        "exportedAt",
+        "entryCount",
+        "selectedKeys",
+      ]);
 
       const rawLocalStorage = window.localStorage;
       const rawLocalStorageGetItem =
@@ -5422,6 +5432,204 @@
       };
 
       migrateLegacyAppStorageOnce();
+
+      function getStoredThemeMode() {
+        const stored = appStorage.getItem("themeMode");
+        return stored === "dark" || stored === "light" ? stored : "light";
+      }
+
+      function applyThemeToUi(mode, refreshStyles = true) {
+        const effectiveMode = mode === "dark" ? "dark" : "light";
+        document.body.classList.toggle("theme-dark", effectiveMode === "dark");
+
+        const btn = document.getElementById("themeToggleButton");
+        if (btn) {
+          btn.textContent = effectiveMode === "dark" ? "☀️" : "🌙";
+          btn.title = effectiveMode === "dark" ? "Hellmodus" : "Dunkelmodus";
+        }
+
+        if (
+          refreshStyles &&
+          typeof refreshThemeDependentStyles === "function"
+        ) {
+          refreshThemeDependentStyles();
+        }
+
+        return effectiveMode;
+      }
+
+      function applyStoredThemeMode(refreshStyles = true) {
+        return applyThemeToUi(getStoredThemeMode(), refreshStyles);
+      }
+
+      function applyStoredMainBarcodeVisibility() {
+        const mainBarcodeContainer = document.getElementById(
+          "expirationContainer",
+        );
+        if (!mainBarcodeContainer) return;
+
+        let isHidden = appStorage.getItem("mainBarcodeHidden");
+        if (isHidden === null) {
+          appStorage.setItem("mainBarcodeHidden", "false");
+          isHidden = "false";
+        }
+
+        mainBarcodeContainer.style.display =
+          isHidden === "true" ? "none" : "block";
+      }
+
+      function applyStoredGroupSectionState() {
+        const toggleSection = document.getElementById("toggleSection");
+        if (!toggleSection) return;
+
+        const pinGroupSection = appStorage.getItem("pinGroupSection");
+        if (pinGroupSection === "true") {
+          const visible = appStorage.getItem("groupSectionVisible");
+          if (visible === "true") {
+            toggleSection.classList.add("show");
+          } else {
+            toggleSection.classList.remove("show");
+          }
+        } else {
+          toggleSection.classList.remove("show");
+        }
+
+        if (typeof updatePinGroupSectionButtonText === "function") {
+          updatePinGroupSectionButtonText();
+        }
+        if (typeof updateToggleButtonText === "function") {
+          updateToggleButtonText();
+        }
+      }
+
+      function applyStoredToggleableBarcodeState() {
+        document.querySelectorAll(".barcode-container").forEach((container) => {
+          container.classList.remove("hiddenCode", "toggleable");
+
+          const labelElement = container.querySelector(".barcode-label");
+          const text =
+            container.dataset.fullLabel || labelElement?.textContent || "";
+          const match = text.match(/\[([^\]]*)\]/i);
+          if (!match) return;
+
+          const content = match[1].trim();
+          if (content === "" || content.includes("#")) {
+            container.classList.add("hiddenCode", "toggleable");
+            container.style.display = "none";
+          }
+        });
+
+        const toggleHiddenSlaves =
+          document.getElementById("toggleHiddenSlaves");
+        if (!toggleHiddenSlaves) return;
+
+        const openEye = "👁️";
+        const closedEye = "👁️‍🗨️";
+
+        const updateButtonText = () => {
+          const toggleableContainers = document.querySelectorAll(
+            ".barcode-container.toggleable",
+          );
+          const currentlyHidden = Array.from(toggleableContainers).some(
+            (el) =>
+              el.classList.contains("hiddenCode") ||
+              el.style.display === "none",
+          );
+
+          toggleHiddenSlaves.textContent = currentlyHidden
+            ? `${openEye} Ausgeblendete anzeigen`
+            : `${closedEye} Ausgeblendete verbergen`;
+        };
+
+        if (!toggleHiddenSlaves.dataset.boundToggleHandler) {
+          toggleHiddenSlaves.addEventListener("click", function () {
+            const toggleableContainers = document.querySelectorAll(
+              ".barcode-container.toggleable",
+            );
+            const currentlyHidden = Array.from(toggleableContainers).some(
+              (el) =>
+                el.classList.contains("hiddenCode") ||
+                el.style.display === "none",
+            );
+
+            toggleableContainers.forEach((el) => {
+              if (currentlyHidden) {
+                el.classList.remove("hiddenCode");
+                el.style.display = "";
+              } else {
+                el.classList.add("hiddenCode");
+                el.style.display = "none";
+              }
+            });
+
+            updateButtonText();
+          });
+          toggleHiddenSlaves.dataset.boundToggleHandler = "1";
+        }
+
+        updateButtonText();
+      }
+
+      function applyStoredSelectedGroupFilter() {
+        const groupFilterElem = document.getElementById("groupFilter");
+        if (!groupFilterElem) return "";
+
+        let savedGroup = appStorage.getItem("selectedGroup") || "";
+        const hasMatchingOption = Array.from(groupFilterElem.options).some(
+          (option) => option.value === savedGroup,
+        );
+        if (!hasMatchingOption) {
+          savedGroup = "";
+        }
+
+        groupFilterElem.value = savedGroup;
+        filterAndSortBarcodesByGroup(savedGroup);
+        return savedGroup;
+      }
+
+      function applyStoredConsentState() {
+        const hasConsent = Boolean(appStorage.getItem("userConsent"));
+        const consentStatusElem = document.getElementById("consentStatus");
+
+        if (!hasConsent) {
+          if (consentStatusElem) {
+            consentStatusElem.textContent = "";
+          }
+          openViewportLockedOverlay(
+            "consentPopupOverlay",
+            "#consentPopupOverlay .popup-content",
+          );
+          return;
+        }
+
+        closeViewportLockedOverlay("consentPopupOverlay");
+        if (typeof updateConsentStatus === "function") {
+          updateConsentStatus();
+        }
+      }
+
+      function refreshUiAfterFullLocalImport() {
+        try {
+          barcodeStyles = JSON.parse(appStorage.getItem("barcodeStyles")) || {};
+        } catch (error) {
+          console.warn(
+            "barcodeStyles konnten nach Import nicht gelesen werden",
+            error,
+          );
+          barcodeStyles = {};
+        }
+
+        applyStoredThemeMode(false);
+        loadBarcodes();
+        applyStoredToggleableBarcodeState();
+        applyStoredSelectedGroupFilter();
+        updateFlag();
+        reloadBarcodes();
+        updateMainBarcode();
+        applyStoredMainBarcodeVisibility();
+        applyStoredGroupSectionState();
+        refreshThemeDependentStyles();
+      }
 
       // Funktionen zum Escapen und Wiederherstellen nicht druckbarer Zeichen
       function escapeNonPrintableChars(text) {
@@ -5918,7 +6126,7 @@
 
       /**
        * Öffnet das Popup zum Auswählen von localStorage-Einträgen
-       * und bietet Löschen, selektiven Export und selektiven Import an.
+       * und bietet Löschen, selektiven Export und Komplettimport an.
        */
       function openLocalStorageDeletionPopup() {
         const keys = appStorage.keys();
@@ -6144,9 +6352,9 @@
           // Popup bleibt geöffnet
         };
 
-        // 3) Importieren-Button
+        // 3) Komplettimport-Button
         const btnImport = document.createElement("button");
-        btnImport.textContent = "Importieren";
+        btnImport.textContent = "Komplett importieren";
         Object.assign(btnImport.style, {
           margin: "0 5px",
           padding: "10px 20px",
@@ -6158,7 +6366,6 @@
         });
         btnImport.onclick = () => {
           importLocalStorageWithConfirmation();
-          // Popup bleibt geöffnet
         };
         // Neuer Button: Werkseinstellung (alles außer barcodeList löschen)
         const btnFactoryReset = document.createElement("button");
@@ -6582,22 +6789,30 @@
         }
 
         const importEntries = [];
+        const usesStorageWrapper =
+          parsed &&
+          typeof parsed === "object" &&
+          parsed.storage &&
+          typeof parsed.storage === "object" &&
+          !Array.isArray(parsed.storage);
+
         Object.entries(sourceData).forEach(([rawKey, val]) => {
           let logicalKey = String(rawKey || "").trim();
           if (!logicalKey) return;
+
+          if (
+            !usesStorageWrapper &&
+            LOCAL_STORAGE_IMPORT_METADATA_KEYS.has(logicalKey)
+          ) {
+            return;
+          }
 
           if (logicalKey.startsWith(APP_STORAGE_PREFIX)) {
             logicalKey = logicalKey.slice(APP_STORAGE_PREFIX.length);
           }
 
-          if (
-            !(
-              APP_STORAGE_EXACT_KEYS.includes(logicalKey) ||
-              APP_STORAGE_PREFIX_KEYS.some((prefix) =>
-                logicalKey.startsWith(prefix),
-              )
-            )
-          ) {
+          logicalKey = logicalKey.trim();
+          if (!logicalKey || logicalKey.startsWith("__")) {
             return;
           }
 
@@ -6644,6 +6859,55 @@
             if (input) input.value = "";
             return;
           }
+
+          const fileName = String(file.name || "unbekannt");
+          const confirmed = confirm(
+            `Datei "${fileName}" mit ${importEntries.length} Einträgen komplett importieren?\n\n` +
+              `Dabei werden alle bisherigen lokalen Daten / Settings der App gelöscht und vollständig durch den Dateiinhalt ersetzt.`,
+          );
+
+          if (!confirmed) {
+            if (input) input.value = "";
+            showToast("Komplettimport abgebrochen.", "info");
+            return;
+          }
+
+          appStorage.clear();
+          importEntries.forEach(([key, val]) => {
+            appStorage.setItem(key, val);
+          });
+
+          try {
+            refreshUiAfterFullLocalImport();
+          } catch (error) {
+            console.warn(
+              "UI konnte nach Komplettimport nicht vollständig synchronisiert werden",
+              error,
+            );
+          }
+
+          const localPopupOverlay = document.getElementById(
+            "localStorageDeleteOverlay",
+          );
+          if (localPopupOverlay) {
+            closeViewportLockedOverlay(localPopupOverlay);
+          }
+
+          try {
+            applyStoredConsentState();
+          } catch (error) {
+            console.warn(
+              "Consent-Status konnte nach Komplettimport nicht aktualisiert werden",
+              error,
+            );
+          }
+
+          if (input) input.value = "";
+          showToast(
+            `Komplettimport abgeschlossen (${importEntries.length} Einträge)!`,
+            "success",
+          );
+          return;
 
           let importedCount = 0;
           importEntries.forEach(([key, val]) => {
@@ -8672,14 +8936,8 @@ In den App-Namensraum importieren?`)
       }
 
       document.addEventListener("DOMContentLoaded", function () {
-        if (!appStorage.getItem("userConsent")) {
-          openViewportLockedOverlay(
-            "consentPopupOverlay",
-            "#consentPopupOverlay .popup-content",
-          );
-        } else {
-          updateConsentStatus();
-        }
+        applyStoredConsentState();
+        // Bereits über applyStoredConsentState() synchronisiert.
         document
           .getElementById("consentOkButton")
           .addEventListener("click", function () {
@@ -11080,6 +11338,8 @@ In den App-Namensraum importieren?`)
         const STORAGE_KEY = "themeMode";
 
         function getPreferredTheme() {
+          return getStoredThemeMode();
+
           const stored = appStorage.getItem(STORAGE_KEY);
           if (stored === "dark" || stored === "light") return stored;
 
@@ -11088,6 +11348,8 @@ In den App-Namensraum importieren?`)
         }
 
         function applyTheme(mode) {
+          return applyThemeToUi(mode, true);
+
           document.body.classList.toggle("theme-dark", mode === "dark");
 
           const btn = document.getElementById("themeToggleButton");
@@ -11136,6 +11398,9 @@ In den App-Namensraum importieren?`)
     <!-- === DOMContentLoaded-Block zum Ausblenden anhand der eckigen Klammern === -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        applyStoredToggleableBarcodeState();
+        return;
+
         let barcodeContainers = document.querySelectorAll(".barcode-container");
         barcodeContainers.forEach((container) => {
           let label = container.querySelector(".barcode-label");
@@ -11212,6 +11477,9 @@ In den App-Namensraum importieren?`)
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        applyStoredMainBarcodeVisibility();
+        return;
+
         var mainBarcodeContainer = document.getElementById(
           "expirationContainer",
         );
