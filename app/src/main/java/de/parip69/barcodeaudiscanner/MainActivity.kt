@@ -3,10 +3,11 @@ package de.parip69.barcodeaudiscanner
 import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.View
+import android.view.WindowManager
 import android.webkit.ConsoleMessage
 import android.webkit.MimeTypeMap
 import android.webkit.ValueCallback
@@ -19,6 +20,9 @@ import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import de.parip69.barcodeaudiscanner.databinding.ActivityMainBinding
 import java.io.ByteArrayInputStream
 
@@ -184,6 +188,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
     private var isBarcodeFullscreenRotationEnabled = false
+    private val immersiveModeRunnable = Runnable { applyImmersiveFullscreen() }
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -194,16 +199,51 @@ class MainActivity : AppCompatActivity() {
         fileUploadCallback = null
     }
 
+    private fun configureImmersiveWindow() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
+        }
+    }
+
+    private fun applyImmersiveFullscreen() {
+        val controller = WindowCompat.getInsetsController(window, window.decorView) ?: return
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+        controller.isAppearanceLightStatusBars = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            controller.isAppearanceLightNavigationBars = false
+        }
+    }
+
+    private fun scheduleImmersiveFullscreen() {
+        if (!::binding.isInitialized) return
+        binding.root.removeCallbacks(immersiveModeRunnable)
+        binding.root.post(immersiveModeRunnable)
+        binding.root.postDelayed(immersiveModeRunnable, 120)
+        binding.root.postDelayed(immersiveModeRunnable, 300)
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            )
+        configureImmersiveWindow()
+        scheduleImmersiveFullscreen()
 
         setBarcodeFullscreenRotationEnabled(false)
         configureWebView(binding.webView)
@@ -300,6 +340,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 binding.swipeRefresh.isRefreshing = false
+                scheduleImmersiveFullscreen()
             }
 
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
@@ -343,7 +384,22 @@ class MainActivity : AppCompatActivity() {
         return if (mimeTypes.isEmpty()) arrayOf("*/*") else mimeTypes.toTypedArray()
     }
 
+    override fun onResume() {
+        super.onResume()
+        scheduleImmersiveFullscreen()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            scheduleImmersiveFullscreen()
+        }
+    }
+
     override fun onDestroy() {
+        if (::binding.isInitialized) {
+            binding.root.removeCallbacks(immersiveModeRunnable)
+        }
         binding.webView.destroy()
         super.onDestroy()
     }

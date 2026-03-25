@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="28">
+<html lang="de" data-app-version="31">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2656,6 +2656,12 @@
         display: none;
       }
 
+      html.app-viewport-overlay-open,
+      body.app-viewport-overlay-open {
+        overflow: hidden !important;
+        overscroll-behavior: none !important;
+      }
+
       /* Buttons Export/Import (für Barcodes) */
       #exportButton,
       #importButton {
@@ -2793,29 +2799,22 @@
         Expiration, Slave) */
       #fullscreenOverlay {
         position: fixed;
-        top: 0;
-        left: 0;
+        inset: 0;
         width: 100%;
-        height: 100%;
+        height: 100dvh;
         background: #ffffff;
         box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.3);
-        display: none;
+        display: flex;
         justify-content: center;
         align-items: center;
         z-index: 3000;
         flex-direction: column;
         padding: 20px;
         box-sizing: border-box;
-        opacity: 0;
-        transition: opacity 0.5s ease;
         overflow-x: hidden;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-      }
-
-      #fullscreenOverlay.show {
-        display: flex;
-        opacity: 1;
+        overscroll-behavior: contain;
       }
 
       #fullscreenContent {
@@ -3095,25 +3094,20 @@
 
       /* Export-Overlay (für Barcodes) */
       #exportOverlay {
-        display: none;
         position: fixed;
-        top: 0;
-        left: 0;
+        inset: 0;
         width: 100%;
-        height: 100vh;
+        height: 100dvh;
         background: rgb(242, 242, 242);
-        justify-content: center;
-        align-items: flex-start;
-        padding-top: 20px;
-        /* Optional: Abstand von ganz oben */
-
-        z-index: 9999;
-      }
-
-      #exportOverlay.show {
         display: flex;
-        align-items: flex-start;
         justify-content: center;
+        align-items: flex-start;
+        padding: calc(env(safe-area-inset-top, 0px) + 12px) 12px
+          calc(env(safe-area-inset-bottom, 0px) + 12px);
+        box-sizing: border-box;
+        overflow: hidden;
+        overscroll-behavior: contain;
+        z-index: 9999;
       }
 
       #exportOverlayContent {
@@ -3127,9 +3121,11 @@
         margin-left: auto;
         margin-right: auto;
         box-sizing: border-box;
-        width: 95%;
-        max-width: 95%;
-        max-height: 90vh;
+        width: min(95%, 960px);
+        max-width: min(95%, 960px);
+        max-height: calc(
+          100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px
+        );
         box-shadow:
           0 2px 4px rgba(0, 0, 0, 0.1),
           0 0 20px rgba(91, 189, 255, 0.5);
@@ -3261,14 +3257,17 @@
 
       .popup-container {
         position: fixed;
-        top: 0;
-        left: 0;
+        inset: 0;
         width: 100%;
-        height: 100%;
+        height: 100dvh;
         background: rgba(252, 251, 251, 1);
         display: flex;
         justify-content: center;
         align-items: center;
+        padding: 12px;
+        box-sizing: border-box;
+        overflow: hidden;
+        overscroll-behavior: contain;
         z-index: 10000;
       }
 
@@ -3342,14 +3341,17 @@
       /* Popup für Barcode Settings (ohne Style-Export/-Import) */
       #settingsPopup {
         position: fixed;
-        top: 0;
-        left: 0;
+        inset: 0;
         width: 100%;
-        height: 100vh;
+        height: 100dvh;
         background: rgb(255, 255, 255);
-        display: none;
+        display: flex;
         justify-content: center;
         align-items: center;
+        padding: 12px;
+        box-sizing: border-box;
+        overflow: hidden;
+        overscroll-behavior: contain;
         z-index: 3001;
       }
 
@@ -3357,9 +3359,9 @@
         background: #fff;
         padding: 20px;
         border-radius: 10px;
-        width: 90%;
-        max-width: 300px;
-        max-height: calc(100vh - 24px);
+        width: min(300px, calc(100vw - 24px));
+        max-width: min(300px, calc(100vw - 24px));
+        max-height: calc(100dvh - 24px);
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -3501,10 +3503,6 @@
         color: #fff;
       }
 
-      #settingsOverlay {
-        pointer-events: none;
-      }
-
       /* Hamburger-Menü */
       .main-settings-button {
         position: absolute;
@@ -3552,21 +3550,13 @@
         transform: scale(1.05);
       }
 
-      #menuOverlayMain {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        justify-content: center;
-        align-items: center;
-        z-index: 4000;
-      }
-
-      #menuOverlayMain.show {
-        display: flex;
+      #menuOverlayMain,
+      #menuOverlayDynamic {
+        inset: 0;
+        padding: 12px;
+        box-sizing: border-box;
+        overflow: hidden;
+        z-index: 10000;
       }
 
       #menuOverlayMainContent {
@@ -3574,25 +3564,13 @@
         padding: 20px;
         border-radius: 10px;
         text-align: center;
-        width: 300px;
+        width: min(300px, calc(100vw - 24px));
+        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      }
-
-      #menuOverlayDynamic {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        justify-content: center;
-        align-items: center;
-        z-index: 4000;
-      }
-
-      #menuOverlayDynamic.show {
-        display: flex;
       }
 
       #menuOverlayDynamicContent {
@@ -3600,7 +3578,12 @@
         padding: 20px;
         border-radius: 10px;
         text-align: center;
-        width: 300px;
+        width: min(300px, calc(100vw - 24px));
+        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       }
 
@@ -3944,7 +3927,6 @@
 
       /* Style-Popup komplett vom Hell-/Dunkelmodus entkoppeln – Ver. 75 */
       #settingsPopup,
-      #settingsOverlay,
       #settingsContent,
       #settingsContent *,
       .confirmation-popup,
@@ -3953,9 +3935,6 @@
       }
       #settingsPopup {
         background: rgba(255, 255, 255, 0.96) !important;
-      }
-      #settingsOverlay {
-        background: rgba(0, 0, 0, 0.18) !important;
       }
       #settingsContent {
         position: relative;
@@ -4646,7 +4625,7 @@
     </div>
 
     <!-- Vollbild-Overlay (Master, Expiration, Slave) -->
-    <div id="fullscreenOverlay">
+    <div id="fullscreenOverlay" class="hidden">
       <button id="closeOverlayButton">✖</button>
       <div id="fullscreenContent">
         <div id="fullscreenMasterSection">
@@ -4674,7 +4653,7 @@
     </div>
 
     <!-- Export-Overlay (Barcodes) -->
-    <div id="exportOverlay">
+    <div id="exportOverlay" class="hidden">
       <div id="exportOverlayContent">
         <h3>Barcodes zum Export auswählen</h3>
         <div id="exportList"></div>
@@ -4773,7 +4752,7 @@
     </div>
 
     <!-- Popup für Barcode Settings (ohne Style-Export/-Import) -->
-    <div id="settingsPopup">
+    <div id="settingsPopup" class="hidden">
       <div id="settingsContent">
         <h3>Einstellungen</h3>
         <!-- Rahmen-Einstellungen -->
@@ -4925,7 +4904,7 @@
     </div>
 
     <!-- Menü-Overlay für den Hauptcontainer (Hamburger-Menü) -->
-    <div id="menuOverlayMain">
+    <div id="menuOverlayMain" class="popup-container hidden">
       <div id="menuOverlayMainContent">
         <h3>Einstellungen</h3>
         <div
@@ -4978,7 +4957,7 @@
       </div>
     </div>
     <!-- Menü-Overlay für dynamische Barcodes -->
-    <div id="menuOverlayDynamic">
+    <div id="menuOverlayDynamic" class="popup-container hidden">
       <div id="menuOverlayDynamicContent">
         <h3>Einstellungen</h3>
         <button class="menu-button" onclick="openActualSettingsDynamic()">
@@ -5562,86 +5541,221 @@
       /******************************************
        * FUNKTIONEN FÜR DIE MENÜ‑OVERLAYS
        ******************************************/
-      const appModalFocusLocks = new Set();
+      let viewportOverlaySequence = 0;
+      const activeViewportLockedOverlays = new Set();
 
-      function applyAppModalFocusLock() {
-        const body = document.body;
-        const html = document.documentElement;
-        if (!body || !html) return;
-        if (body.dataset.appModalFocusLocked === "1") return;
-
-        const scrollY = window.scrollY || window.pageYOffset || 0;
-        body.dataset.appModalFocusLocked = "1";
-        body.dataset.appModalFocusScrollY = String(scrollY);
-        body.dataset.appModalPrevOverflow = body.style.overflow || "";
-        body.dataset.appModalPrevPosition = body.style.position || "";
-        body.dataset.appModalPrevTop = body.style.top || "";
-        body.dataset.appModalPrevLeft = body.style.left || "";
-        body.dataset.appModalPrevRight = body.style.right || "";
-        body.dataset.appModalPrevWidth = body.style.width || "";
-        html.dataset.appModalPrevOverflow = html.style.overflow || "";
-
-        html.style.overflow = "hidden";
-        body.style.overflow = "hidden";
-        body.style.position = "fixed";
-        body.style.top = `-${scrollY}px`;
-        body.style.left = "0";
-        body.style.right = "0";
-        body.style.width = "100%";
+      function resolveOverlayTarget(target) {
+        if (!target) return null;
+        if (typeof target === "string") {
+          return document.getElementById(target) || document.querySelector(target);
+        }
+        return target;
       }
 
-      function releaseAppModalFocusLock() {
-        const body = document.body;
-        const html = document.documentElement;
-        if (!body || !html) return;
-        if (body.dataset.appModalFocusLocked !== "1") return;
-
-        const scrollY = parseInt(body.dataset.appModalFocusScrollY || "0", 10);
-
-        body.style.overflow = body.dataset.appModalPrevOverflow || "";
-        body.style.position = body.dataset.appModalPrevPosition || "";
-        body.style.top = body.dataset.appModalPrevTop || "";
-        body.style.left = body.dataset.appModalPrevLeft || "";
-        body.style.right = body.dataset.appModalPrevRight || "";
-        body.style.width = body.dataset.appModalPrevWidth || "";
-        html.style.overflow = html.dataset.appModalPrevOverflow || "";
-
-        delete body.dataset.appModalFocusLocked;
-        delete body.dataset.appModalFocusScrollY;
-        delete body.dataset.appModalPrevOverflow;
-        delete body.dataset.appModalPrevPosition;
-        delete body.dataset.appModalPrevTop;
-        delete body.dataset.appModalPrevLeft;
-        delete body.dataset.appModalPrevRight;
-        delete body.dataset.appModalPrevWidth;
-        delete html.dataset.appModalPrevOverflow;
-
-        window.scrollTo(0, Number.isFinite(scrollY) ? scrollY : 0);
+      function getViewportOverlayKey(overlay) {
+        if (!overlay) return "";
+        if (overlay.id) return overlay.id;
+        if (!overlay.dataset.viewportOverlayKey) {
+          viewportOverlaySequence += 1;
+          overlay.dataset.viewportOverlayKey = `viewportOverlay${viewportOverlaySequence}`;
+        }
+        return overlay.dataset.viewportOverlayKey;
       }
 
-      function setAppModalFocusLock(key, active) {
-        if (!key) return;
-        if (active) {
-          appModalFocusLocks.add(key);
-        } else {
-          appModalFocusLocks.delete(key);
+      function resetBodyOverscrollPullUpState() {
+        const body = document.body;
+        if (!body) return;
+
+        body.style.transition = "none";
+        body.style.transform = "translateY(0)";
+
+        requestAnimationFrame(() => {
+          body.style.removeProperty("transition");
+          body.style.removeProperty("transform");
+        });
+      }
+
+      function syncViewportLockedOverlayState() {
+        const hasOpenOverlay = activeViewportLockedOverlays.size > 0;
+        document.documentElement.classList.toggle(
+          "app-viewport-overlay-open",
+          hasOpenOverlay,
+        );
+        document.body.classList.toggle(
+          "app-viewport-overlay-open",
+          hasOpenOverlay,
+        );
+      }
+
+      function isViewportLockedOverlayOpen() {
+        return activeViewportLockedOverlays.size > 0;
+      }
+
+      function isViewportLockedOverlayVisible(overlayTarget) {
+        const overlay = resolveOverlayTarget(overlayTarget);
+        return Boolean(overlay && !overlay.classList.contains("hidden"));
+      }
+
+      function setupViewportLockedOverlay(
+        overlayTarget,
+        contentTarget,
+        options = {},
+      ) {
+        const overlay = resolveOverlayTarget(overlayTarget);
+        const content = resolveOverlayTarget(contentTarget);
+        if (!overlay || !content || overlay.dataset.viewportLockReady === "1") {
+          return overlay;
         }
 
-        if (appModalFocusLocks.size > 0) {
-          applyAppModalFocusLock();
-        } else {
-          releaseAppModalFocusLock();
+        const allowTarget =
+          typeof options.allowTarget === "function"
+            ? options.allowTarget
+            : () => false;
+        const closeOnBackdrop = options.closeOnBackdrop === true;
+        const onBackdrop =
+          typeof options.onBackdrop === "function" ? options.onBackdrop : null;
+
+        overlay.dataset.viewportLockReady = "1";
+
+        overlay.addEventListener("click", (event) => {
+          if (!isViewportLockedOverlayVisible(overlay)) return;
+          event.stopPropagation();
+          if (content.contains(event.target) || allowTarget(event.target)) return;
+          if (closeOnBackdrop) {
+            if (onBackdrop) onBackdrop(event);
+            else closeViewportLockedOverlay(overlay);
+          }
+        });
+
+        ["touchstart", "touchmove", "touchend", "touchcancel"].forEach((eventName) => {
+          overlay.addEventListener(
+            eventName,
+            (event) => {
+              if (!isViewportLockedOverlayVisible(overlay)) return;
+              if (!content.contains(event.target) && !allowTarget(event.target)) {
+                event.preventDefault();
+              }
+              event.stopPropagation();
+            },
+            { passive: false },
+          );
+        });
+
+        overlay.addEventListener(
+          "wheel",
+          (event) => {
+            if (!isViewportLockedOverlayVisible(overlay)) return;
+            if (!content.contains(event.target) && event.cancelable) {
+              event.preventDefault();
+            }
+            event.stopPropagation();
+          },
+          { passive: false },
+        );
+
+        return overlay;
+      }
+
+      function openViewportLockedOverlay(
+        overlayTarget,
+        contentTarget,
+        options = {},
+      ) {
+        const overlay = setupViewportLockedOverlay(
+          overlayTarget,
+          contentTarget,
+          options,
+        );
+        const content = resolveOverlayTarget(contentTarget);
+        if (!overlay) return null;
+
+        resetBodyOverscrollPullUpState();
+        overlay.classList.remove("hidden");
+        overlay.setAttribute("aria-hidden", "false");
+
+        if (options.resetOverlayScroll !== false) {
+          overlay.scrollTop = 0;
+        }
+        if (content && options.resetContentScroll !== false) {
+          content.scrollTop = 0;
+        }
+
+        activeViewportLockedOverlays.add(getViewportOverlayKey(overlay));
+        syncViewportLockedOverlayState();
+
+        if (typeof options.afterOpen === "function") {
+          requestAnimationFrame(() => {
+            options.afterOpen(overlay, content);
+          });
+        }
+
+        return overlay;
+      }
+
+      function closeViewportLockedOverlay(overlayTarget, options = {}) {
+        const overlay = resolveOverlayTarget(overlayTarget);
+        if (!overlay) return;
+
+        overlay.classList.add("hidden");
+        overlay.setAttribute("aria-hidden", "true");
+        activeViewportLockedOverlays.delete(getViewportOverlayKey(overlay));
+        syncViewportLockedOverlayState();
+
+        if (typeof options.afterClose === "function") {
+          options.afterClose(overlay);
+        }
+        if (options.removeFromDom) {
+          overlay.remove();
         }
       }
+
+      setupViewportLockedOverlay("menuOverlayMain", "menuOverlayMainContent");
+      setupViewportLockedOverlay("menuOverlayDynamic", "menuOverlayDynamicContent");
+      setupViewportLockedOverlay("fullscreenOverlay", "fullscreenContent", {
+        allowTarget: (target) => {
+          const closeButton = document.getElementById("closeOverlayButton");
+          return Boolean(
+            closeButton && (target === closeButton || closeButton.contains(target)),
+          );
+        },
+      });
+      setupViewportLockedOverlay("exportOverlay", "exportOverlayContent");
+      setupViewportLockedOverlay("settingsPopup", "settingsContent");
+      setupViewportLockedOverlay(
+        "customExportOverlay",
+        "#customExportOverlay .popup-content",
+      );
+      setupViewportLockedOverlay(
+        "settingsExportOverlay",
+        "#settingsExportOverlay .popup-content",
+      );
+      setupViewportLockedOverlay(
+        "cacheEditorOverlay",
+        "#cacheEditorOverlay .popup-content",
+      );
+      setupViewportLockedOverlay(
+        "editPopupOverlay",
+        "#editPopupOverlay .popup-content",
+        {
+          closeOnBackdrop: true,
+          onBackdrop: () => closeViewportLockedOverlay("editPopupOverlay"),
+        },
+      );
+      setupViewportLockedOverlay(
+        "consentPopupOverlay",
+        "#consentPopupOverlay .popup-content",
+      );
+      window.isViewportLockedOverlayOpen = isViewportLockedOverlayOpen;
 
       function openMenuOverlayMain() {
         updateBundledIndexHtmlExportVisibility();
-        document.getElementById("menuOverlayMain").classList.add("show");
-        setAppModalFocusLock("menuOverlayMain", true);
+        openViewportLockedOverlay(
+          "menuOverlayMain",
+          "menuOverlayMainContent",
+        );
       }
       function closeMenuOverlayMain() {
-        document.getElementById("menuOverlayMain").classList.remove("show");
-        setAppModalFocusLock("menuOverlayMain", false);
+        closeViewportLockedOverlay("menuOverlayMain");
       }
       async function exportBundledIndexHtml() {
         closeMenuOverlayMain();
@@ -5672,12 +5786,13 @@
       let subMenuCurrentBarcode = null;
       function openMenuOverlayDynamic(barcodeElement) {
         subMenuCurrentBarcode = barcodeElement;
-        document.getElementById("menuOverlayDynamic").classList.add("show");
-        setAppModalFocusLock("menuOverlayDynamic", true);
+        openViewportLockedOverlay(
+          "menuOverlayDynamic",
+          "menuOverlayDynamicContent",
+        );
       }
       function closeMenuOverlayDynamic() {
-        document.getElementById("menuOverlayDynamic").classList.remove("show");
-        setAppModalFocusLock("menuOverlayDynamic", false);
+        closeViewportLockedOverlay("menuOverlayDynamic");
       }
       function openActualSettings() {
         closeMenuOverlayMain();
@@ -5824,24 +5939,19 @@
         // Overlay
         const overlay = document.createElement("div");
         overlay.id = "localStorageDeleteOverlay";
+        overlay.classList.add("popup-container");
         Object.assign(overlay.style, {
-          position: "fixed",
-          top: "0",
-          left: "0",
-          width: "100%",
           height: "100dvh",
           backgroundColor: "rgba(0,0,0,0.8)",
           zIndex: "50000",
           overflowY: "auto",
-          display: "flex",
           justifyContent: "center",
           alignItems: "flex-start",
           padding: "calc(env(safe-area-inset-top, 0px) + 16px) 14px calc(env(safe-area-inset-bottom, 0px) + 40px)",
           boxSizing: "border-box",
         });
         const closeLocalStorageDeleteOverlay = () => {
-          setAppModalFocusLock("localStorageDeleteOverlay", false);
-          overlay.remove();
+          closeViewportLockedOverlay(overlay, { removeFromDom: true });
         };
 
         // Popup-Container
@@ -6117,7 +6227,7 @@
         popup.appendChild(btnCancel); // Cancel als letzter
         overlay.appendChild(popup);
         document.body.appendChild(overlay);
-        setAppModalFocusLock("localStorageDeleteOverlay", true);
+        openViewportLockedOverlay(overlay, popup);
       }
 
       /**
@@ -6422,14 +6532,16 @@
           "localStorageDeleteOverlay",
         );
         if (localPopupOverlay) {
-          localPopupOverlay.style.display = "none";
+          closeViewportLockedOverlay(localPopupOverlay);
           exportOverlay.dataset.returnOverlayId = "localStorageDeleteOverlay";
         } else {
           delete exportOverlay.dataset.returnOverlayId;
         }
 
-        exportOverlay.classList.remove("hidden");
-        setAppModalFocusLock("settingsExportOverlay", true);
+        openViewportLockedOverlay(
+          exportOverlay,
+          "#settingsExportOverlay .popup-content",
+        );
 
         requestAnimationFrame(() => {
           fileNameInput.focus();
@@ -6834,7 +6946,7 @@ In den App-Namensraum importieren?`)
 
       function closeFullscreenOverlay() {
         const overlay = document.getElementById("fullscreenOverlay");
-        overlay.classList.remove("show");
+        closeViewportLockedOverlay(overlay);
         setNativeBarcodeFullscreenRotation(false);
         overlay.scrollTop = 0;
         resetFullscreenPinchZoom();
@@ -7766,14 +7878,21 @@ In den App-Namensraum importieren?`)
           });
           mainInput.dataset.listenerAdded = "true";
         }
-        overlay.classList.remove("hidden");
+        openViewportLockedOverlay(
+          overlay,
+          "#editPopupOverlay .popup-content",
+          {
+            afterOpen: () => {
+              mainInput.focus();
+            },
+          },
+        );
 
         overlay.onclick = function (e) {
           if (e.target === overlay) {
-            overlay.classList.add("hidden");
+            closeViewportLockedOverlay(overlay);
           }
         };
-        mainInput.focus();
 
         document.getElementById("editSaveButton").onclick = function () {
           const newValue = mainInput.value;
@@ -7823,14 +7942,14 @@ In den App-Namensraum importieren?`)
           if (newBracket !== "") {
             finalText += "[" + newBracket + "]";
           }
-          overlay.classList.add("hidden");
+          closeViewportLockedOverlay(overlay);
           callback(finalText);
 
           // Die Passwortdatum-Prüfung wurde entfernt
         };
 
         document.getElementById("editCancelButton").onclick = function () {
-          overlay.classList.add("hidden");
+          closeViewportLockedOverlay(overlay);
         };
       }
 
@@ -7922,7 +8041,7 @@ In den App-Namensraum importieren?`)
         const overlay = document.getElementById("fullscreenOverlay");
         const fsContainer = document.getElementById("fullscreenContent");
         if (!overlay || !fsContainer) return false;
-        if (!overlay.classList.contains("show")) return false;
+        if (!isViewportLockedOverlayVisible(overlay)) return false;
         if (!window.matchMedia("(orientation: landscape)").matches) {
           return false;
         }
@@ -8088,11 +8207,11 @@ In den App-Namensraum importieren?`)
 
         // ——— 3) Öffne Overlay und zeichne Master ———
         const overlay = document.getElementById("fullscreenOverlay");
-        if (!overlay.classList.contains("show")) {
+        if (!isViewportLockedOverlayVisible(overlay)) {
           history.pushState({ fullscreen: true }, "", "");
           fullscreenHistoryPushed = true;
         }
-        overlay.classList.add("show");
+        openViewportLockedOverlay(overlay, "fullscreenContent");
         setNativeBarcodeFullscreenRotation(true);
         document.getElementById("fullscreenMasterSection").style.display =
           "block";
@@ -8328,7 +8447,7 @@ In den App-Namensraum importieren?`)
 
         // Vollbild-Overlay anzeigen
         const overlay = document.getElementById("fullscreenOverlay");
-        overlay.classList.add("show");
+        openViewportLockedOverlay(overlay, "fullscreenContent");
         setNativeBarcodeFullscreenRotation(true);
 
         // Blende den Master-Bereich aus (nicht benötigt)
@@ -8439,7 +8558,7 @@ In den App-Namensraum importieren?`)
               startY = e.touches[0].clientY;
             }
             if (
-              overlay.classList.contains("show") &&
+              isViewportLockedOverlayVisible(overlay) &&
               !shouldUseLandscapeFullscreenScroll()
             ) {
               e.preventDefault();
@@ -8454,7 +8573,7 @@ In den App-Namensraum importieren?`)
           (e) => {
             if (e.target === closeButton) return;
             if (
-              overlay.classList.contains("show") &&
+              isViewportLockedOverlayVisible(overlay) &&
               !shouldUseLandscapeFullscreenScroll()
             ) {
               e.preventDefault();
@@ -8469,7 +8588,7 @@ In den App-Namensraum importieren?`)
           "touchend",
           (e) => {
             if (e.target === closeButton) return;
-            if (!overlay.classList.contains("show")) return;
+            if (!isViewportLockedOverlayVisible(overlay)) return;
             if (shouldUseLandscapeFullscreenScroll()) return;
             if (e.changedTouches.length === 1) {
               const endY = e.changedTouches[0].clientY;
@@ -8484,36 +8603,10 @@ In den App-Namensraum importieren?`)
             passive: false,
           },
         );
-        const applyFullscreenStyles = () => {
-          document.body.style.overflow = "hidden";
-          document.body.style.position = "fixed";
-          document.body.style.width = "100%";
-          document.body.style.height = "100%";
-          overlay.style.overscrollBehavior = "contain";
-          overlay.style.touchAction = "pan-y pinch-zoom";
-          overlay.style.overflowY = "auto";
-          overlay.style.overflowX = "hidden";
-        };
-        const removeFullscreenStyles = () => {
-          document.body.style.overflow = "";
-          document.body.style.position = "";
-          document.body.style.width = "";
-          document.body.style.height = "";
-          overlay.style.overscrollBehavior = "";
-          overlay.style.touchAction = "";
-          overlay.style.overflowY = "";
-          overlay.style.overflowX = "";
-        };
-        overlay.addEventListener("transitionstart", () => {
-          if (overlay.classList.contains("show")) {
-            applyFullscreenStyles();
-          }
-        });
-        overlay.addEventListener("transitionend", () => {
-          if (!overlay.classList.contains("show")) {
-            removeFullscreenStyles();
-          }
-        });
+        overlay.style.overscrollBehavior = "contain";
+        overlay.style.touchAction = "pan-y pinch-zoom";
+        overlay.style.overflowY = "auto";
+        overlay.style.overflowX = "hidden";
         window.addEventListener("resize", syncFullscreenLandscapeMode);
         window.addEventListener("orientationchange", syncFullscreenLandscapeMode);
         closeButton.addEventListener("click", () => {
@@ -8580,9 +8673,10 @@ In den App-Namensraum importieren?`)
 
       document.addEventListener("DOMContentLoaded", function () {
         if (!appStorage.getItem("userConsent")) {
-          document
-            .getElementById("consentPopupOverlay")
-            .classList.remove("hidden");
+          openViewportLockedOverlay(
+            "consentPopupOverlay",
+            "#consentPopupOverlay .popup-content",
+          );
         } else {
           updateConsentStatus();
         }
@@ -8590,9 +8684,7 @@ In den App-Namensraum importieren?`)
           .getElementById("consentOkButton")
           .addEventListener("click", function () {
             appStorage.setItem("userConsent", getDeviceNow().toISOString());
-            document
-              .getElementById("consentPopupOverlay")
-              .classList.add("hidden");
+            closeViewportLockedOverlay("consentPopupOverlay");
             updateConsentStatus();
           });
         // Toggle für versteckte Barcodes wird weiter unten im Code implementiert
@@ -8764,8 +8856,7 @@ In den App-Namensraum importieren?`)
       /* EXPORT/IMPORT (Barcodes) */
       function closeExportOverlay() {
         const exportOverlay = document.getElementById("exportOverlay");
-        exportOverlay.classList.remove("show");
-        setAppModalFocusLock("exportOverlay", false);
+        closeViewportLockedOverlay(exportOverlay);
       }
       document.getElementById("exportButton").addEventListener("click", () => {
         showExportOverlay();
@@ -8844,8 +8935,7 @@ In den App-Namensraum importieren?`)
         });
 
         // 4) Overlay anzeigen
-        exportOverlay.classList.add("show");
-        setAppModalFocusLock("exportOverlay", true);
+        openViewportLockedOverlay(exportOverlay, "exportOverlayContent");
       }
 
       document
@@ -8869,8 +8959,10 @@ In den App-Namensraum importieren?`)
             JSON.stringify(selectedBarcodes);
           const fileNameInput = document.getElementById("popupFileNameInput");
           fileNameInput.value = buildBarcodeExportBaseName();
-          exportOverlay.classList.remove("hidden");
-          setAppModalFocusLock("customExportOverlay", true);
+          openViewportLockedOverlay(
+            exportOverlay,
+            "#customExportOverlay .popup-content",
+          );
           requestAnimationFrame(() => {
             fileNameInput.focus();
             const len = fileNameInput.value.length;
@@ -8892,10 +8984,7 @@ In den App-Namensraum importieren?`)
               .selectedBarcodes,
           );
           handleSendOrShare(selectedBarcodes, finalFileName);
-          document
-            .getElementById("customExportOverlay")
-            .classList.add("hidden");
-          setAppModalFocusLock("customExportOverlay", false);
+          closeViewportLockedOverlay("customExportOverlay");
         });
       document
         .getElementById("popupDownloadButton")
@@ -8911,30 +9000,26 @@ In den App-Namensraum importieren?`)
               .selectedBarcodes,
           );
           handleDownload(selectedBarcodes, finalFileName);
-          document
-            .getElementById("customExportOverlay")
-            .classList.add("hidden");
-          setAppModalFocusLock("customExportOverlay", false);
+          closeViewportLockedOverlay("customExportOverlay");
         });
       document
         .getElementById("popupCancelButton")
         .addEventListener("click", () => {
-          document
-            .getElementById("customExportOverlay")
-            .classList.add("hidden");
-          setAppModalFocusLock("customExportOverlay", false);
+          closeViewportLockedOverlay("customExportOverlay");
           showToast("❌ Export abgebrochen");
         });
       function closeSettingsExportOverlay() {
         const exportOverlay = document.getElementById("settingsExportOverlay");
-        exportOverlay.classList.add("hidden");
-        setAppModalFocusLock("settingsExportOverlay", false);
+        closeViewportLockedOverlay(exportOverlay);
 
         const returnOverlayId = exportOverlay.dataset.returnOverlayId || "";
         if (returnOverlayId) {
           const returnOverlay = document.getElementById(returnOverlayId);
           if (returnOverlay) {
-            returnOverlay.style.display = "flex";
+            openViewportLockedOverlay(returnOverlay, "#localStorageDeletePopup", {
+              resetOverlayScroll: false,
+              resetContentScroll: false,
+            });
           }
           delete exportOverlay.dataset.returnOverlayId;
         }
@@ -9236,16 +9321,9 @@ In den App-Namensraum importieren?`)
       function showModal(options) {
         return new Promise((resolve) => {
           const overlay = document.createElement("div");
+          overlay.classList.add("popup-container");
           Object.assign(overlay.style, {
-            position: "fixed",
-            top: "0",
-            left: "0",
-            width: "100%",
-            height: "100%",
             backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
             zIndex: "10000",
           });
           const modal = document.createElement("div");
@@ -9290,7 +9368,7 @@ In den App-Namensraum importieren?`)
               color: "#fff",
             });
             button.addEventListener("click", () => {
-              document.body.removeChild(overlay);
+              closeViewportLockedOverlay(overlay, { removeFromDom: true });
               resolve(btn.result);
             });
             btnContainer.appendChild(button);
@@ -9298,6 +9376,10 @@ In den App-Namensraum importieren?`)
           modal.appendChild(btnContainer);
           overlay.appendChild(modal);
           document.body.appendChild(overlay);
+          openViewportLockedOverlay(overlay, modal, {
+            resetOverlayScroll: false,
+            resetContentScroll: false,
+          });
         });
       }
 
@@ -9483,7 +9565,7 @@ In den App-Namensraum importieren?`)
           if (
             document
               .getElementById("fullscreenOverlay")
-              .classList.contains("show") &&
+              && isViewportLockedOverlayVisible("fullscreenOverlay") &&
             currentFullscreenIndex >= 0
           ) {
             showFullscreenBarcodeByIndex(currentFullscreenIndex);
@@ -9972,10 +10054,7 @@ In den App-Namensraum importieren?`)
           tsField.style.display = shouldShow ? "" : "none";
         }
 
-        document.getElementById("settingsPopup").style.display = "flex";
-        const ov = document.getElementById("settingsOverlay");
-        if (ov) ov.style.display = "block";
-        setAppModalFocusLock("settingsPopup", true);
+        openViewportLockedOverlay("settingsPopup", "settingsContent");
 
         updateSettingsPreview();
       }
@@ -10000,10 +10079,7 @@ In den App-Namensraum importieren?`)
           sc.style.removeProperty("color");
         }
 
-        document.getElementById("settingsPopup").style.display = "none";
-        const ov = document.getElementById("settingsOverlay");
-        if (ov) ov.style.display = "none";
-        setAppModalFocusLock("settingsPopup", false);
+        closeViewportLockedOverlay("settingsPopup");
 
         currentBarcode = null;
       }
@@ -11284,13 +11360,16 @@ In den App-Namensraum importieren?`)
           listContainer.appendChild(lineDiv);
         });
 
-        overlay.classList.remove("hidden");
+        openViewportLockedOverlay(
+          overlay,
+          "#cacheEditorOverlay .popup-content",
+        );
       }
 
       // Schließt den Cache‑Editor
       function closeCacheEditor() {
         const overlay = document.getElementById("cacheEditorOverlay");
-        overlay.classList.add("hidden");
+        closeViewportLockedOverlay(overlay);
       }
 
       // Verschiebt die aktuell ausgewählte Zeile eine Position nach oben
@@ -11558,7 +11637,7 @@ In den App-Namensraum importieren?`)
           "touchstart",
           function (e) {
             const overlay = document.getElementById("fullscreenOverlay");
-            if (!overlay || !overlay.classList.contains("show")) return;
+            if (!overlay || !isViewportLockedOverlayVisible(overlay)) return;
 
             if (e.touches.length === 2) {
               initialDistance = getDistance(e.touches[0], e.touches[1]);
@@ -11585,7 +11664,7 @@ In den App-Namensraum importieren?`)
           "touchmove",
           function (e) {
             const overlay = document.getElementById("fullscreenOverlay");
-            if (!overlay || !overlay.classList.contains("show")) return;
+            if (!overlay || !isViewportLockedOverlayVisible(overlay)) return;
 
             if (e.touches.length === 2 && initialDistance !== null) {
               e.preventDefault();
@@ -12001,6 +12080,14 @@ In den App-Namensraum importieren?`)
         let startY = 0, dragging = false, atBottom = false;
 
         body.addEventListener('touchstart', function(e) {
+          if (
+            window.isViewportLockedOverlayOpen &&
+            window.isViewportLockedOverlayOpen()
+          ) {
+            dragging = false;
+            atBottom = false;
+            return;
+          }
           const scrollTop = window.scrollY || document.documentElement.scrollTop;
           const scrollHeight = document.documentElement.scrollHeight;
           const clientHeight = window.innerHeight;
@@ -12012,6 +12099,14 @@ In den App-Namensraum importieren?`)
         }, { passive: true });
 
         body.addEventListener('touchmove', function(e) {
+          if (
+            window.isViewportLockedOverlayOpen &&
+            window.isViewportLockedOverlayOpen()
+          ) {
+            dragging = false;
+            atBottom = false;
+            return;
+          }
           if (!atBottom) return;
           const dy = e.touches[0].clientY - startY;
           if (dy < 0) {
