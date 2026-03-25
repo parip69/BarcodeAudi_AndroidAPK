@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="33">
+<html lang="de" data-app-version="34">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -3653,9 +3653,23 @@
         left: 25px;
         font-size: 12px;
         font-weight: bold;
-        pointer-events: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 14px;
+        min-height: 14px;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        background: transparent;
+        font: inherit;
+        line-height: 1;
+        pointer-events: auto;
         z-index: 5;
         color: #000 !important;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
       }
 
       body.theme-dark .password-days-indicator {
@@ -3671,6 +3685,22 @@
 
       .password-days-indicator.is-expired {
         z-index: 3;
+      }
+
+      .password-days-indicator.password-date-dot {
+        width: 9px;
+        min-width: 9px;
+        height: 9px;
+        min-height: 9px;
+        top: 7px;
+        left: 28px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.62) !important;
+        color: transparent !important;
+        opacity: 0.78;
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.18),
+          0 0 2px rgba(0, 0, 0, 0.12);
       }
 
       .barcode-svg-dynamic text {
@@ -5174,7 +5204,70 @@
         </div>
       </div>
     </div>
-    <!-- Consent-Popup (zunächst verborgen) -->
+    <!-- Passwortdatum-Popup -->
+    <div id="passwordDatePopupOverlay" class="popup-container hidden">
+      <div class="popup-content" style="max-width: 430px; width: 95%">
+        <h3 style="text-align: center">Passwort-Ablaufdatum</h3>
+        <p
+          id="passwordDatePopupLabel"
+          style="
+            font-size: 0.9em;
+            text-align: center;
+            margin-bottom: 10px;
+            word-break: break-word;
+          "
+        ></p>
+        <p
+          style="
+            font-size: 0.8em;
+            color: #555;
+            text-align: center;
+            margin-bottom: 14px;
+          "
+        >
+          Leer speichern entfernt das Passwortdatum nur fuer diesen Barcode.
+        </p>
+        <div>
+          <label for="passwordDateInput">Datum:</label>
+          <input
+            type="date"
+            id="passwordDateInput"
+            style="width: 95%; padding: 8px 12px; margin-bottom: 12px"
+          />
+        </div>
+        <div class="popup-buttons" style="text-align: center">
+          <button
+            id="passwordDateSaveButton"
+            class="save"
+            style="
+              background-color: #4caf50;
+              color: white;
+              border: none;
+              border-radius: 5px;
+              padding: 8px 16px;
+              cursor: pointer;
+            "
+          >
+            Speichern
+          </button>
+          <button
+            id="passwordDateCancelButton"
+            class="cancel"
+            style="
+              background-color: #ff5c5c;
+              color: white;
+              border: none;
+              border-radius: 5px;
+              padding: 8px 16px;
+              cursor: pointer;
+            "
+          >
+            Abbrechen
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Consent-Popup (zunaechst verborgen) -->
     <div id="consentPopupOverlay" class="popup-container hidden">
       <div class="popup-content">
         <p style="text-align: center">
@@ -5658,6 +5751,181 @@
         return keys;
       }
 
+      function convertGermanDateToIso(dateStr) {
+        const match = String(dateStr || "")
+          .trim()
+          .match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+        if (!match) return "";
+
+        const day = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10);
+        const year = parseInt(match[3], 10);
+        const parsedDate = new Date(year, month - 1, day);
+
+        if (
+          parsedDate.getFullYear() !== year ||
+          parsedDate.getMonth() !== month - 1 ||
+          parsedDate.getDate() !== day
+        ) {
+          return "";
+        }
+
+        return `${year}-${pad2(month)}-${pad2(day)}`;
+      }
+
+      function convertIsoToGermanDate(dateStr) {
+        const match = String(dateStr || "")
+          .trim()
+          .match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return "";
+
+        const year = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10);
+        const day = parseInt(match[3], 10);
+        const parsedDate = new Date(year, month - 1, day);
+
+        if (
+          parsedDate.getFullYear() !== year ||
+          parsedDate.getMonth() !== month - 1 ||
+          parsedDate.getDate() !== day
+        ) {
+          return "";
+        }
+
+        return `${pad2(day)}.${pad2(month)}.${year}`;
+      }
+
+      function updatePwTokenInBracketContent(content, germanDate) {
+        const newToken = "pw:" + germanDate;
+        const pwPattern = /\bpw:\s*(?:\d{1,2}\.\d{1,2}\.\d{4})?\b/i;
+        if (pwPattern.test(content)) {
+          return content.replace(pwPattern, newToken);
+        }
+
+        const trailingWhitespaceMatch = content.match(/\s*$/);
+        const trailingWhitespace = trailingWhitespaceMatch
+          ? trailingWhitespaceMatch[0]
+          : "";
+        const coreContent = content.slice(
+          0,
+          content.length - trailingWhitespace.length,
+        );
+
+        if (!coreContent) {
+          return newToken + trailingWhitespace;
+        }
+        if (coreContent.endsWith(",")) {
+          return coreContent + " " + newToken + trailingWhitespace;
+        }
+        return coreContent + ", " + newToken + trailingWhitespace;
+      }
+
+      function replacePwTokenInBarcodeText(barcodeText, germanDate) {
+        const bracketPattern = /\[([^\]]*)\]/;
+        const bracketMatch = barcodeText.match(bracketPattern);
+        if (bracketMatch) {
+          const updatedBracketContent = updatePwTokenInBracketContent(
+            bracketMatch[1],
+            germanDate,
+          );
+          return barcodeText.replace(
+            bracketPattern,
+            "[" + updatedBracketContent + "]",
+          );
+        }
+        return barcodeText + "[pw:" + germanDate + "]";
+      }
+
+      function removePwTokenFromBarcodeText(barcodeText) {
+        const bracketPattern = /\[([^\]]*)\]/;
+        const bracketMatch = barcodeText.match(bracketPattern);
+        if (!bracketMatch) {
+          return barcodeText;
+        }
+
+        const tokens = bracketMatch[1]
+          .split(",")
+          .map((token) => token.trim())
+          .filter((token) => token !== "");
+        const hasPwToken = tokens.some((token) =>
+          token.toUpperCase().startsWith("PW:"),
+        );
+
+        if (!hasPwToken) {
+          return barcodeText;
+        }
+
+        const remainingTokens = tokens.filter(
+          (token) => !token.toUpperCase().startsWith("PW:"),
+        );
+
+        if (remainingTokens.length === 0) {
+          return barcodeText.replace(/\s*\[[^\]]*\]/, "");
+        }
+
+        return barcodeText.replace(
+          bracketPattern,
+          "[" + remainingTokens.join(", ") + "]",
+        );
+      }
+
+      function updateBarcodeEntryEverywhere(oldText, newText, options = {}) {
+        const {
+          successMessage = "Barcode aktualisiert!",
+          saveErrorMessage = "Fehler beim Speichern des aktualisierten Barcodes!",
+          notFoundMessage = "Original-Barcode nicht in der globalen Liste gefunden!",
+          resaveCurrentGroupOrdering = false,
+        } = options;
+
+        let currentGlobalBarcodes =
+          JSON.parse(appStorage.getItem("barcodes")) || [];
+        const index = currentGlobalBarcodes.indexOf(oldText);
+
+        if (index === -1) {
+          showToast(notFoundMessage, "error");
+          return false;
+        }
+
+        currentGlobalBarcodes[index] = newText;
+        if (!saveBarcodesStrict(currentGlobalBarcodes, "editor")) {
+          showToast(saveErrorMessage, "error");
+          return false;
+        }
+
+        const allGroupKeys = getAllGroupOrderingKeys();
+        allGroupKeys.forEach((groupKey) => {
+          try {
+            let groupOrderList = JSON.parse(
+              appStorage.getItem(groupKey) || "[]",
+            );
+            const indexInGroup = groupOrderList.indexOf(oldText);
+
+            if (indexInGroup > -1) {
+              groupOrderList[indexInGroup] = newText;
+              appStorage.setItem(groupKey, JSON.stringify(groupOrderList));
+            }
+          } catch (error) {
+            console.error(
+              `Error processing group order list ${groupKey} for update:`,
+              error,
+            );
+          }
+        });
+
+        const groupFilter = document.getElementById("groupFilter");
+        const selectedGroup = groupFilter ? groupFilter.value : "";
+
+        loadBarcodes();
+        filterAndSortBarcodesByGroup(selectedGroup);
+
+        if (resaveCurrentGroupOrdering && selectedGroup !== "") {
+          saveGroupOrdering(selectedGroup, true);
+        }
+
+        showToast(successMessage, "success");
+        return true;
+      }
+
       // Funktion zur Berechnung der verbleibenden Tage bis zum Ablauf
       function calculateRemainingDays(dateStr) {
         if (!dateStr) return null;
@@ -5686,10 +5954,46 @@
         return Math.floor(diffMs / (1000 * 60 * 60 * 24));
       }
 
+      // Klickbarer Punkt oder Resttage-Zahl fuer das Passwortdatum.
+      function createPasswordDateIndicator(barcodeText, pairInfo) {
+        const indicator = document.createElement("button");
+        indicator.type = "button";
+        indicator.className = "password-days-indicator";
+        indicator.title = pairInfo.passwordDate
+          ? "Passwort-Ablaufdatum aendern"
+          : "Passwort-Ablaufdatum setzen";
+
+        const days = pairInfo.passwordDate
+          ? calculateRemainingDays(pairInfo.passwordDate)
+          : null;
+
+        if (days === null) {
+          indicator.classList.add("password-date-dot");
+          if (pairInfo.passwordDate) {
+            indicator.title = "Passwort-Ablaufdatum korrigieren";
+          }
+        } else {
+          if (days <= 0) {
+            indicator.classList.add("is-expired");
+          } else if (days <= 10) {
+            indicator.classList.add("is-warning");
+          }
+          indicator.textContent = days;
+        }
+
+        indicator.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openPasswordDatePopup(barcodeText);
+        });
+
+        return indicator;
+      }
+
       /**
-       * Fügt nur das Overlay hinzu, ohne das <li> zu verschieben.
+       * Fuegt nur das Overlay hinzu, ohne das <li> zu verschieben.
        * @param {HTMLElement} li
-       * @param {string|null} pwDate — z.B. "13.05.2025"
+       * @param {string|null} pwDate - z.B. "13.05.2025"
        */
       function applyExpiryOverlay(li, pwDate) {
         const days = calculateRemainingDays(pwDate);
@@ -5947,6 +6251,15 @@
         {
           closeOnBackdrop: true,
           onBackdrop: () => closeViewportLockedOverlay("editPopupOverlay"),
+        },
+      );
+      setupViewportLockedOverlay(
+        "passwordDatePopupOverlay",
+        "#passwordDatePopupOverlay .popup-content",
+        {
+          closeOnBackdrop: true,
+          onBackdrop: () =>
+            closeViewportLockedOverlay("passwordDatePopupOverlay"),
         },
       );
       setupViewportLockedOverlay(
@@ -7554,7 +7867,7 @@ In den App-Namensraum importieren?`)
         // showToast("Globale Sortierung gespeichert!");
       }
       // 2. Speicherung der gruppenspezifischen Reihenfolge
-      function saveGroupOrdering(selectedGroup) {
+      function saveGroupOrdering(selectedGroup, silent = false) {
         const visibleContainers = Array.from(
           document.querySelectorAll(".barcode-container"),
         )
@@ -7564,7 +7877,9 @@ In den App-Namensraum importieren?`)
           "groupOrdering_" + selectedGroup,
           JSON.stringify(visibleContainers),
         );
-        showToast("Gruppensortierung gespeichert!");
+        if (!silent) {
+          showToast("Gruppensortierung gespeichert!");
+        }
       }
       // 3. Entscheidet, ob global oder gruppenspezifisch gespeichert werden soll
       function saveOrdering() {
@@ -7586,46 +7901,38 @@ In den App-Namensraum importieren?`)
       const groupMarkerState = {}; // Beispiel: { "ZSB": "plus" }
 
       function createBarcode(text) {
-        // Sicherstellen, dass wir einen Slash haben
         if (!text.includes("/")) {
           text = text + "/";
         }
         const parts = text.split("/");
         const codePart = parts[0] || "";
         const labelPart = parts[1] || "";
-        // Immer einen Slash einfügen, auch wenn labelPart leer ist
         const finalText = codePart + "/" + labelPart;
-
-        // Parse pairing and group information
         const pairInfo = parsePairInfo(labelPart);
 
-        // Create container
         const barcodeContainer = document.createElement("div");
-
         barcodeContainer.className = "barcode-container";
+        barcodeContainer.style.position = "relative";
         barcodeContainer.dataset.text = finalText;
         if (labelPart) barcodeContainer.dataset.fullLabel = labelPart;
 
-        // Assign group
         if (pairInfo.groups.length > 0) {
           barcodeContainer.dataset.group = pairInfo.groups[0].groupLetter;
         }
 
-        // Detect marker
         let marker = "";
         if (labelPart.includes("*:+")) marker = "plus";
         else if (labelPart.includes("*:-")) marker = "minus";
         if (marker) barcodeContainer.dataset.marker = marker;
 
-        // Swipe gestures for group marker toggle
         if (barcodeContainer.dataset.group && barcodeContainer.dataset.marker) {
           if (!groupMarkerState[barcodeContainer.dataset.group]) {
             groupMarkerState[barcodeContainer.dataset.group] = "plus";
           }
           updateVisibilityForContainer(barcodeContainer);
 
-          let startX = 0,
-            startY = 0;
+          let startX = 0;
+          let startY = 0;
           barcodeContainer.addEventListener("touchstart", (e) => {
             if (e.touches.length === 1) {
               startX = e.touches[0].clientX;
@@ -7640,7 +7947,6 @@ In den App-Namensraum importieren?`)
                 const grp = document.getElementById("groupFilter").value;
                 if (grp) {
                   toggleGroupMarkersForGroup(grp);
-                  // Scroll to first visible
                   setTimeout(() => {
                     const el = Array.from(
                       document.querySelectorAll(".barcode-container"),
@@ -7651,10 +7957,11 @@ In den App-Namensraum importieren?`)
                         window.getComputedStyle(c).display !== "none"
                       );
                     });
-                    if (el)
+                    if (el) {
                       el.scrollIntoView({
                         behavior: "smooth",
                       });
+                    }
                   }, 100);
                 }
               }
@@ -7662,7 +7969,6 @@ In den App-Namensraum importieren?`)
           });
         }
 
-        // Create barcode SVG
         const barcodeSvg = document.createElementNS(
           "http://www.w3.org/2000/svg",
           "svg",
@@ -7681,78 +7987,51 @@ In den App-Namensraum importieren?`)
           lineColor: "#000",
         });
 
-        // Expiry date display
-        // … innerhalb von createBarcode(text) …
-        if (pairInfo.passwordDate) {
-          const days = calculateRemainingDays(pairInfo.passwordDate);
-          // … bereits in createBarcode, nach calculateRemainingDays() …
-          if (days !== null) {
-            // Stelle sicher, dass wir absolut platzieren können:
-            barcodeContainer.style.position = "relative";
+        const passwordDays = pairInfo.passwordDate
+          ? calculateRemainingDays(pairInfo.passwordDate)
+          : null;
+        const passwordDateIndicator = createPasswordDateIndicator(
+          finalText,
+          pairInfo,
+        );
 
-            if (days <= 0) {
-              // ① blickdichte Weiß-Rot-Streifen ganz hinten
-              const stripes = document.createElement("div");
-              Object.assign(stripes.style, {
-                position: "absolute",
-                top: "0",
-                left: "0",
-                width: "100%",
-                height: "100%",
-                background:
-                  "repeating-linear-gradient(45deg,#FFF 0 8px,#F00 8px 16px)",
-                pointerEvents: "none",
-                zIndex: "1",
-                borderRadius: "5px",
-              });
-              barcodeContainer.appendChild(stripes);
+        if (pairInfo.passwordDate && passwordDays !== null && passwordDays <= 0) {
+          const stripes = document.createElement("div");
+          Object.assign(stripes.style, {
+            position: "absolute",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            background:
+              "repeating-linear-gradient(45deg,#FFF 0 8px,#F00 8px 16px)",
+            pointerEvents: "none",
+            zIndex: "1",
+            borderRadius: "5px",
+          });
+          barcodeContainer.appendChild(stripes);
 
-              // ② ABGELAUFEN-Stempel in der Mitte
-              const stamp = document.createElement("div");
-              stamp.textContent = "ABGELAUFEN";
-              Object.assign(stamp.style, {
-                position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%,-50%) rotate(-15deg)",
-                color: "#fff",
-                fontSize: "1.2em",
-                fontWeight: "bold",
-                backgroundColor: "rgba(0,0,0,0.5)",
-                padding: "3px 6px",
-                borderRadius: "3px",
-                pointerEvents: "none",
-                zIndex: "2",
-                whiteSpace: "nowrap",
-                textShadow: "2px 2px 4px rgba(0,0,0,0.7)",
-              });
-              barcodeContainer.appendChild(stamp);
-
-              // ③ Negative Resttage ganz oben
-              const negSpan = document.createElement("span");
-              negSpan.className = "password-days-indicator is-expired";
-              negSpan.textContent = days; // z.B. "-5"
-              barcodeContainer.appendChild(negSpan);
-
-              // ④ Barcode selbst unsichtbar machen
-              const svg = barcodeContainer.querySelector(
-                "svg.barcode-svg-dynamic",
-              );
-              if (svg) svg.style.opacity = "0";
-            } else {
-              // normale Tages-Anzeige für days > 0
-              const span = document.createElement("span");
-              span.className =
-                days > 10
-                  ? "password-days-indicator"
-                  : "password-days-indicator is-warning";
-              span.textContent = days;
-              barcodeContainer.appendChild(span);
-            }
-          }
+          const stamp = document.createElement("div");
+          stamp.textContent = "ABGELAUFEN";
+          Object.assign(stamp.style, {
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%,-50%) rotate(-15deg)",
+            color: "#fff",
+            fontSize: "1.2em",
+            fontWeight: "bold",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            padding: "3px 6px",
+            borderRadius: "3px",
+            pointerEvents: "none",
+            zIndex: "2",
+            whiteSpace: "nowrap",
+            textShadow: "2px 2px 4px rgba(0,0,0,0.7)",
+          });
+          barcodeContainer.appendChild(stamp);
         }
 
-        // Label element
         let labelEl = null;
         if (labelPart) {
           labelEl = document.createElement("div");
@@ -7761,7 +8040,6 @@ In den App-Namensraum importieren?`)
           labelEl.textContent = labelPart.replace(/\s*\[[^\]]*\]\s*/, "");
         }
 
-        // Control buttons
         const makeBtn = (cls, txt, tip, fn) => {
           const b = document.createElement("button");
           b.className = cls;
@@ -7773,108 +8051,38 @@ In den App-Namensraum importieren?`)
           };
           return b;
         };
+
         const deleteBtn = makeBtn("delete-button", "X", "Löschen", () => {
           if (confirm("Wirklich löschen '" + finalText + "'?")) {
-            // Get current list from localStorage or global barcodeList
             let currentGlobalBarcodes =
               JSON.parse(appStorage.getItem("barcodes")) || barcodeList.slice();
-
-            // Filter out the barcode to be deleted
             const updatedList = currentGlobalBarcodes.filter(
               (bcText) => bcText !== finalText,
             );
 
             if (saveBarcodesStrict(updatedList, "delete")) {
-              loadBarcodes(); // Refresh main display from localStorage
+              loadBarcodes();
               showToast("Barcode '" + finalText + "' gelöscht!", "success");
-              // No need to manually remove barcodeContainer, loadBarcodes will handle it.
             } else {
               showToast(
                 "Fehler beim Löschen von Barcode '" + finalText + "'.",
                 "error",
               );
-              // Consider if location.reload() is still desired or if a more graceful error handling is needed
-              // For now, keeping it as it was the prior fallback.
               location.reload();
             }
           }
         });
+
         const editBtn = makeBtn("edit-button", "✎", "Bearbeiten", () => {
           openEditPopup(finalText, (newText) => {
             if (newText && newText !== finalText) {
-              // Original logic commented out for reference
-              // const nb = createBarcode(newText);
-              // barcodeContainer.replaceWith(nb);
-              //
-              // // Strikt speichern mit korrektem Kontext
-              // const updatedList = Array.from(document.querySelectorAll(".barcode-container"))
-              //     .map(container => container.dataset.text)
-              //     .filter(text => text);
-              //
-              // if (saveBarcodesStrict(updatedList, "editor")) {
-              //     showToast("Barcode aktualisiert!");
-              // } else {
-              //     showToast("Fehler beim Aktualisieren!", "error");
-              // }
-
-              let currentGlobalBarcodes =
-                JSON.parse(appStorage.getItem("barcodes")) || [];
-              const index = currentGlobalBarcodes.indexOf(finalText);
-
-              if (index > -1) {
-                currentGlobalBarcodes[index] = newText;
-                if (saveBarcodesStrict(currentGlobalBarcodes, "editor")) {
-                  // Iterate over ALL groupOrdering_ lists
-                  const allGroupKeys = getAllGroupOrderingKeys();
-                  allGroupKeys.forEach((groupKey) => {
-                    try {
-                      let groupOrderList = JSON.parse(
-                        appStorage.getItem(groupKey) || "[]",
-                      );
-                      const indexInGroup = groupOrderList.indexOf(finalText);
-
-                      if (indexInGroup > -1) {
-                        groupOrderList[indexInGroup] = newText;
-                        appStorage.setItem(
-                          groupKey,
-                          JSON.stringify(groupOrderList),
-                        );
-                        // Optional: console.log(`Updated '${finalText}' to '${newText}' in group order list: ${groupKey}`);
-                      }
-                    } catch (e) {
-                      console.error(
-                        `Error processing group order list ${groupKey} for update:`,
-                        e,
-                      );
-                    }
-                  });
-                  // END of new iteration logic
-
-                  const selectedGroup =
-                    document.getElementById("groupFilter").value; // Keep this for UI updates after load
-                  loadBarcodes(); // Reloads and rebuilds DOM
-
-                  filterAndSortBarcodesByGroup(selectedGroup); // Apply current filter/sort
-
-                  if (selectedGroup !== "") {
-                    saveGroupOrdering(selectedGroup); // Save order if a group is selected (mainly if new item added to view)
-                  }
-                  showToast("Barcode aktualisiert!", "success");
-                } else {
-                  showToast(
-                    "Fehler beim Speichern des aktualisierten Barcodes!",
-                    "error",
-                  );
-                }
-              } else {
-                showToast(
-                  "Original-Barcode nicht in der globalen Liste gefunden!",
-                  "error",
-                );
-              }
+              updateBarcodeEntryEverywhere(finalText, newText, {
+                resaveCurrentGroupOrdering: true,
+              });
             }
           });
         });
+
         const upBtn = makeBtn(
           "move-button move-up-button",
           "↑",
@@ -7885,15 +8093,6 @@ In den App-Namensraum importieren?`)
             const prev = barcodeContainer.previousElementSibling;
             if (prev && prev.classList.contains("barcode-container")) {
               prev.before(barcodeContainer);
-
-              // Strikt mit editor-Kontext speichern
-              const updatedList = Array.from(
-                document.querySelectorAll(".barcode-container"),
-              )
-                .map((container) => container.dataset.text)
-                .filter((text) => text);
-
-              // Removed saveBarcodesStrict block
               saveGroupOrdering(grp);
               showToast(
                 "Reihenfolge in Gruppe '" + grp + "' angepasst.",
@@ -7902,6 +8101,7 @@ In den App-Namensraum importieren?`)
             } else showToast("Oben Ende.");
           },
         );
+
         const dnBtn = makeBtn(
           "move-button move-down-button",
           "↓",
@@ -7912,8 +8112,6 @@ In den App-Namensraum importieren?`)
             const next = barcodeContainer.nextElementSibling;
             if (next && next.classList.contains("barcode-container")) {
               next.after(barcodeContainer);
-
-              // Removed saveBarcodesStrict block
               saveGroupOrdering(grp);
               showToast(
                 "Reihenfolge in Gruppe '" + grp + "' angepasst.",
@@ -7922,6 +8120,7 @@ In den App-Namensraum importieren?`)
             } else showToast("Unten Ende.");
           },
         );
+
         const setBtn = document.createElement("span");
         setBtn.className = "settings-button";
         setBtn.innerHTML = '<span class="settings-dots">•<br>•<br>•</span>';
@@ -7931,7 +8130,6 @@ In den App-Namensraum importieren?`)
           openMenuOverlayDynamic(barcodeContainer);
         };
 
-        // Bottom labels
         let pairingDisplay =
           pairInfo.pairingInfo && pairInfo.pairingInfo.startsWith("P:")
             ? "💞 " + pairInfo.pairingInfo
@@ -7944,22 +8142,23 @@ In den App-Namensraum importieren?`)
         if (pairingDisplay || groupDisplay) {
           const bottom = document.createElement("div");
           bottom.className = "bottom-labels";
-          if (pairingDisplay)
+          if (pairingDisplay) {
             bottom.appendChild(
               Object.assign(document.createElement("span"), {
                 textContent: pairingDisplay,
               }),
             );
-          if (groupDisplay)
+          }
+          if (groupDisplay) {
             bottom.appendChild(
               Object.assign(document.createElement("span"), {
                 textContent: groupDisplay,
               }),
             );
+          }
           barcodeContainer.appendChild(bottom);
         }
 
-        // Click for fullscreen
         barcodeContainer.addEventListener("click", (e) => {
           if (
             !e.target.closest("button") &&
@@ -7970,9 +8169,10 @@ In den App-Namensraum importieren?`)
                 "#generatedBarcodes .barcode-container",
               ),
             ).filter((el) => {
-              const inf = parsePairInfo(el.dataset.fullLabel);
-              if (window.getComputedStyle(el).display === "none")
+              const inf = parsePairInfo(el.dataset.fullLabel || "");
+              if (window.getComputedStyle(el).display === "none") {
                 return inf.isPaired && !inf.isMaster;
+              }
               return true;
             });
             const idx = items.findIndex((el) => el.dataset.text === finalText);
@@ -7980,32 +8180,31 @@ In den App-Namensraum importieren?`)
           }
         });
 
-        // Append all
-        if (labelEl)
+        if (labelEl) {
           barcodeContainer.append(
             labelEl,
             barcodeSvg,
+            passwordDateIndicator,
             deleteBtn,
             editBtn,
             upBtn,
             dnBtn,
             setBtn,
           );
-        else
+        } else {
           barcodeContainer.append(
             barcodeSvg,
+            passwordDateIndicator,
             deleteBtn,
             editBtn,
             upBtn,
             dnBtn,
             setBtn,
           );
+        }
 
-        if (pairInfo.passwordDate) {
-          const days = calculateRemainingDays(pairInfo.passwordDate);
-          if (days !== null && days <= 0) {
-            barcodeSvg.style.opacity = "0";
-          }
+        if (passwordDays !== null && passwordDays <= 0) {
+          barcodeSvg.style.opacity = "0";
         }
 
         document
@@ -8076,6 +8275,97 @@ In den App-Namensraum importieren?`)
           background: "#ffffff",
           lineColor: "#000000",
         });
+      }
+
+      function openPasswordDatePopup(initialText) {
+        const overlay = document.getElementById("passwordDatePopupOverlay");
+        const labelEl = document.getElementById("passwordDatePopupLabel");
+        const dateInput = document.getElementById("passwordDateInput");
+        const slashIndex = initialText.indexOf("/");
+        const codePart =
+          slashIndex >= 0 ? initialText.substring(0, slashIndex) : initialText;
+        const labelPart =
+          slashIndex >= 0 ? initialText.substring(slashIndex + 1) : "";
+        const pairInfo = parsePairInfo(labelPart || "");
+        const initialIsoDate = convertGermanDateToIso(pairInfo.passwordDate);
+
+        labelEl.textContent =
+          labelPart.replace(/\s*\[[^\]]*\]\s*/, "").trim() ||
+          escapeNonPrintableChars(codePart) ||
+          "Dieser Barcode";
+        dateInput.value = initialIsoDate;
+
+        openViewportLockedOverlay(
+          overlay,
+          "#passwordDatePopupOverlay .popup-content",
+          {
+            afterOpen: () => {
+              dateInput.focus();
+              requestAnimationFrame(() => {
+                if (typeof dateInput.showPicker === "function") {
+                  try {
+                    dateInput.showPicker();
+                    return;
+                  } catch (error) {
+                    console.debug("showPicker nicht verfuegbar", error);
+                  }
+                }
+                dateInput.click();
+              });
+            },
+          },
+        );
+
+        document.getElementById("passwordDateSaveButton").onclick = function () {
+          const isoDate = String(dateInput.value || "").trim();
+          let updatedText = initialText;
+          let updateMessages = {
+            successMessage: "Passwort-Ablaufdatum gespeichert!",
+            saveErrorMessage:
+              "Fehler beim Speichern des Passwort-Ablaufdatums!",
+            notFoundMessage:
+              "Der Barcode wurde fuer dieses Passwortdatum nicht mehr gefunden!",
+          };
+
+          if (isoDate === "") {
+            updatedText = removePwTokenFromBarcodeText(initialText);
+            updateMessages = {
+              successMessage: "Passwort-Ablaufdatum entfernt!",
+              saveErrorMessage:
+                "Fehler beim Entfernen des Passwort-Ablaufdatums!",
+              notFoundMessage:
+                "Der Barcode wurde fuer dieses Passwortdatum nicht mehr gefunden!",
+            };
+          } else {
+            const germanDate = convertIsoToGermanDate(isoDate);
+            if (!germanDate) {
+              showToast("Bitte ein gueltiges Datum auswaehlen.", "warning");
+              dateInput.focus();
+              return;
+            }
+            updatedText = replacePwTokenInBarcodeText(initialText, germanDate);
+          }
+
+          if (updatedText === initialText) {
+            closeViewportLockedOverlay(overlay);
+            return;
+          }
+
+          const updateSucceeded = updateBarcodeEntryEverywhere(
+            initialText,
+            updatedText,
+            updateMessages,
+          );
+
+          if (updateSucceeded) {
+            closeViewportLockedOverlay(overlay);
+          }
+        };
+
+        document.getElementById("passwordDateCancelButton").onclick =
+          function () {
+            closeViewportLockedOverlay(overlay);
+          };
       }
 
       function openEditPopup(initialText, callback) {
