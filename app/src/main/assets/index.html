@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="34">
+<html lang="de" data-app-version="37">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -4135,8 +4135,11 @@
       .popup-input,
       #popupFileNameInput,
       #settingsPopupFileNameInput,
-      #editMainInput,
+      #editCodeInput,
+      #editLabelInput,
       #editBracketInput,
+      #passwordDateCodeInput,
+      #passwordDateInput,
       #borderHexInput,
       #shadowHexInput,
       #bodyHexInput,
@@ -5119,10 +5122,18 @@
       <div class="popup-content">
         <h3 style="text-align: center">Barcode bearbeiten</h3>
         <div>
-          <label for="editMainInput">Barcode (Code/Bezeichnung):</label>
+          <label for="editCodeInput">Code vor /:</label>
           <input
             type="text"
-            id="editMainInput"
+            id="editCodeInput"
+            style="width: 95%; padding: 8px 12px; margin-bottom: 10px"
+          />
+        </div>
+        <div>
+          <label for="editLabelInput">Bezeichnung nach /:</label>
+          <input
+            type="text"
+            id="editLabelInput"
             style="width: 95%; padding: 8px 12px; margin-bottom: 10px"
           />
         </div>
@@ -5226,6 +5237,26 @@
           "
         >
           Leer speichern entfernt das Passwortdatum nur fuer diesen Barcode.
+        </p>
+        <div>
+          <label for="passwordDateCodeInput">Code/Passwort:</label>
+          <input
+            type="text"
+            id="passwordDateCodeInput"
+            style="width: 95%; padding: 8px 12px; margin-bottom: 12px"
+          />
+        </div>
+        <p
+          style="
+            font-size: 0.78em;
+            color: #555;
+            text-align: left;
+            margin-top: -4px;
+            margin-bottom: 12px;
+          "
+        >
+          Tab, Leerzeichen und Enter am Anfang oder Ende bleiben automatisch
+          erhalten.
         </p>
         <div>
           <label for="passwordDateInput">Datum:</label>
@@ -5818,6 +5849,65 @@
           return coreContent + " " + newToken + trailingWhitespace;
         }
         return coreContent + ", " + newToken + trailingWhitespace;
+      }
+
+      function splitBarcodeText(barcodeText) {
+        const text = String(barcodeText || "");
+        const slashIndex = text.indexOf("/");
+        const codePart = slashIndex >= 0 ? text.substring(0, slashIndex) : text;
+        const remainder = slashIndex >= 0 ? text.substring(slashIndex + 1) : "";
+        const bracketMatch = remainder.match(/\[([^\]]*)\]/);
+        const bracketContent = bracketMatch ? bracketMatch[1] : "";
+        const labelPart = remainder
+          .replace(/\s*\[[^\]]*\]\s*/, "")
+          .trim();
+
+        return {
+          codePart,
+          labelPart,
+          bracketContent,
+          hasSlash: slashIndex >= 0,
+        };
+      }
+
+      function splitCodeForPasswordPopup(codePart) {
+        const rawCodePart = String(codePart || "");
+        const specialCharPattern = /[ \t\r\n]/;
+        let leadingLength = 0;
+        let trailingStart = rawCodePart.length;
+
+        while (
+          leadingLength < rawCodePart.length &&
+          specialCharPattern.test(rawCodePart.charAt(leadingLength))
+        ) {
+          leadingLength += 1;
+        }
+
+        while (
+          trailingStart > leadingLength &&
+          specialCharPattern.test(rawCodePart.charAt(trailingStart - 1))
+        ) {
+          trailingStart -= 1;
+        }
+
+        return {
+          leadingSpecialChars: rawCodePart.substring(0, leadingLength),
+          visibleCore: rawCodePart.substring(leadingLength, trailingStart),
+          trailingSpecialChars: rawCodePart.substring(trailingStart),
+        };
+      }
+
+      function composeBarcodeText(codePart, labelPart, bracketContent) {
+        const normalizedCode = String(codePart || "");
+        const normalizedLabel = String(labelPart || "").trim();
+        const normalizedBracket = String(bracketContent || "").trim();
+        let composedText = normalizedCode + "/" + normalizedLabel;
+
+        if (normalizedBracket !== "") {
+          composedText += "[" + normalizedBracket + "]";
+        }
+
+        return composedText;
       }
 
       function replacePwTokenInBarcodeText(barcodeText, germanDate) {
@@ -8280,19 +8370,22 @@ In den App-Namensraum importieren?`)
       function openPasswordDatePopup(initialText) {
         const overlay = document.getElementById("passwordDatePopupOverlay");
         const labelEl = document.getElementById("passwordDatePopupLabel");
+        const codeInput = document.getElementById("passwordDateCodeInput");
         const dateInput = document.getElementById("passwordDateInput");
-        const slashIndex = initialText.indexOf("/");
-        const codePart =
-          slashIndex >= 0 ? initialText.substring(0, slashIndex) : initialText;
-        const labelPart =
-          slashIndex >= 0 ? initialText.substring(slashIndex + 1) : "";
-        const pairInfo = parsePairInfo(labelPart || "");
+        const barcodeParts = splitBarcodeText(initialText);
+        const passwordPopupCodeParts = splitCodeForPasswordPopup(
+          barcodeParts.codePart,
+        );
+        const labelWithTokens =
+          barcodeParts.labelPart +
+          (barcodeParts.bracketContent
+            ? "[" + barcodeParts.bracketContent + "]"
+            : "");
+        const pairInfo = parsePairInfo(labelWithTokens || "");
         const initialIsoDate = convertGermanDateToIso(pairInfo.passwordDate);
 
-        labelEl.textContent =
-          labelPart.replace(/\s*\[[^\]]*\]\s*/, "").trim() ||
-          escapeNonPrintableChars(codePart) ||
-          "Dieser Barcode";
+        labelEl.textContent = barcodeParts.labelPart || "Dieser Barcode";
+        codeInput.value = passwordPopupCodeParts.visibleCore;
         dateInput.value = initialIsoDate;
 
         openViewportLockedOverlay(
@@ -8300,25 +8393,38 @@ In den App-Namensraum importieren?`)
           "#passwordDatePopupOverlay .popup-content",
           {
             afterOpen: () => {
-              dateInput.focus();
-              requestAnimationFrame(() => {
-                if (typeof dateInput.showPicker === "function") {
-                  try {
-                    dateInput.showPicker();
-                    return;
-                  } catch (error) {
-                    console.debug("showPicker nicht verfuegbar", error);
+              codeInput.focus();
+              if (initialIsoDate) {
+                requestAnimationFrame(() => {
+                  if (typeof dateInput.showPicker === "function") {
+                    try {
+                      dateInput.showPicker();
+                      return;
+                    } catch (error) {
+                      console.debug("showPicker nicht verfuegbar", error);
+                    }
                   }
-                }
-                dateInput.click();
-              });
+                  dateInput.click();
+                });
+              }
             },
           },
         );
 
         document.getElementById("passwordDateSaveButton").onclick = function () {
+          const updatedVisibleCodePart = String(codeInput.value || "");
+          const updatedCodePart =
+            passwordPopupCodeParts.leadingSpecialChars +
+            updatedVisibleCodePart +
+            passwordPopupCodeParts.trailingSpecialChars;
           const isoDate = String(dateInput.value || "").trim();
-          let updatedText = initialText;
+          const codeChanged = updatedCodePart !== barcodeParts.codePart;
+          const baseText = composeBarcodeText(
+            updatedCodePart,
+            barcodeParts.labelPart,
+            barcodeParts.bracketContent,
+          );
+          let updatedText = baseText;
           let updateMessages = {
             successMessage: "Passwort-Ablaufdatum gespeichert!",
             saveErrorMessage:
@@ -8328,13 +8434,22 @@ In den App-Namensraum importieren?`)
           };
 
           if (isoDate === "") {
-            updatedText = removePwTokenFromBarcodeText(initialText);
+            updatedText = removePwTokenFromBarcodeText(baseText);
             updateMessages = {
-              successMessage: "Passwort-Ablaufdatum entfernt!",
+              successMessage:
+                codeChanged && pairInfo.passwordDate
+                  ? "Code und Passwort-Ablaufdatum gespeichert!"
+                  : codeChanged
+                    ? "Code gespeichert!"
+                    : "Passwort-Ablaufdatum entfernt!",
               saveErrorMessage:
-                "Fehler beim Entfernen des Passwort-Ablaufdatums!",
+                codeChanged
+                  ? "Fehler beim Speichern des Codes!"
+                  : "Fehler beim Entfernen des Passwort-Ablaufdatums!",
               notFoundMessage:
-                "Der Barcode wurde fuer dieses Passwortdatum nicht mehr gefunden!",
+                codeChanged
+                  ? "Der Barcode wurde fuer diesen Code nicht mehr gefunden!"
+                  : "Der Barcode wurde fuer dieses Passwortdatum nicht mehr gefunden!",
             };
           } else {
             const germanDate = convertIsoToGermanDate(isoDate);
@@ -8343,7 +8458,15 @@ In den App-Namensraum importieren?`)
               dateInput.focus();
               return;
             }
-            updatedText = replacePwTokenInBarcodeText(initialText, germanDate);
+            updatedText = replacePwTokenInBarcodeText(baseText, germanDate);
+            if (codeChanged) {
+              updateMessages.successMessage =
+                "Code und Passwort-Ablaufdatum gespeichert!";
+              updateMessages.saveErrorMessage =
+                "Fehler beim Speichern von Code und Passwort-Ablaufdatum!";
+              updateMessages.notFoundMessage =
+                "Der Barcode wurde fuer diesen Code nicht mehr gefunden!";
+            }
           }
 
           if (updatedText === initialText) {
@@ -8370,7 +8493,8 @@ In den App-Namensraum importieren?`)
 
       function openEditPopup(initialText, callback) {
         const overlay = document.getElementById("editPopupOverlay");
-        const mainInput = document.getElementById("editMainInput");
+        const codeInput = document.getElementById("editCodeInput");
+        const labelInput = document.getElementById("editLabelInput");
         const bracketInput = document.getElementById("editBracketInput");
 
         // Teile initialText in den Code‑Teil (vor dem ersten "/") und den Rest (ab dem "/")
@@ -8393,8 +8517,11 @@ In den App-Namensraum importieren?`)
         // Setze den Hauptinput:
         // - Der Code‑Teil (bis zum "/") wird mittels escapeNonPrintableChars transformiert.
         // - Der Rest (ohne die eckigen Klammern) wird unverändert übernommen.
-        mainInput.value =
-          escapeNonPrintableChars(codePart) + restWithoutBrackets;
+        const labelText = restWithoutBrackets.startsWith("/")
+          ? restWithoutBrackets.substring(1).trim()
+          : restWithoutBrackets.trim();
+        codeInput.value = escapeNonPrintableChars(codePart);
+        labelInput.value = labelText;
 
         // Der Bracket‑Input erhält den Inhalt der eckigen Klammern, formatiert mit Zeilenumbrüchen
         if (bracketContent) {
@@ -8406,38 +8533,27 @@ In den App-Namensraum importieren?`)
 
         // Füge (einmalig) einen "input"-Listener hinzu, der während des Tippens den Code‑Teil (bis zum "/")
         // automatisch transformiert – ohne den Rest zu verändern.
-        if (!mainInput.dataset.listenerAdded) {
-          mainInput.addEventListener("input", function () {
-            const currentValue = mainInput.value;
-            const idx = currentValue.indexOf("/");
-            let currentCode = "";
-            let currentRest = "";
-            if (idx >= 0) {
-              currentCode = currentValue.substring(0, idx);
-              currentRest = currentValue.substring(idx);
-            } else {
-              currentCode = currentValue;
-            }
-            const transformed =
-              escapeNonPrintableChars(currentCode) + currentRest;
+        if (!codeInput.dataset.listenerAdded) {
+          codeInput.addEventListener("input", function () {
+            const currentValue = codeInput.value;
+            const transformed = escapeNonPrintableChars(currentValue);
             if (currentValue !== transformed) {
-              const selStart = mainInput.selectionStart;
-              const selEnd = mainInput.selectionEnd;
+              const selStart = codeInput.selectionStart;
+              const selEnd = codeInput.selectionEnd;
               const lenDiff = transformed.length - currentValue.length;
-              mainInput.value = transformed;
-              mainInput.selectionStart =
-                selStart + (idx < selStart ? lenDiff : 0);
-              mainInput.selectionEnd = selEnd + (idx < selEnd ? lenDiff : 0);
+              codeInput.value = transformed;
+              codeInput.selectionStart = Math.max(0, selStart + lenDiff);
+              codeInput.selectionEnd = Math.max(0, selEnd + lenDiff);
             }
           });
-          mainInput.dataset.listenerAdded = "true";
+          codeInput.dataset.listenerAdded = "true";
         }
         openViewportLockedOverlay(
           overlay,
           "#editPopupOverlay .popup-content",
           {
             afterOpen: () => {
-              mainInput.focus();
+              codeInput.focus();
             },
           },
         );
@@ -8449,16 +8565,8 @@ In den App-Namensraum importieren?`)
         };
 
         document.getElementById("editSaveButton").onclick = function () {
-          const newValue = mainInput.value;
-          let restoredCode = "";
-          const idx = newValue.indexOf("/");
-          if (idx >= 0) {
-            restoredCode =
-              restoreSpecialChars(newValue.substring(0, idx)) +
-              newValue.substring(idx);
-          } else {
-            restoredCode = restoreSpecialChars(newValue);
-          }
+          const restoredCode = restoreSpecialChars(codeInput.value);
+          const normalizedLabel = String(labelInput.value || "").trim();
 
           // Verarbeite die Zeilenumbrüche im Textarea und konvertiere sie zurück in eine kommagetrennte Liste
           let newBracket = bracketInput.value
@@ -8492,10 +8600,11 @@ In den App-Namensraum importieren?`)
             );
           }
 
-          let finalText = restoredCode;
-          if (newBracket !== "") {
-            finalText += "[" + newBracket + "]";
-          }
+          const finalText = composeBarcodeText(
+            restoredCode,
+            normalizedLabel,
+            newBracket,
+          );
           closeViewportLockedOverlay(overlay);
           callback(finalText);
 
