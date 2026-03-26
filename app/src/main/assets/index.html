@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="37">
+<html lang="de" data-app-version="38">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -10093,6 +10093,52 @@ In den App-Namensraum importieren?`)
         });
       }
 
+      function showImportModeModal(fileName, entryCount) {
+        return showModal({
+          message: `Datei "<strong>${escapeHtmlForModal(fileName)}</strong>" mit ${entryCount} Eintr\u00e4gen ausgew\u00e4hlt.<br><br>Wie m\u00f6chtest du importieren?`,
+          buttons: [
+            {
+              text: "Liste komplett \u00fcbernehmen",
+              result: "bulk_replace",
+              backgroundColor: "#4caf50",
+            },
+            {
+              text: "Einzeln pr\u00fcfen",
+              result: "interactive",
+              backgroundColor: "#5bbdff",
+            },
+            {
+              text: "Abbrechen",
+              result: "cancel",
+              backgroundColor: "#ff5c5c",
+            },
+          ],
+        });
+      }
+
+      function parseImportedBarcodeLines(rawText) {
+        return String(rawText || "")
+          .replace(/^\uFEFF/, "")
+          .split(/\r?\n/)
+          .filter((text) => text !== "");
+      }
+
+      function refreshBarcodeImportView() {
+        const groupFilter = document.getElementById("groupFilter");
+        const selectedGroup = groupFilter ? groupFilter.value : "";
+
+        loadBarcodes();
+
+        if (!groupFilter) return;
+
+        const hasSelectedGroup = Array.from(groupFilter.options).some(
+          (option) => option.value === selectedGroup,
+        );
+        groupFilter.value = hasSelectedGroup ? selectedGroup : "";
+        appStorage.setItem("selectedGroup", groupFilter.value);
+        filterAndSortBarcodesByGroup(groupFilter.value);
+      }
+
       // Angepasste Import-Funktion
       document
         .getElementById("importFile")
@@ -10101,8 +10147,39 @@ In den App-Namensraum importieren?`)
           if (!file) return;
           const reader = new FileReader();
           reader.onload = async (e) => {
-            const importedBarcodes = e.target.result.split("\n");
+            const importedBarcodes = parseImportedBarcodeLines(
+              e && e.target ? e.target.result : "",
+            );
+            if (importedBarcodes.length === 0) {
+              showToast("Importdatei enth\u00e4lt keine Barcodes!", "warning");
+              event.target.value = "";
+              return;
+            }
+
+            const importMode = await showImportModeModal(
+              String(file.name || "unbekannt"),
+              importedBarcodes.length,
+            );
+
+            if (importMode === "cancel") {
+              showToast("Import abgebrochen!", "warning");
+              event.target.value = "";
+              return;
+            }
+
+            if (importMode === "bulk_replace") {
+              if (saveBarcodesStrict([...importedBarcodes], "import")) {
+                refreshBarcodeImportView();
+                showToast(
+                  `Liste komplett \u00fcbernommen (${importedBarcodes.length} Eintr\u00e4ge)!`,
+                  "success",
+                );
+              }
+              event.target.value = "";
+              return;
+            }
             let changesMade = false;
+            let importCanceled = false;
             for (const text of importedBarcodes) {
               if (text === "") continue;
               const codePart = text.split("/")[0] || "";
@@ -10116,7 +10193,7 @@ In den App-Namensraum importieren?`)
                   barcodeList[existingIndex],
                 );
                 if (result === "cancel") {
-                  showToast("Import abgebrochen!");
+                  importCanceled = true;
                   break;
                 } else if (result === "overwrite") {
                   const oldText = barcodeList[existingIndex];
@@ -10138,7 +10215,7 @@ In den App-Namensraum importieren?`)
                 // Barcode existiert noch nicht
                 const result = await showNewBarcodeModal(text);
                 if (result === "cancel") {
-                  showToast("Import abgebrochen!");
+                  importCanceled = true;
                   break;
                 } else if (result === "add") {
                   barcodeList.push(text);
@@ -10152,11 +10229,20 @@ In den App-Namensraum importieren?`)
             if (changesMade) {
               // STRENGE KONTROLLE: Nur Import darf die Barcode-Liste ändern
               if (saveBarcodesStrict(barcodeList, "import")) {
-                showToast("Daten erfolgreich importiert!");
+                refreshBarcodeImportView();
+                showToast(
+                  importCanceled
+                    ? "Import abgebrochen, best\u00e4tigte \u00c4nderungen wurden \u00fcbernommen."
+                    : "Daten erfolgreich importiert!",
+                  importCanceled ? "warning" : "success",
+                );
               }
+            } else if (importCanceled) {
+              showToast("Import abgebrochen!", "warning");
             }
+            event.target.value = "";
           };
-          reader.readAsText(file);
+          reader.readAsText(file, "utf-8");
         });
 
       document
