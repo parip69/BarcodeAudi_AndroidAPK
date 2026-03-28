@@ -1,11 +1,36 @@
 $ErrorActionPreference = "Stop"
 
-$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$gradleFile = Join-Path $scriptRoot "app\build.gradle.kts"
-$indexFile = Join-Path $scriptRoot "app\src\main\assets\index.html"
-$gradlewBat = Join-Path $scriptRoot "gradlew.bat"
-$privatDir = Join-Path $scriptRoot "Privat"
-$apkOutputDir = Join-Path $scriptRoot "app\build\outputs\apk\debug"
+# Vorlage fuer neue Projekte.
+# Vor dem Einsatz diese Platzhalter ersetzen:
+# - {{APK_BASENAME}}
+# - {{HTML_ARCHIVE_BASENAME}}
+# - {{APK_ARCHIVE_BASENAME}}
+#
+# Standardstruktur:
+# - Privat\sync_version_and_build.ps1
+# - app\build.gradle.kts
+# - app\src\main\assets\index.html
+# - app\build\outputs\apk\debug
+# - Privat\
+
+$scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
+$candidateProjectRoots = @(
+    $scriptDirectory
+    (Split-Path -Parent $scriptDirectory)
+) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+$projectRoot = $candidateProjectRoots |
+    Where-Object { Test-Path -LiteralPath (Join-Path $_ "app\build.gradle.kts") } |
+    Select-Object -First 1
+
+if (-not $projectRoot) {
+    $projectRoot = $scriptDirectory
+}
+
+$gradleFile = Join-Path $projectRoot "app\build.gradle.kts"
+$indexFile = Join-Path $projectRoot "app\src\main\assets\index.html"
+$gradlewBat = Join-Path $projectRoot "gradlew.bat"
+$privatDir = Join-Path $projectRoot "Privat"
+$apkOutputDir = Join-Path $projectRoot "app\build\outputs\apk\debug"
 
 function Read-TextFilePreserveEncoding {
     param(
@@ -101,7 +126,7 @@ function Copy-BuildArtifactsToPrivat {
         throw "APK-Ausgabeordner nicht gefunden: $apkOutputDir"
     }
 
-    $expectedApkFileName = "BarcodeAudi_ver_${Version}.apk"
+    $expectedApkFileName = "{{APK_BASENAME}}_ver_${Version}.apk"
     $apkSourcePath = Join-Path $apkOutputDir $expectedApkFileName
 
     if (-not (Test-Path -LiteralPath $apkSourcePath)) {
@@ -116,8 +141,8 @@ function Copy-BuildArtifactsToPrivat {
         $apkSourcePath = $latestApk.FullName
     }
 
-    $htmlArchivePath = Join-Path $privatDir ("BarcodeScannerAudi_ver_{0}.html" -f $Version)
-    $apkArchivePath = Join-Path $privatDir ("BarcodeAudiScanner-v{0}.apk" -f $Version)
+    $htmlArchivePath = Join-Path $privatDir ("{{HTML_ARCHIVE_BASENAME}}_ver_{0}.html" -f $Version)
+    $apkArchivePath = Join-Path $privatDir ("{{APK_ARCHIVE_BASENAME}}-v{0}.apk" -f $Version)
 
     Copy-Item -LiteralPath $indexFile -Destination $htmlArchivePath -Force
     Copy-Item -LiteralPath $apkSourcePath -Destination $apkArchivePath -Force
@@ -146,7 +171,7 @@ if ($versionNameNumericMatch.Success) {
 
 Write-Host "[INFO] Gelesene Version aus build.gradle.kts: ""$currentVersion"""
 if ([string]::IsNullOrWhiteSpace($currentVersion)) {
-    Write-Host "[FEHLER] Konnte keine numerische Version aus build.gradle.kts lesen! Abbruch."
+    Write-Host "[FEHLER] Konnte keine numerische Version aus build.gradle.kts lesen. Abbruch."
     exit 1
 }
 
@@ -216,9 +241,9 @@ if ($buildExitCode -eq 0) {
         exit 1
     }
 
-    Write-Host "[SUCCESS] Build und Versionssync erfolgreich! Version: $newVersion"
+    Write-Host "[SUCCESS] Build und Versionssync erfolgreich. Version: $newVersion"
     exit 0
 }
 
-Write-Host "[FEHLER] Fehler beim Build!"
+Write-Host "[FEHLER] Fehler beim Build."
 exit $buildExitCode

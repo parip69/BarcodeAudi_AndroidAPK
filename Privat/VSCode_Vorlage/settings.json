@@ -1,0 +1,30 @@
+{
+  "chatgpt.cliExecutable": "",
+  "chat.viewSessions.orientation": "stacked",
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "liveServer.settings.donotShowInfoMsg": true,
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "editor.stickyScroll.enabled": false,
+  "workbench.editorAssociations": {
+    "*.copilotmd": "vscode.markdown.preview.editor"
+  },
+  "workbench.localHistory.maxFileSize": 4096,
+  "java.configuration.updateBuildConfiguration": "interactive",
+  "statusbar_command.commands": [
+    {
+      "text": "$(package) Build APK",
+      "command": "workbench.action.tasks.runTask",
+      "arguments": ["Build APK"],
+      "tooltip": "APK bauen"
+    },
+    {
+      "text": "$(sync) Sync & Build APK",
+      "command": "workbench.action.tasks.runTask",
+      "arguments": ["Sync Version & Build APK"],
+      "tooltip": "Version synchronisieren & APK bauen"
+    }
+  ]
+}

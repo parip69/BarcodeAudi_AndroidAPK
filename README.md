@@ -6,7 +6,7 @@ Android-Studio-Projekt fuer einen nativen Android-Wrapper um eine lokale HTML-/J
 
 - `app/` enthaelt den eigentlichen Android-App-Code und die Web-App-Assets.
 - `gradle/`, `gradlew`, `gradlew.bat`, `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties` gehoeren zum Build.
-- `sync_version_and_build.ps1` und `sync_version_and_build.bat` erhoehen Version und bauen die Debug-APK.
+- `Privat/sync_version_and_build.ps1` und `Privat/sync_version_and_build.bat` erhoehen Version und bauen die Debug-APK.
 - `.agent/` bleibt absichtlich im Repository, damit die Agenten-Workflows mitkommen.
 - `Privat/` bleibt absichtlich im Repository, ist aber kein Teil des Gradle-Builds. Das ist eher Archiv-/Begleitmaterial.
 
@@ -74,13 +74,13 @@ Archiviert werden automatisch:
 Windows Batch:
 
 ```bat
-.\sync_version_and_build.bat
+.\Privat\sync_version_and_build.bat
 ```
 
 PowerShell direkt:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\sync_version_and_build.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\Privat\sync_version_and_build.ps1
 ```
 
 ## Entwicklerumgebung in VS Code
@@ -94,8 +94,13 @@ Die eigentliche App braucht VS Code nicht, aber fuer den Entwicklungsablauf ist 
   settings.json
   tasks.json
   launch.json
-sync_version_and_build.bat
-sync_version_and_build.ps1
+Privat/
+  sync_version_and_build.bat
+  sync_version_and_build.ps1
+  VSCode_Vorlage/
+    settings.json
+    tasks.json
+    launch.json
 ```
 
 ### Rolle der Dateien
@@ -103,15 +108,16 @@ sync_version_and_build.ps1
 - `.vscode/tasks.json` definiert die ausfuehrbaren Aufgaben in VS Code.
 - `.vscode/settings.json` enthaelt die lokalen Editor-Einstellungen und die Statusleisten-Buttons.
 - `.vscode/launch.json` ist aktuell nur ein Platzhalter.
-- `sync_version_and_build.bat` ist der einfache Einstiegspunkt fuer Windows und ruft das PowerShell-Skript auf.
-- `sync_version_and_build.ps1` macht die eigentliche Arbeit: Version erhoehen, `index.html` synchronisieren, APK bauen und danach die Archivkopien nach `Privat/` schreiben.
+- `Privat/sync_version_and_build.bat` ist der einfache Einstiegspunkt fuer Windows und ruft das PowerShell-Skript auf.
+- `Privat/sync_version_and_build.ps1` macht die eigentliche Arbeit: Version erhoehen, `index.html` synchronisieren, APK bauen und danach die Archivkopien nach `Privat/` schreiben.
+- `Privat/VSCode_Vorlage/` enthaelt die kopierbaren Vorlagen fuer neue Projekte.
 
 ### Eingerichtete Tasks
 
 In `tasks.json` sind aktuell diese Tasks hinterlegt:
 
 - `Build APK` fuehrt `.\gradlew.bat assembleDebug` aus
-- `Sync Version & Build APK` fuehrt `.\sync_version_and_build.bat` aus
+- `Sync Version & Build APK` fuehrt `.\Privat\sync_version_and_build.bat` aus
 
 ### Statusleisten-Buttons
 
@@ -126,10 +132,11 @@ Die Buttons starten intern einfach die beiden VS-Code-Tasks.
 
 Kopiere oder baue dort dieselben Bausteine nach:
 
-1. `sync_version_and_build.ps1`
-2. `sync_version_and_build.bat`
-3. `.vscode/tasks.json`
-4. die relevanten Teile aus `.vscode/settings.json`, vor allem `statusbar_command.commands`
+1. `Privat/sync_version_and_build.ps1`
+2. `Privat/sync_version_and_build.bat`
+3. `Privat/VSCode_Vorlage/tasks.json`
+4. `Privat/VSCode_Vorlage/settings.json`
+5. `Privat/VSCode_Vorlage/launch.json`
 
 Danach musst du nur noch diese projektspezifischen Stellen anpassen:
 
@@ -142,6 +149,8 @@ Danach musst du nur noch diese projektspezifischen Stellen anpassen:
 ### Wichtig fuer dieses Repository
 
 `.vscode/` ist in `.gitignore` absichtlich ignoriert. Die Entwicklerumgebung ist also lokal dokumentiert und nutzbar, gehoert aber nicht zwingend zum eigentlichen App-Code. Darum steht das Setup hier in der README, damit du es fuer andere Projekte trotzdem sauber nachbauen kannst.
+
+Die versionierbare Quelle fuer neue Projekte liegt deshalb zusaetzlich in `Privat/VSCode_Vorlage/`. Von dort kannst du die Dateien in ein neues Projekt nach `.vscode/` kopieren.
 
 ## Hinweis zur Repository-Struktur
 

@@ -2652,6 +2652,16 @@
         background: #17a2b8;
       }
 
+      .move-button.move-locked {
+        opacity: 0.24;
+        filter: saturate(0.95);
+      }
+
+      .move-button.move-locked:hover {
+        transform: none;
+        opacity: 0.34;
+      }
+
       .hidden {
         display: none !important;
       }
@@ -3590,17 +3600,66 @@
       .menu-button {
         display: block;
         width: 100%;
-        padding: 10px;
-        margin: 5px 0;
-        background: #007bff;
+        padding: 10px 12px;
+        margin: 6px 0;
+        background: #0d6efd;
         color: #fff;
-        border: none;
-        border-radius: 5px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 10px;
         cursor: pointer;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+        transition:
+          background-color 0.2s ease,
+          transform 0.15s ease,
+          box-shadow 0.2s ease,
+          opacity 0.2s ease;
       }
 
       .menu-button:hover {
-        background: #0056b3;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+      }
+
+      .menu-button.menu-state-info {
+        background: #0d6efd;
+      }
+
+      .menu-button.menu-state-on {
+        background: #198754;
+      }
+
+      .menu-button.menu-state-off {
+        background: #6c757d;
+      }
+
+      .menu-button.menu-state-warning {
+        background: #fd7e14;
+      }
+
+      .menu-button.menu-state-danger {
+        background: #dc3545;
+      }
+
+      .menu-button.menu-state-info:hover {
+        background: #0b5ed7;
+      }
+
+      .menu-button.menu-state-on:hover {
+        background: #157347;
+      }
+
+      .menu-button.menu-state-off:hover {
+        background: #5c636a;
+      }
+
+      .menu-button.menu-state-warning:hover {
+        background: #e96b09;
+      }
+
+      .menu-button.menu-state-danger:hover {
+        background: #bb2d3b;
       }
 
       .pair-dot {
@@ -4960,8 +5019,19 @@
         >
           📌 Gruppenbereich fixieren: AUS
         </button>
-        <button class="menu-button" onclick="toggleMainBarcode()">
-          📌 Hauptbarcode ausblenden
+        <button
+          class="menu-button"
+          id="toggleMainBarcodeButton"
+          onclick="toggleMainBarcode()"
+        >
+          📌 Hauptbarcode: SICHTBAR
+        </button>
+        <button
+          class="menu-button"
+          id="moveModeButton"
+          onclick="toggleMoveMode()"
+        >
+          ↕ Verschiebemodus: AUS
         </button>
         <select
           id="groupFilter"
@@ -5600,6 +5670,9 @@
 
         mainBarcodeContainer.style.display =
           isHidden === "true" ? "none" : "block";
+        if (typeof updateMainBarcodeButtonText === "function") {
+          updateMainBarcodeButtonText();
+        }
       }
 
       function applyStoredGroupSectionState() {
@@ -5647,24 +5720,6 @@
           document.getElementById("toggleHiddenSlaves");
         if (!toggleHiddenSlaves) return;
 
-        const openEye = "👁️";
-        const closedEye = "👁️‍🗨️";
-
-        const updateButtonText = () => {
-          const toggleableContainers = document.querySelectorAll(
-            ".barcode-container.toggleable",
-          );
-          const currentlyHidden = Array.from(toggleableContainers).some(
-            (el) =>
-              el.classList.contains("hiddenCode") ||
-              el.style.display === "none",
-          );
-
-          toggleHiddenSlaves.textContent = currentlyHidden
-            ? `${openEye} Ausgeblendete anzeigen`
-            : `${closedEye} Ausgeblendete verbergen`;
-        };
-
         if (!toggleHiddenSlaves.dataset.boundToggleHandler) {
           toggleHiddenSlaves.addEventListener("click", function () {
             const toggleableContainers = document.querySelectorAll(
@@ -5686,12 +5741,12 @@
               }
             });
 
-            updateButtonText();
+            updateToggleHiddenSlavesButtonState();
           });
           toggleHiddenSlaves.dataset.boundToggleHandler = "1";
         }
 
-        updateButtonText();
+        updateToggleHiddenSlavesButtonState();
       }
 
       function applyStoredSelectedGroupFilter() {
@@ -6357,6 +6412,99 @@
         "#consentPopupOverlay .popup-content",
       );
       window.isViewportLockedOverlayOpen = isViewportLockedOverlayOpen;
+
+      let moveModeEnabled = false;
+
+      function setMenuButtonState(button, state) {
+        if (!button) return;
+        button.classList.remove(
+          "menu-state-info",
+          "menu-state-on",
+          "menu-state-off",
+          "menu-state-warning",
+          "menu-state-danger",
+        );
+        if (state) {
+          button.classList.add(state);
+        }
+      }
+
+      function updateMoveModeButtonText() {
+        const btn = document.getElementById("moveModeButton");
+        if (!btn) return;
+        btn.textContent = moveModeEnabled
+          ? "↕ Verschiebemodus: EIN"
+          : "↕ Verschiebemodus: AUS";
+        setMenuButtonState(
+          btn,
+          moveModeEnabled ? "menu-state-on" : "menu-state-off",
+        );
+      }
+
+      function refreshMoveButtonsState() {
+        document.querySelectorAll(".move-button").forEach((btn) => {
+          btn.classList.toggle("move-locked", !moveModeEnabled);
+          btn.setAttribute("aria-disabled", moveModeEnabled ? "false" : "true");
+          btn.title = moveModeEnabled
+            ? btn.classList.contains("move-up-button")
+              ? "Nach oben"
+              : "Nach unten"
+            : "Verschiebemodus im Hamburger-Menü freigeben";
+        });
+      }
+
+      function toggleMoveMode() {
+        moveModeEnabled = !moveModeEnabled;
+        updateMoveModeButtonText();
+        refreshMoveButtonsState();
+        showToast(
+          moveModeEnabled
+            ? "Verschiebemodus aktiviert."
+            : "Verschiebemodus deaktiviert.",
+          moveModeEnabled ? "success" : "warning",
+        );
+      }
+
+      function updateMainBarcodeButtonText() {
+        const btn = document.getElementById("toggleMainBarcodeButton");
+        const mainBarcodeContainer = document.getElementById(
+          "expirationContainer",
+        );
+        if (!btn || !mainBarcodeContainer) return;
+
+        const isHidden = mainBarcodeContainer.style.display === "none";
+        btn.textContent = isHidden
+          ? "📌 Hauptbarcode: AUSGEBLENDET"
+          : "📌 Hauptbarcode: SICHTBAR";
+
+        setMenuButtonState(
+          btn,
+          isHidden ? "menu-state-warning" : "menu-state-on",
+        );
+      }
+
+      function updateToggleHiddenSlavesButtonState() {
+        const btn = document.getElementById("toggleHiddenSlaves");
+        if (!btn) return;
+
+        const toggleableContainers = document.querySelectorAll(
+          ".barcode-container.toggleable",
+        );
+        const currentlyHidden = Array.from(toggleableContainers).some(
+          (el) =>
+            el.classList.contains("hiddenCode") ||
+            el.style.display === "none",
+        );
+
+        btn.textContent = currentlyHidden
+          ? "👁️ Ausgeblendete: VERBORGEN"
+          : "👁️ Ausgeblendete: SICHTBAR";
+
+        setMenuButtonState(
+          btn,
+          currentlyHidden ? "menu-state-off" : "menu-state-warning",
+        );
+      }
 
       function openMenuOverlayMain() {
         updateBundledIndexHtmlExportVisibility();
@@ -8178,6 +8326,13 @@ In den App-Namensraum importieren?`)
           "↑",
           "Nach oben",
           () => {
+            if (!moveModeEnabled) {
+              showToast(
+                "Verschiebemodus erst im Hamburger-Menü freigeben.",
+                "warning",
+              );
+              return;
+            }
             const grp = document.getElementById("groupFilter").value;
             if (!grp) return showToast("Nur in Gruppenansicht.");
             const prev = barcodeContainer.previousElementSibling;
@@ -8197,6 +8352,13 @@ In den App-Namensraum importieren?`)
           "↓",
           "Nach unten",
           () => {
+            if (!moveModeEnabled) {
+              showToast(
+                "Verschiebemodus erst im Hamburger-Menü freigeben.",
+                "warning",
+              );
+              return;
+            }
             const grp = document.getElementById("groupFilter").value;
             if (!grp) return showToast("Nur in Gruppenansicht.");
             const next = barcodeContainer.nextElementSibling;
@@ -8292,6 +8454,9 @@ In den App-Namensraum importieren?`)
             setBtn,
           );
         }
+
+        upBtn.classList.toggle("move-locked", !moveModeEnabled);
+        dnBtn.classList.toggle("move-locked", !moveModeEnabled);
 
         if (passwordDays !== null && passwordDays <= 0) {
           barcodeSvg.style.opacity = "0";
@@ -9434,12 +9599,14 @@ In den App-Namensraum importieren?`)
       function updatePinGroupSectionButtonText() {
         const btn = document.getElementById("pinGroupSectionButton");
         const pin = appStorage.getItem("pinGroupSection");
-        if (btn) {
-          if (pin === "true") {
-            btn.textContent = "📌 Gruppenbereich fixieren: EIN";
-          } else {
-            btn.textContent = "📌 Gruppenbereich fixieren: AUS";
-          }
+        if (!btn) return;
+
+        if (pin === "true") {
+          btn.textContent = "📌 Gruppenbereich fixieren: EIN";
+          setMenuButtonState(btn, "menu-state-on");
+        } else {
+          btn.textContent = "📌 Gruppenbereich fixieren: AUS";
+          setMenuButtonState(btn, "menu-state-off");
         }
       }
 
@@ -11906,24 +12073,13 @@ In den App-Namensraum importieren?`)
         const toggleHiddenSlaves =
           document.getElementById("toggleHiddenSlaves");
         if (toggleHiddenSlaves) {
-          // Initialen Zustand prüfen und Button-Text entsprechend setzen
-          let toggleableContainers = document.querySelectorAll(
-            ".barcode-container.toggleable",
-          );
-          let initiallyHidden = Array.from(toggleableContainers).some((el) =>
-            el.classList.contains("hiddenCode"),
-          );
+          if (toggleHiddenSlaves.dataset.boundToggleHandler) {
+            updateToggleHiddenSlavesButtonState();
+            return;
+          }
 
-          // Zwei verschiedene Augensymbole für die Zustände: offen (👁️) und geschlossen (👁️‍🗨️)
-          const openEye = "👁️"; // Offenes Auge
-          const closedEye = "👁️‍🗨️"; // Geschlossenes Auge mit sprechendem Symbol
+          updateToggleHiddenSlavesButtonState();
 
-          // Text mit dem entsprechenden Augensymbol setzen
-          toggleHiddenSlaves.textContent = initiallyHidden
-            ? `${openEye} Ausgeblendete anzeigen`
-            : `${closedEye} Ausgeblendete verbergen`;
-
-          // Event-Handler für das Umschalten
           toggleHiddenSlaves.addEventListener("click", function () {
             // Nur die Container, die ursprünglich togglebar sind, ansprechen:
             let toggleableContainers = document.querySelectorAll(
@@ -11949,13 +12105,9 @@ In den App-Namensraum importieren?`)
               }
             });
 
-            // Buttontext mit dem entsprechenden Augensymbol aktualisieren
-            // Nach dem Klick: Wenn die Elemente sichtbar gemacht wurden, zeige geschlossenes Auge (zum Ausblenden)
-            //               Wenn die Elemente versteckt wurden, zeige offenes Auge (zum Anzeigen)
-            this.textContent = currentlyHidden
-              ? `${closedEye} Ausgeblendete verbergen`
-              : `${openEye} Ausgeblendete anzeigen`;
+            updateToggleHiddenSlavesButtonState();
           });
+          toggleHiddenSlaves.dataset.boundToggleHandler = "1";
         }
       });
     </script>
@@ -11963,6 +12115,7 @@ In den App-Namensraum importieren?`)
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         applyStoredMainBarcodeVisibility();
+        updateMainBarcodeButtonText();
         return;
 
         var mainBarcodeContainer = document.getElementById(
@@ -11986,8 +12139,25 @@ In den App-Namensraum importieren?`)
           var isHidden = mainBarcodeContainer.style.display === "none";
           mainBarcodeContainer.style.display = isHidden ? "block" : "none";
           appStorage.setItem("mainBarcodeHidden", !isHidden);
+          updateMainBarcodeButtonText();
         }
       }
+    </script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        updatePinGroupSectionButtonText();
+        updateMainBarcodeButtonText();
+        updateMoveModeButtonText();
+        updateToggleHiddenSlavesButtonState();
+        refreshMoveButtonsState();
+
+        const exportBtn = document.getElementById("exportBundledIndexHtmlButton");
+        if (exportBtn) setMenuButtonState(exportBtn, "menu-state-info");
+
+        const renameBtn = document.getElementById("renameGroupButton");
+        if (renameBtn) setMenuButtonState(renameBtn, "menu-state-info");
+      });
     </script>
 
     <!-- (Optional) Entferne den alten Block zur Ausblendung von Slave-Codes -->
