@@ -1,7 +1,7 @@
 <!-- Version: 17 -->
 <!-- BarcodeScannerAudi - Ver. 11 -->
 <!doctype html>
-<html lang="de" data-app-version="38">
+<html lang="de" data-app-version="40">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -3598,68 +3598,179 @@
       }
 
       .menu-button {
+        --menu-button-bg: #0d6efd;
+        --menu-button-hover-bg: #0b5ed7;
+        --menu-button-border: rgba(255, 255, 255, 0.16);
+        --menu-button-shadow: rgba(13, 110, 253, 0.24);
+        --menu-button-shadow-hover: rgba(13, 110, 253, 0.32);
         display: block;
         width: 100%;
         padding: 10px 12px;
         margin: 6px 0;
-        background: #0d6efd;
+        background: var(--menu-button-bg);
         color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        border: 1px solid var(--menu-button-border);
         border-radius: 10px;
         cursor: pointer;
         font-weight: 600;
         letter-spacing: 0.01em;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+        box-shadow:
+          0 2px 8px rgba(0, 0, 0, 0.14),
+          0 10px 18px -14px var(--menu-button-shadow);
         transition:
-          background-color 0.2s ease,
+          background 0.2s ease,
           transform 0.15s ease,
           box-shadow 0.2s ease,
           opacity 0.2s ease;
       }
 
       .menu-button:hover {
+        background: var(--menu-button-hover-bg);
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+        box-shadow:
+          0 4px 12px rgba(0, 0, 0, 0.18),
+          0 14px 24px -16px var(--menu-button-shadow-hover);
+      }
+
+      .menu-button.menu-theme-style-barcode {
+        --menu-button-bg: #2c7be5;
+        --menu-button-hover-bg: #1f68c9;
+        --menu-button-shadow: rgba(44, 123, 229, 0.34);
+        --menu-button-shadow-hover: rgba(44, 123, 229, 0.42);
+      }
+
+      .menu-button.menu-theme-style-layout {
+        --menu-button-bg: #4f6bed;
+        --menu-button-hover-bg: #3f59cf;
+        --menu-button-shadow: rgba(79, 107, 237, 0.34);
+        --menu-button-shadow-hover: rgba(79, 107, 237, 0.42);
+      }
+
+      .menu-button.menu-theme-rename {
+        --menu-button-bg: #0f9d8a;
+        --menu-button-hover-bg: #0b8474;
+        --menu-button-shadow: rgba(15, 157, 138, 0.34);
+        --menu-button-shadow-hover: rgba(15, 157, 138, 0.42);
+      }
+
+      .menu-button.menu-theme-storage {
+        --menu-button-bg: #5d6b7f;
+        --menu-button-hover-bg: #4d5a6c;
+        --menu-button-shadow: rgba(93, 107, 127, 0.34);
+        --menu-button-shadow-hover: rgba(93, 107, 127, 0.42);
+      }
+
+      .menu-button.menu-theme-export {
+        --menu-button-bg: #008da6;
+        --menu-button-hover-bg: #00748a;
+        --menu-button-shadow: rgba(0, 141, 166, 0.34);
+        --menu-button-shadow-hover: rgba(0, 141, 166, 0.42);
+      }
+
+      .menu-button.menu-theme-close {
+        --menu-button-bg: #d9485f;
+        --menu-button-hover-bg: #bf3650;
+        --menu-button-shadow: rgba(217, 72, 95, 0.34);
+        --menu-button-shadow-hover: rgba(217, 72, 95, 0.42);
       }
 
       .menu-button.menu-state-info {
-        background: #0d6efd;
+        --menu-button-bg: #0d6efd;
+        --menu-button-hover-bg: #0b5ed7;
+        --menu-button-shadow: rgba(13, 110, 253, 0.34);
+        --menu-button-shadow-hover: rgba(13, 110, 253, 0.42);
       }
 
       .menu-button.menu-state-on {
-        background: #198754;
+        --menu-button-bg: #198754;
+        --menu-button-hover-bg: #157347;
+        --menu-button-shadow: rgba(25, 135, 84, 0.34);
+        --menu-button-shadow-hover: rgba(25, 135, 84, 0.42);
       }
 
       .menu-button.menu-state-off {
-        background: #6c757d;
+        --menu-button-bg: #6c757d;
+        --menu-button-hover-bg: #5c636a;
+        --menu-button-shadow: rgba(108, 117, 125, 0.34);
+        --menu-button-shadow-hover: rgba(108, 117, 125, 0.42);
       }
 
       .menu-button.menu-state-warning {
-        background: #fd7e14;
+        --menu-button-bg: #fd7e14;
+        --menu-button-hover-bg: #e96b09;
+        --menu-button-shadow: rgba(253, 126, 20, 0.34);
+        --menu-button-shadow-hover: rgba(253, 126, 20, 0.42);
       }
 
       .menu-button.menu-state-danger {
-        background: #dc3545;
+        --menu-button-bg: #dc3545;
+        --menu-button-hover-bg: #bb2d3b;
+        --menu-button-shadow: rgba(220, 53, 69, 0.34);
+        --menu-button-shadow-hover: rgba(220, 53, 69, 0.42);
       }
 
-      .menu-button.menu-state-info:hover {
-        background: #0b5ed7;
+      .menu-button.menu-theme-pin.menu-state-on {
+        --menu-button-bg: #1f9d68;
+        --menu-button-hover-bg: #198255;
+        --menu-button-shadow: rgba(31, 157, 104, 0.34);
+        --menu-button-shadow-hover: rgba(31, 157, 104, 0.42);
       }
 
-      .menu-button.menu-state-on:hover {
-        background: #157347;
+      .menu-button.menu-theme-pin.menu-state-off {
+        --menu-button-bg: #b47b2a;
+        --menu-button-hover-bg: #97661f;
+        --menu-button-shadow: rgba(180, 123, 42, 0.34);
+        --menu-button-shadow-hover: rgba(180, 123, 42, 0.42);
       }
 
-      .menu-button.menu-state-off:hover {
-        background: #5c636a;
+      .menu-button.menu-theme-mainbarcode.menu-state-on {
+        --menu-button-bg: #2f86d5;
+        --menu-button-hover-bg: #256eb3;
+        --menu-button-shadow: rgba(47, 134, 213, 0.34);
+        --menu-button-shadow-hover: rgba(47, 134, 213, 0.42);
       }
 
-      .menu-button.menu-state-warning:hover {
-        background: #e96b09;
+      .menu-button.menu-theme-mainbarcode.menu-state-warning {
+        --menu-button-bg: #ef7d32;
+        --menu-button-hover-bg: #d96a20;
+        --menu-button-shadow: rgba(239, 125, 50, 0.34);
+        --menu-button-shadow-hover: rgba(239, 125, 50, 0.42);
       }
 
+      .menu-button.menu-theme-move.menu-state-on {
+        --menu-button-bg: #7a58d1;
+        --menu-button-hover-bg: #6547b1;
+        --menu-button-shadow: rgba(122, 88, 209, 0.34);
+        --menu-button-shadow-hover: rgba(122, 88, 209, 0.42);
+      }
+
+      .menu-button.menu-theme-move.menu-state-off {
+        --menu-button-bg: #6c7686;
+        --menu-button-hover-bg: #58616f;
+        --menu-button-shadow: rgba(108, 118, 134, 0.34);
+        --menu-button-shadow-hover: rgba(108, 118, 134, 0.42);
+      }
+
+      .menu-button.menu-theme-hidden.menu-state-off {
+        --menu-button-bg: #6b7280;
+        --menu-button-hover-bg: #555c68;
+        --menu-button-shadow: rgba(107, 114, 128, 0.34);
+        --menu-button-shadow-hover: rgba(107, 114, 128, 0.42);
+      }
+
+      .menu-button.menu-theme-hidden.menu-state-warning {
+        --menu-button-bg: #b067c8;
+        --menu-button-hover-bg: #9554ac;
+        --menu-button-shadow: rgba(176, 103, 200, 0.34);
+        --menu-button-shadow-hover: rgba(176, 103, 200, 0.42);
+      }
+
+      .menu-button.menu-state-info:hover,
+      .menu-button.menu-state-on:hover,
+      .menu-button.menu-state-off:hover,
+      .menu-button.menu-state-warning:hover,
       .menu-button.menu-state-danger:hover {
-        background: #bb2d3b;
+        background: var(--menu-button-hover-bg);
       }
 
       .pair-dot {
@@ -5005,33 +5116,39 @@
           id="consentStatus"
           style="font-size: 0.5em; color: #c1dcf8; margin-top: 10px"
         ></div>
-        <button class="menu-button" onclick="openActualSettings()">
-          🎨 Style ändern
+        <button
+          class="menu-button menu-theme-style-barcode"
+          onclick="openActualSettings()"
+        >
+          🎨 Stil Hauptbarcode
         </button>
-        <button class="menu-button" onclick="openSettingsForMainContainer()">
-          🎨 Style (Haupt)
+        <button
+          class="menu-button menu-theme-style-layout"
+          onclick="openSettingsForMainContainer()"
+        >
+          🖼️ Stil Hauptbereich
         </button>
         <!-- Neuer PIN‑Button für den Gruppenbereich -->
         <button
-          class="menu-button"
+          class="menu-button menu-theme-pin"
           id="pinGroupSectionButton"
           onclick="togglePinGroupSection()"
         >
-          📌 Gruppenbereich fixieren: AUS
+          📌 Gruppenbereich fixiert: deaktiviert
         </button>
         <button
-          class="menu-button"
+          class="menu-button menu-theme-mainbarcode"
           id="toggleMainBarcodeButton"
           onclick="toggleMainBarcode()"
         >
-          📌 Hauptbarcode: SICHTBAR
+          🏷️ Hauptbarcode: sichtbar
         </button>
         <button
-          class="menu-button"
+          class="menu-button menu-theme-move"
           id="moveModeButton"
           onclick="toggleMoveMode()"
         >
-          ↕ Verschiebemodus: AUS
+          ↕ Verschiebemodus: deaktiviert
         </button>
         <select
           id="groupFilter"
@@ -5039,24 +5156,30 @@
         >
           <option value="">Alle Gruppen anzeigen</option>
         </select>
-        <button id="toggleHiddenSlaves" class="menu-button">
-          👁️ Ausgeblendete anzeigen
+        <button id="toggleHiddenSlaves" class="menu-button menu-theme-hidden">
+          👁️ Ausgeblendete Barcodes: verborgen
         </button>
-        <button class="menu-button" id="renameGroupButton">
-          🔄 Gruppe umbenennen
+        <button class="menu-button menu-theme-rename" id="renameGroupButton">
+          ✏️ Gruppe umbenennen
         </button>
-        <button class="menu-button" onclick="openLocalStorageDeletionPopup()">
-          💾 Lokale Daten / Settings
+        <button
+          class="menu-button menu-theme-storage"
+          onclick="openLocalStorageDeletionPopup()"
+        >
+          🗂️ Lokale Daten & Settings
         </button>
         <button
           id="exportBundledIndexHtmlButton"
-          class="menu-button"
+          class="menu-button menu-theme-export"
           onclick="exportBundledIndexHtml()"
         >
-          Index HTML exportieren
+          📤 Index-HTML exportieren
         </button>
 
-        <button class="menu-button" onclick="closeMenuOverlayMain()">
+        <button
+          class="menu-button menu-theme-close"
+          onclick="closeMenuOverlayMain()"
+        >
           ❌ Menü schließen
         </button>
       </div>
@@ -5065,10 +5188,16 @@
     <div id="menuOverlayDynamic" class="popup-container hidden">
       <div id="menuOverlayDynamicContent">
         <h3>Einstellungen</h3>
-        <button class="menu-button" onclick="openActualSettingsDynamic()">
-          🎨 Style ändern
+        <button
+          class="menu-button menu-theme-style-barcode"
+          onclick="openActualSettingsDynamic()"
+        >
+          🎨 Stil dieses Barcodes
         </button>
-        <button class="menu-button" onclick="closeMenuOverlayDynamic()">
+        <button
+          class="menu-button menu-theme-close"
+          onclick="closeMenuOverlayDynamic()"
+        >
           Schließen
         </button>
       </div>
@@ -6433,8 +6562,8 @@
         const btn = document.getElementById("moveModeButton");
         if (!btn) return;
         btn.textContent = moveModeEnabled
-          ? "↕ Verschiebemodus: EIN"
-          : "↕ Verschiebemodus: AUS";
+          ? "↕ Verschiebemodus: aktiv"
+          : "↕ Verschiebemodus: deaktiviert";
         setMenuButtonState(
           btn,
           moveModeEnabled ? "menu-state-on" : "menu-state-off",
@@ -6474,8 +6603,8 @@
 
         const isHidden = mainBarcodeContainer.style.display === "none";
         btn.textContent = isHidden
-          ? "📌 Hauptbarcode: AUSGEBLENDET"
-          : "📌 Hauptbarcode: SICHTBAR";
+          ? "🏷️ Hauptbarcode: ausgeblendet"
+          : "🏷️ Hauptbarcode: sichtbar";
 
         setMenuButtonState(
           btn,
@@ -6497,8 +6626,8 @@
         );
 
         btn.textContent = currentlyHidden
-          ? "👁️ Ausgeblendete: VERBORGEN"
-          : "👁️ Ausgeblendete: SICHTBAR";
+          ? "👁️ Ausgeblendete Barcodes: verborgen"
+          : "👁️ Ausgeblendete Barcodes: eingeblendet";
 
         setMenuButtonState(
           btn,
@@ -9602,10 +9731,10 @@ In den App-Namensraum importieren?`)
         if (!btn) return;
 
         if (pin === "true") {
-          btn.textContent = "📌 Gruppenbereich fixieren: EIN";
+          btn.textContent = "📌 Gruppenbereich fixiert: aktiv";
           setMenuButtonState(btn, "menu-state-on");
         } else {
-          btn.textContent = "📌 Gruppenbereich fixieren: AUS";
+          btn.textContent = "📌 Gruppenbereich fixiert: deaktiviert";
           setMenuButtonState(btn, "menu-state-off");
         }
       }
@@ -12151,12 +12280,6 @@ In den App-Namensraum importieren?`)
         updateMoveModeButtonText();
         updateToggleHiddenSlavesButtonState();
         refreshMoveButtonsState();
-
-        const exportBtn = document.getElementById("exportBundledIndexHtmlButton");
-        if (exportBtn) setMenuButtonState(exportBtn, "menu-state-info");
-
-        const renameBtn = document.getElementById("renameGroupButton");
-        if (renameBtn) setMenuButtonState(renameBtn, "menu-state-info");
       });
     </script>
 
