@@ -4424,26 +4424,29 @@
   <body>
     <div id="startupFullscreenHint" aria-hidden="true">
       <div class="startup-fullscreen-card">
-        <h3>Vollbild-Start aktivieren</h3>
+        <h3>Als Home-Bildschirm-App öffnen</h3>
         <p id="startupFullscreenHintText">
-          Für eine Ansicht ohne sichtbare Browserleiste diese Seite am besten
-          vom Startbildschirm öffnen. Nach einmaligem Aktivieren merkt sich die
-          Seite deinen Wunsch und fragt nicht jedes Mal erneut.
+          Auf dem iPhone diese Seite am besten direkt in Safari öffnen und über
+          „Teilen“ zu „Zum Home-Bildschirm“ hinzufügen. Auf Android die Seite
+          direkt in Chrome oder dem Standardbrowser öffnen und dann „Zum
+          Startbildschirm“ oder „App installieren“ verwenden.
         </p>
         <div class="startup-fullscreen-actions">
           <button id="startupFullscreenButton" type="button">
-            Einmal aktivieren
+            Browser-Vollbild
           </button>
           <button id="installAppButton" type="button">
-            Zum Startbildschirm
+            Zum Home-Bildschirm
           </button>
           <button id="startupFullscreenLaterButton" type="button">
             Schließen
           </button>
         </div>
         <div id="startupFullscreenHintSmall">
-          Hinweis: Telegram-/In-App-Viewer blockieren das oft. Am
-          zuverlässigsten ist Starten direkt vom Handy-Startbildschirm.
+          Hinweis: In-App-Browser aus Telegram, Mail oder Messengern blockieren
+          Installation und Vollbild oft. Am zuverlässigsten funktioniert die
+          Seite direkt im normalen Browser, also auf iPhone in Safari und auf
+          Android in Chrome oder dem Standardbrowser.
         </div>
       </div>
     </div>
@@ -12969,12 +12972,12 @@ In den App-Namensraum importieren?`)
           hintHeading.textContent = "Als Home-Bildschirm-App öffnen";
         }
         hintText.innerHTML =
-          "Für iPhone und Safari diese Seite am besten direkt in Safari öffnen, dann auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen. Vom Home-Bildschirm gestartet läuft die GitHub-Pages-Version am stabilsten.";
+          "Auf dem iPhone diese Seite am besten direkt in Safari öffnen und über „Teilen“ zu „Zum Home-Bildschirm“ hinzufügen. Auf Android die Seite direkt in Chrome oder dem Standardbrowser öffnen und dann „Zum Startbildschirm“ oder „App installieren“ verwenden.";
         fullscreenButton.textContent = "Browser-Vollbild";
         installButton.textContent = "Zum Home-Bildschirm";
         if (hintSmall) {
           hintSmall.textContent =
-            "Hinweis: In-App-Browser aus Telegram, Mail oder Messengern blockieren Installation und Vollbild oft. Am zuverlässigsten funktioniert die Seite direkt in Safari.";
+            "Hinweis: In-App-Browser aus Telegram, Mail oder Messengern blockieren Installation und Vollbild oft. Am zuverlässigsten funktioniert die Seite direkt im normalen Browser, also auf iPhone in Safari und auf Android in Chrome oder dem Standardbrowser.";
         }
 
         migrateLegacyState();
@@ -13089,7 +13092,7 @@ In den App-Namensraum importieren?`)
             return;
           }
           hintText.textContent =
-            "Diese Seite direkt in Safari öffnen, dann auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen. Danach die App vom Home-Bildschirm starten.";
+            "Auf dem iPhone diese Seite direkt in Safari öffnen und „Zum Home-Bildschirm“ wählen. Auf Android die Seite direkt in Chrome oder dem Standardbrowser öffnen und „Zum Startbildschirm“ oder „App installieren“ verwenden.";
         });
 
         closeButton.addEventListener("click", function () {
