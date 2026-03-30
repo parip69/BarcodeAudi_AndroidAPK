@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-app-version="45">
+<html lang="de" data-app-version="46">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2400,45 +2400,10 @@
         let deferredInstallPrompt = null;
         window.isBarcodeStandaloneMode = function () {
           return (
-            window.matchMedia("(display-mode: fullscreen)").matches ||
             window.matchMedia("(display-mode: standalone)").matches ||
             window.matchMedia("(display-mode: minimal-ui)").matches ||
             window.navigator.standalone === true
           );
-        };
-        window.isBarcodeDocumentFullscreen = function () {
-          return Boolean(
-            document.fullscreenElement ||
-              document.webkitFullscreenElement ||
-              document.msFullscreenElement,
-          );
-        };
-        window.requestBarcodeDocumentFullscreen = async function () {
-          if (window.isBarcodeDocumentFullscreen()) return true;
-
-          const root = document.documentElement;
-          const requestNativeFullscreen =
-            root.requestFullscreen ||
-            root.webkitRequestFullscreen ||
-            root.msRequestFullscreen;
-          if (!requestNativeFullscreen) return false;
-
-          try {
-            const maybePromise =
-              requestNativeFullscreen === root.requestFullscreen
-                ? requestNativeFullscreen.call(root, { navigationUI: "hide" })
-                : requestNativeFullscreen.call(root);
-            if (maybePromise && typeof maybePromise.then === "function") {
-              await maybePromise;
-            }
-            return true;
-          } catch (error) {
-            console.warn(
-              "Browser-Vollbild konnte nicht gestartet werden:",
-              error,
-            );
-            return false;
-          }
         };
         window.addEventListener("beforeinstallprompt", function (event) {
           event.preventDefault();
@@ -2464,13 +2429,71 @@
             window.location.protocol === "https:" ||
             window.location.hostname === "localhost" ||
             window.location.hostname === "127.0.0.1";
+          let didRefreshForServiceWorker = false;
+
+          const requestLatestServiceWorker = function (registration) {
+            if (!registration || typeof registration.update !== "function") {
+              return Promise.resolve();
+            }
+            return registration.update().catch((error) =>
+              console.warn(
+                "Service Worker konnte nicht aktualisiert werden:",
+                error,
+              ),
+            );
+          };
 
           if (isHttpLikeContext) {
+            navigator.serviceWorker.addEventListener(
+              "controllerchange",
+              function () {
+                if (didRefreshForServiceWorker) return;
+                didRefreshForServiceWorker = true;
+                window.location.reload();
+              },
+              { once: true },
+            );
+
             window.addEventListener(
               "load",
               function () {
                 navigator.serviceWorker
                   .register("./sw.js")
+                  .then(function (registration) {
+                    const promoteWaitingWorker = function (worker) {
+                      if (!worker || typeof worker.postMessage !== "function") {
+                        return;
+                      }
+                      worker.postMessage({ type: "SKIP_WAITING" });
+                    };
+
+                    if (registration.waiting) {
+                      promoteWaitingWorker(registration.waiting);
+                    }
+
+                    registration.addEventListener("updatefound", function () {
+                      const nextWorker = registration.installing;
+                      if (!nextWorker) return;
+                      nextWorker.addEventListener("statechange", function () {
+                        if (
+                          nextWorker.state === "installed" &&
+                          navigator.serviceWorker.controller
+                        ) {
+                          promoteWaitingWorker(nextWorker);
+                        }
+                      });
+                    });
+
+                    requestLatestServiceWorker(registration);
+                    window.addEventListener("focus", function () {
+                      requestLatestServiceWorker(registration);
+                    });
+                    document.addEventListener("visibilitychange", function () {
+                      if (!document.hidden) {
+                        requestLatestServiceWorker(registration);
+                      }
+                    });
+                  })
                   .catch((error) =>
                     console.warn(
                       "Service Worker konnte nicht registriert werden:",
@@ -2550,12 +2573,12 @@
       }
 
       .container {
-        width: min(calc(100% - 10px), 1120px);
+        width: min(calc(100% - 18px), 1108px);
         margin: 0 auto;
         background: #fff;
         border: 1px solid #d5e7fb;
         border-radius: 10px;
-        padding: 10px;
+        padding: 8px;
         box-shadow:
           0 2px 4px rgba(0, 0, 0, 0.1),
           0 0 20px rgba(91, 189, 255, 0.5);
@@ -2581,8 +2604,8 @@
       }
 
       #expirationContainer {
-        width: calc(100% - 4px);
-        max-width: calc(100% - 4px);
+        width: calc(100% - 12px);
+        max-width: calc(100% - 12px);
         border: 1.5px solid #d5e7fb;
         border-radius: 5px;
         background: #f9f9f9;
@@ -2620,8 +2643,8 @@
         display: block;
         justify-content: center;
         align-items: center;
-        width: calc(100% - 4px);
-        max-width: calc(100% - 4px);
+        width: calc(100% - 12px);
+        max-width: calc(100% - 12px);
         height: auto;
         position: relative;
         margin: 10px auto;
@@ -2819,8 +2842,8 @@
 
       @media (max-width: 600px) {
         .barcode-container {
-          width: calc(100% - 4px);
-          max-width: calc(100% - 4px);
+          width: calc(100% - 12px);
+          max-width: calc(100% - 12px);
         }
 
         .dynamic-input {
@@ -4470,12 +4493,6 @@
         cursor: pointer;
       }
 
-      #startupFullscreenButton {
-        background: #38bdf8;
-        color: #062033;
-        font-weight: 700;
-      }
-
       #installAppButton {
         background: #22c55e;
         color: #ffffff;
@@ -4498,18 +4515,15 @@
   <body>
     <div id="startupFullscreenHint" aria-hidden="true">
       <div class="startup-fullscreen-card">
-        <h3>Vollbild-Start aktivieren</h3>
+        <h3>Als Web-App starten</h3>
         <p id="startupFullscreenHintText">
           Für eine Ansicht ohne sichtbare Browserleiste diese Seite am besten
           vom Startbildschirm öffnen. Nach einmaligem Aktivieren merkt sich die
           Seite deinen Wunsch und fragt nicht jedes Mal erneut.
         </p>
         <div class="startup-fullscreen-actions">
-          <button id="startupFullscreenButton" type="button">
-            Einmal aktivieren
-          </button>
           <button id="installAppButton" type="button">
-            Zum Startbildschirm
+            App installieren
           </button>
           <button id="startupFullscreenLaterButton" type="button">
             Schließen
@@ -9225,7 +9239,6 @@ In den App-Namensraum importieren?`)
         // ——— 3) Öffne Overlay und zeichne Master ———
         const overlay = document.getElementById("fullscreenOverlay");
         if (!isViewportLockedOverlayVisible(overlay)) {
-          void window.requestBarcodeDocumentFullscreen?.();
           history.pushState({ fullscreen: true }, "", "");
           fullscreenHistoryPushed = true;
         }
@@ -9465,7 +9478,6 @@ In den App-Namensraum importieren?`)
 
         // Vollbild-Overlay anzeigen
         const overlay = document.getElementById("fullscreenOverlay");
-        void window.requestBarcodeDocumentFullscreen?.();
         openViewportLockedOverlay(overlay, "fullscreenContent");
         setNativeBarcodeFullscreenRotation(true);
 
@@ -12936,8 +12948,7 @@ In den App-Namensraum importieren?`)
 
       (function () {
         const APP_STATE_KEY = "BarcodeScannerAudiAppState";
-        const APP_STATE_HINT_FIELD = "fullscreenHintDismissed";
-        const APP_STATE_FULLSCREEN_FIELD = "preferredFullscreen";
+        const APP_STATE_HINT_FIELD = "installHintDismissed";
         const LEGACY_HINT_KEYS = [
           "barcodeStandaloneHintDismissed_v62",
           "barcodeStandaloneHintDismissed_v63",
@@ -12945,19 +12956,10 @@ In den App-Namensraum importieren?`)
           "barcodeStandaloneHintDismissed_v65",
           "barcodeStandaloneHintDismissed_v66",
         ];
-        const LEGACY_FULLSCREEN_PREF_KEYS = [
-          "barcodePreferredFullscreen_v62",
-          "barcodePreferredFullscreen_v63",
-          "barcodePreferredFullscreen_v64",
-          "barcodePreferredFullscreen_v65",
-          "barcodePreferredFullscreen_v66",
-        ];
         let lastKnownScrollY = 0;
         const hintOverlay = document.getElementById("startupFullscreenHint");
         const hintText = document.getElementById("startupFullscreenHintText");
-        const fullscreenButton = document.getElementById(
-          "startupFullscreenButton",
-        );
+        const hintSmall = document.getElementById("startupFullscreenHintSmall");
         const installButton = document.getElementById("installAppButton");
         const closeButton = document.getElementById(
           "startupFullscreenLaterButton",
@@ -13020,28 +13022,22 @@ In den App-Namensraum importieren?`)
             }
           }
 
-          if (typeof state[APP_STATE_FULLSCREEN_FIELD] === "undefined") {
-            for (const legacyKey of LEGACY_FULLSCREEN_PREF_KEYS) {
-              const legacyValue = storage.getItem(legacyKey);
-              if (legacyValue !== null) {
-                state[APP_STATE_FULLSCREEN_FIELD] = legacyValue;
-                changed = true;
-                break;
-              }
-            }
-          }
-
           if (changed) writeAppState(state);
 
           if (typeof storage.removeItem === "function") {
-            [...LEGACY_HINT_KEYS, ...LEGACY_FULLSCREEN_PREF_KEYS].forEach(
-              (key) => storage.removeItem(key),
-            );
+            LEGACY_HINT_KEYS.forEach((key) => storage.removeItem(key));
           }
         }
 
-        if (!hintOverlay || !fullscreenButton || !installButton || !closeButton)
-          return;
+        if (!hintOverlay || !hintText || !installButton || !closeButton) return;
+
+        hintText.textContent =
+          "Fuer die beste Darstellung diese Seite vom Startbildschirm oeffnen. Die installierte Web-App startet ohne Browser-Tab und verhaelt sich damit naeher an der APK-Ansicht.";
+        if (hintSmall) {
+          hintSmall.textContent =
+            "Hinweis: In normalen Browser-Tabs bleiben Browserleisten technisch teilweise sichtbar. Am zuverlaessigsten ist Starten direkt vom Handy-Startbildschirm.";
+        }
+        closeButton.textContent = "Schliessen";
 
         migrateLegacyState();
 
@@ -13079,57 +13075,16 @@ In den App-Namensraum importieren?`)
           );
         }
 
-        function nudgeBrowserChromeAway() {
-          const currentY = window.scrollY || window.pageYOffset || 0;
-          if (currentY > 24) return;
-          window.scrollTo(0, 1);
-          setTimeout(() => window.scrollTo(0, 1), 120);
-          setTimeout(() => window.scrollTo(0, 1), 420);
-        }
-
-        function enableRememberedFullscreenOnNextTap() {
-          if (getAppStateValue(APP_STATE_FULLSCREEN_FIELD) !== "1") return;
-
-          const onceHandler = async function () {
-            document.removeEventListener("pointerdown", onceHandler, true);
-            document.removeEventListener("touchstart", onceHandler, true);
-            await requestDocumentFullscreen();
-          };
-
-          document.addEventListener("pointerdown", onceHandler, true);
-          document.addEventListener("touchstart", onceHandler, true);
-        }
-
-        async function requestDocumentFullscreen() {
-          const ok =
-            window.requestBarcodeDocumentFullscreen &&
-            typeof window.requestBarcodeDocumentFullscreen === "function"
-              ? await window.requestBarcodeDocumentFullscreen()
-              : false;
-          if (ok) nudgeBrowserChromeAway();
-          return ok;
-        }
-
-        fullscreenButton.addEventListener("click", async function () {
-          setAppStateValue(APP_STATE_FULLSCREEN_FIELD, "1");
-          const ok = await requestDocumentFullscreen();
-          hideHint(true);
-          if (!(ok || isStandalone())) {
-            console.warn(
-              "Dieser Viewer blockiert Browser-Vollbild. Bevorzugung wurde trotzdem gespeichert.",
-            );
-          }
-          enableRememberedFullscreenOnNextTap();
-        });
-
         installButton.addEventListener("click", async function () {
           updateInstallButton();
           if (
             window.hasBarcodeInstallPrompt &&
             window.hasBarcodeInstallPrompt()
           ) {
-            await window.promptBarcodeInstall();
-            if (isStandalone()) hideHint(true);
+            const choice = await window.promptBarcodeInstall();
+            if ((choice && choice.outcome === "accepted") || isStandalone()) {
+              hideHint(true);
+            }
             return;
           }
           hintText.textContent =
@@ -13141,14 +13096,10 @@ In den App-Namensraum importieren?`)
         });
 
         window.addEventListener("barcodeInstallAvailable", updateInstallButton);
-        window.addEventListener("orientationchange", nudgeBrowserChromeAway);
-        window.addEventListener("resize", nudgeBrowserChromeAway);
-        document.addEventListener("visibilitychange", function () {
-          if (!document.hidden) nudgeBrowserChromeAway();
+        window.addEventListener("appinstalled", function () {
+          hideHint(true);
         });
         window.addEventListener("load", function () {
-          nudgeBrowserChromeAway();
-          enableRememberedFullscreenOnNextTap();
           setTimeout(showHint, 280);
         });
       })();

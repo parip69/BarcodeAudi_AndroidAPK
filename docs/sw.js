@@ -1,55 +1,127 @@
-const CACHE_NAME = 'mathe-guru-v183';
+const APP_SHELL_CACHE = "barcode-audi-shell-v20260330-2";
+const RUNTIME_CACHE = "barcode-audi-runtime-v20260330-2";
 const PRECACHE_URLS = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/apple-touch-icon.png'
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/apple-touch-icon.png",
 ];
 
-self.addEventListener('install', event => {
+function isCacheableResponse(response) {
+  return Boolean(response && response.status === 200 && response.type !== "opaque");
+}
+
+function isAppShellRequest(request, url) {
+  const scopePath = new URL(self.registration.scope).pathname;
+  const scopeRoot =
+    scopePath.endsWith("/") && scopePath.length > 1
+      ? scopePath.slice(0, -1)
+      : scopePath;
+
+  return (
+    request.mode === "navigate" ||
+    url.pathname === scopePath ||
+    url.pathname === scopeRoot ||
+    url.pathname.endsWith("/index.html") ||
+    url.pathname.endsWith("/manifest.webmanifest") ||
+    url.pathname.endsWith("/sw.js")
+  );
+}
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS)).then(() => self.skipWaiting())
+    caches
+      .open(APP_SHELL_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting()),
   );
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-    )).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter(
+              (key) =>
+                (key.startsWith("barcode-audi-") || key.startsWith("mathe-guru-")) &&
+                key !== APP_SHELL_CACHE &&
+                key !== RUNTIME_CACHE,
+            )
+            .map((key) => caches.delete(key)),
+        ),
+      )
+      .then(() => self.clients.claim()),
   );
 });
 
-self.addEventListener('fetch', event => {
+async function networkFirst(request, cacheName, fallbackUrl) {
+  const cache = await caches.open(cacheName);
+
+  try {
+    const response = await fetch(request, { cache: "no-store" });
+    if (isCacheableResponse(response)) {
+      cache.put(request, response.clone()).catch(() => {});
+    }
+    return response;
+  } catch (error) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+
+    if (fallbackUrl) {
+      const fallback = await cache.match(fallbackUrl);
+      if (fallback) return fallback;
+    }
+
+    throw error;
+  }
+}
+
+async function cacheFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  const response = await fetch(request);
+  if (isCacheableResponse(response)) {
+    cache.put(request, response.clone()).catch(() => {});
+  }
+  return response;
+}
+
+self.addEventListener("fetch", (event) => {
   const request = event.request;
-  if (request.method !== 'GET') return;
+  if (request.method !== "GET") return;
 
   const url = new URL(request.url);
 
-  // Für Google Fonts & ähnliche CDNs: Netzwerk zuerst, dann Cache
   if (url.origin !== self.location.origin) {
     event.respondWith(
-      fetch(request).then(response => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
-        return response;
-      }).catch(() => caches.match(request))
+      networkFirst(request, RUNTIME_CACHE).catch(() => caches.match(request)),
     );
     return;
   }
 
-  // Für eigene Dateien: Cache zuerst
+  if (isAppShellRequest(request, url)) {
+    event.respondWith(
+      networkFirst(request, APP_SHELL_CACHE, "./index.html").catch(() =>
+        caches.match("./index.html"),
+      ),
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(request).then(cached => {
-      if (cached) return cached;
-      return fetch(request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') return response;
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
-        return response;
-      });
-    })
+    cacheFirst(request, RUNTIME_CACHE).catch(() => caches.match(request)),
   );
 });
