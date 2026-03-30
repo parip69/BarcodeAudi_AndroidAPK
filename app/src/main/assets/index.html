@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-app-version="46">
+<html lang="de" data-app-version="47">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2394,16 +2394,56 @@
     <meta name="application-name" content="Barcode Audi" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" sizes="192x192" />
-    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link
+      rel="apple-touch-icon"
+      href="./icons/apple-touch-icon.png"
+      sizes="180x180"
+    />
     <script>
       (function () {
         let deferredInstallPrompt = null;
         window.isBarcodeStandaloneMode = function () {
           return (
+            window.matchMedia("(display-mode: fullscreen)").matches ||
             window.matchMedia("(display-mode: standalone)").matches ||
             window.matchMedia("(display-mode: minimal-ui)").matches ||
             window.navigator.standalone === true
           );
+        };
+        window.isBarcodeDocumentFullscreen = function () {
+          return Boolean(
+            document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.msFullscreenElement,
+          );
+        };
+        window.requestBarcodeDocumentFullscreen = async function () {
+          if (window.isBarcodeStandaloneMode()) return true;
+          if (window.isBarcodeDocumentFullscreen()) return true;
+
+          const root = document.documentElement;
+          const requestNativeFullscreen =
+            root.requestFullscreen ||
+            root.webkitRequestFullscreen ||
+            root.msRequestFullscreen;
+          if (!requestNativeFullscreen) return false;
+
+          try {
+            const maybePromise =
+              requestNativeFullscreen === root.requestFullscreen
+                ? requestNativeFullscreen.call(root, { navigationUI: "hide" })
+                : requestNativeFullscreen.call(root);
+            if (maybePromise && typeof maybePromise.then === "function") {
+              await maybePromise;
+            }
+            return true;
+          } catch (error) {
+            console.warn(
+              "Browser-Vollbild konnte nicht gestartet werden:",
+              error,
+            );
+            return false;
+          }
         };
         window.addEventListener("beforeinstallprompt", function (event) {
           event.preventDefault();
@@ -9239,6 +9279,7 @@ In den App-Namensraum importieren?`)
         // ——— 3) Öffne Overlay und zeichne Master ———
         const overlay = document.getElementById("fullscreenOverlay");
         if (!isViewportLockedOverlayVisible(overlay)) {
+          void window.requestBarcodeDocumentFullscreen?.();
           history.pushState({ fullscreen: true }, "", "");
           fullscreenHistoryPushed = true;
         }
@@ -9478,6 +9519,7 @@ In den App-Namensraum importieren?`)
 
         // Vollbild-Overlay anzeigen
         const overlay = document.getElementById("fullscreenOverlay");
+        void window.requestBarcodeDocumentFullscreen?.();
         openViewportLockedOverlay(overlay, "fullscreenContent");
         setNativeBarcodeFullscreenRotation(true);
 
@@ -13075,6 +13117,14 @@ In den App-Namensraum importieren?`)
           );
         }
 
+        function nudgeBrowserChromeAway() {
+          const currentY = window.scrollY || window.pageYOffset || 0;
+          if (currentY > 24) return;
+          window.scrollTo(0, 1);
+          setTimeout(() => window.scrollTo(0, 1), 120);
+          setTimeout(() => window.scrollTo(0, 1), 420);
+        }
+
         installButton.addEventListener("click", async function () {
           updateInstallButton();
           if (
@@ -13099,7 +13149,13 @@ In den App-Namensraum importieren?`)
         window.addEventListener("appinstalled", function () {
           hideHint(true);
         });
+        window.addEventListener("orientationchange", nudgeBrowserChromeAway);
+        window.addEventListener("resize", nudgeBrowserChromeAway);
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) nudgeBrowserChromeAway();
+        });
         window.addEventListener("load", function () {
+          nudgeBrowserChromeAway();
           setTimeout(showHint, 280);
         });
       })();
