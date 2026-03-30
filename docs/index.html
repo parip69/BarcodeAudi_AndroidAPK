@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-app-version="40">
+<html lang="de" data-app-version="42">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2392,11 +2392,60 @@
     />
     <meta name="apple-mobile-web-app-title" content="Barcode Audi" />
     <meta name="application-name" content="Barcode Audi" />
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="icon" href="./icons/icon-192.png" sizes="192x192" />
-    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <script>
       (function () {
+        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="110" fill="#0f172a"/><rect x="54" y="54" width="404" height="404" rx="74" fill="#111827" stroke="#7dd3fc" stroke-width="16"/><g fill="#ffffff"><rect x="110" y="118" width="24" height="220" rx="8"/><rect x="154" y="118" width="12" height="220" rx="6"/><rect x="182" y="118" width="28" height="220" rx="8"/><rect x="228" y="118" width="14" height="220" rx="6"/><rect x="258" y="118" width="36" height="220" rx="8"/><rect x="312" y="118" width="14" height="220" rx="6"/><rect x="342" y="118" width="24" height="220" rx="8"/></g><text x="256" y="418" font-family="Arial, sans-serif" font-size="72" font-weight="700" text-anchor="middle" fill="#e5e7eb">BA</text></svg>`;
+        const iconDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(iconSvg)}`;
+        const startUrl = window.location.href.split("#")[0];
+        const scopeUrl = startUrl.replace(/[^/]*$/, "");
+        const manifest = {
+          name: "BarcodeScannerAudi",
+          short_name: "Barcode Audi",
+          description:
+            "BarcodeScannerAudi als Vollbild-Startbildschirm-App in einer einzigen HTML-Datei.",
+          display: "fullscreen",
+          display_override: [
+            "fullscreen",
+            "standalone",
+            "minimal-ui",
+            "browser",
+          ],
+          orientation: "any",
+          start_url: startUrl,
+          scope: scopeUrl,
+          background_color: "#0f172a",
+          theme_color: "#0f172a",
+          icons: [
+            {
+              src: iconDataUrl,
+              sizes: "192x192",
+              type: "image/svg+xml",
+              purpose: "any maskable",
+            },
+            {
+              src: iconDataUrl,
+              sizes: "512x512",
+              type: "image/svg+xml",
+              purpose: "any maskable",
+            },
+          ],
+        };
+
+        const manifestLink = document.createElement("link");
+        manifestLink.rel = "manifest";
+        manifestLink.href = `data:application/manifest+json;charset=utf-8,${encodeURIComponent(JSON.stringify(manifest))}`;
+        document.head.appendChild(manifestLink);
+
+        const iconLink = document.createElement("link");
+        iconLink.rel = "icon";
+        iconLink.href = iconDataUrl;
+        document.head.appendChild(iconLink);
+
+        const appleIconLink = document.createElement("link");
+        appleIconLink.rel = "apple-touch-icon";
+        appleIconLink.href = iconDataUrl;
+        document.head.appendChild(appleIconLink);
+
         let deferredInstallPrompt = null;
         window.isBarcodeStandaloneMode = function () {
           return (
@@ -2459,30 +2508,6 @@
         window.hasBarcodeInstallPrompt = function () {
           return !!deferredInstallPrompt;
         };
-
-        if ("serviceWorker" in navigator) {
-          const isHttpLikeContext =
-            window.location.protocol === "https:" ||
-            window.location.hostname === "localhost" ||
-            window.location.hostname === "127.0.0.1";
-
-          if (isHttpLikeContext) {
-            window.addEventListener(
-              "load",
-              function () {
-                navigator.serviceWorker
-                  .register("./sw.js")
-                  .catch((error) =>
-                    console.warn(
-                      "Service Worker konnte nicht registriert werden:",
-                      error,
-                    ),
-                  );
-              },
-              { once: true },
-            );
-          }
-        }
       })();
     </script>
     <style>
@@ -4493,29 +4518,26 @@
   <body>
     <div id="startupFullscreenHint" aria-hidden="true">
       <div class="startup-fullscreen-card">
-        <h3>Als Home-Bildschirm-App öffnen</h3>
+        <h3>Vollbild-Start aktivieren</h3>
         <p id="startupFullscreenHintText">
-          Auf dem iPhone diese Seite am besten direkt in Safari öffnen und über
-          „Teilen“ zu „Zum Home-Bildschirm“ hinzufügen. Auf Android die Seite
-          direkt in Chrome oder dem Standardbrowser öffnen und dann „Zum
-          Startbildschirm“ oder „App installieren“ verwenden.
+          Für eine Ansicht ohne sichtbare Browserleiste diese Seite am besten
+          vom Startbildschirm öffnen. Nach einmaligem Aktivieren merkt sich die
+          Seite deinen Wunsch und fragt nicht jedes Mal erneut.
         </p>
         <div class="startup-fullscreen-actions">
           <button id="startupFullscreenButton" type="button">
-            Browser-Vollbild
+            Einmal aktivieren
           </button>
           <button id="installAppButton" type="button">
-            Zum Home-Bildschirm
+            Zum Startbildschirm
           </button>
           <button id="startupFullscreenLaterButton" type="button">
             Schließen
           </button>
         </div>
         <div id="startupFullscreenHintSmall">
-          Hinweis: In-App-Browser aus Telegram, Mail oder Messengern blockieren
-          Installation und Vollbild oft. Am zuverlässigsten funktioniert die
-          Seite direkt im normalen Browser, also auf iPhone in Safari und auf
-          Android in Chrome oder dem Standardbrowser.
+          Hinweis: Telegram-/In-App-Viewer blockieren das oft. Am
+          zuverlässigsten ist Starten direkt vom Handy-Startbildschirm.
         </div>
       </div>
     </div>
@@ -9028,13 +9050,14 @@ In den App-Namensraum importieren?`)
 
       function setNativeBarcodeFullscreenRotation(enabled) {
         try {
-          const androidBridge = getAndroidBridge();
           if (
-            androidBridge &&
-            typeof androidBridge.setBarcodeFullscreenRotationEnabled ===
+            window.AndroidInterface &&
+            typeof window.AndroidInterface.setBarcodeFullscreenRotationEnabled ===
               "function"
           ) {
-            androidBridge.setBarcodeFullscreenRotationEnabled(Boolean(enabled));
+            window.AndroidInterface.setBarcodeFullscreenRotationEnabled(
+              Boolean(enabled),
+            );
           }
         } catch (error) {
           console.warn(
@@ -10077,10 +10100,9 @@ In den App-Namensraum importieren?`)
       function handleSendOrShare(selectedBarcodes, fileName) {
         const barcodeText = selectedBarcodes.join("\n");
         // 1. Native Android-Schnittstelle (falls vorhanden)
-        const androidBridge = getAndroidBridge();
-        if (androidBridge && typeof androidBridge.shareTextFile === "function") {
+        if (window.AndroidInterface && typeof window.AndroidInterface.shareTextFile === "function") {
           try {
-            androidBridge.shareTextFile(fileName, barcodeText);
+            window.AndroidInterface.shareTextFile(fileName, barcodeText);
             showToast("Barcodes erfolgreich geteilt (Android)!", "success");
             return;
           } catch (err) {
@@ -10088,7 +10110,7 @@ In den App-Namensraum importieren?`)
             console.warn("AndroidInterface.shareTextFile fehlgeschlagen", err);
             return;
           }
-        } else if (androidBridge) {
+        } else if (window.AndroidInterface) {
           showToast("AndroidInterface.shareTextFile nicht verfügbar!", "error");
         }
         // 2. Web Share API (Browser, moderne WebViews)
@@ -10123,10 +10145,9 @@ In den App-Namensraum importieren?`)
       function handleDownload(selectedBarcodes, fileName) {
         const barcodeText = selectedBarcodes.join("\n");
         // 1. Native Android-Schnittstelle (falls vorhanden)
-        const androidBridge = getAndroidBridge();
-        if (androidBridge && typeof androidBridge.saveTextFile === "function") {
+        if (window.AndroidInterface && typeof window.AndroidInterface.saveTextFile === "function") {
           try {
-            androidBridge.saveTextFile(fileName, barcodeText);
+            window.AndroidInterface.saveTextFile(fileName, barcodeText);
             showToast("Barcodes erfolgreich heruntergeladen (Android)!", "success");
             return;
           } catch (err) {
@@ -10134,7 +10155,7 @@ In den App-Namensraum importieren?`)
             console.warn("AndroidInterface.saveTextFile fehlgeschlagen", err);
             return;
           }
-        } else if (androidBridge) {
+        } else if (window.AndroidInterface) {
           showToast("AndroidInterface.saveTextFile nicht verfügbar!", "error");
         }
         // 2. Standard-Download im Browser
@@ -10167,10 +10188,9 @@ In den App-Namensraum importieren?`)
         const shareText = "Hier sind meine exportierten Barcode-Einstellungen.";
 
         // 1. Native Android-Schnittstelle (falls vorhanden)
-        const androidBridge = getAndroidBridge();
-        if (androidBridge && typeof androidBridge.shareTextFile === "function") {
+        if (window.AndroidInterface && typeof window.AndroidInterface.shareTextFile === "function") {
           try {
-            androidBridge.shareTextFile(finalJsonFileName, safeJsonText);
+            window.AndroidInterface.shareTextFile(finalJsonFileName, safeJsonText);
             showToast("Settings erfolgreich geteilt (Android)!", "success");
             return true;
           } catch (err) {
@@ -10178,7 +10198,7 @@ In den App-Namensraum importieren?`)
             console.warn("AndroidInterface.shareTextFile fehlgeschlagen", err);
             return false;
           }
-        } else if (androidBridge) {
+        } else if (window.AndroidInterface) {
           showToast("AndroidInterface.shareTextFile nicht verfügbar!", "error");
         }
 
@@ -10268,10 +10288,9 @@ In den App-Namensraum importieren?`)
           return;
         }
         // 1. Native Android-Schnittstelle (falls vorhanden)
-        const androidBridge = getAndroidBridge();
-        if (androidBridge && typeof androidBridge.saveTextFile === "function") {
+        if (window.AndroidInterface && typeof window.AndroidInterface.saveTextFile === "function") {
           try {
-            androidBridge.saveTextFile(fileName, safeJsonText);
+            window.AndroidInterface.saveTextFile(fileName, safeJsonText);
             if (entryCount > 0) {
               showToast(
                 `Selektiver Export abgeschlossen (${entryCount} Einträge, Android)!`,
@@ -10286,7 +10305,7 @@ In den App-Namensraum importieren?`)
             console.warn("AndroidInterface.saveTextFile fehlgeschlagen", err);
             return;
           }
-        } else if (androidBridge) {
+        } else if (window.AndroidInterface) {
           showToast("AndroidInterface.saveTextFile nicht verfügbar!", "error");
         }
         // 2. Standard-Download im Browser
@@ -12949,8 +12968,6 @@ In den App-Namensraum importieren?`)
         let lastKnownScrollY = 0;
         const hintOverlay = document.getElementById("startupFullscreenHint");
         const hintText = document.getElementById("startupFullscreenHintText");
-        const hintHeading = hintOverlay?.querySelector("h3");
-        const hintSmall = document.getElementById("startupFullscreenHintSmall");
         const fullscreenButton = document.getElementById(
           "startupFullscreenButton",
         );
@@ -13039,18 +13056,6 @@ In den App-Namensraum importieren?`)
         if (!hintOverlay || !fullscreenButton || !installButton || !closeButton)
           return;
 
-        if (hintHeading) {
-          hintHeading.textContent = "Als Home-Bildschirm-App öffnen";
-        }
-        hintText.innerHTML =
-          "Auf dem iPhone diese Seite am besten direkt in Safari öffnen und über „Teilen“ zu „Zum Home-Bildschirm“ hinzufügen. Auf Android die Seite direkt in Chrome oder dem Standardbrowser öffnen und dann „Zum Startbildschirm“ oder „App installieren“ verwenden.";
-        fullscreenButton.textContent = "Browser-Vollbild";
-        installButton.textContent = "Zum Home-Bildschirm";
-        if (hintSmall) {
-          hintSmall.textContent =
-            "Hinweis: In-App-Browser aus Telegram, Mail oder Messengern blockieren Installation und Vollbild oft. Am zuverlässigsten funktioniert die Seite direkt im normalen Browser, also auf iPhone in Safari und auf Android in Chrome oder dem Standardbrowser.";
-        }
-
         migrateLegacyState();
 
         function isStandalone() {
@@ -13064,7 +13069,7 @@ In den App-Namensraum importieren?`)
           installButton.textContent =
             window.hasBarcodeInstallPrompt && window.hasBarcodeInstallPrompt()
               ? "App installieren"
-              : "Zum Home-Bildschirm";
+              : "Zum Startbildschirm";
         }
 
         function showHint() {
@@ -13143,17 +13148,6 @@ In den App-Namensraum importieren?`)
           }
           hintText.textContent =
             "Öffne das Browser-Menü und wähle dort ‚Zum Startbildschirm hinzufügen‘. Danach die App vom Startbildschirm starten.";
-        });
-
-        installButton.addEventListener("click", function () {
-          if (
-            window.hasBarcodeInstallPrompt &&
-            window.hasBarcodeInstallPrompt()
-          ) {
-            return;
-          }
-          hintText.textContent =
-            "Auf dem iPhone diese Seite direkt in Safari öffnen und „Zum Home-Bildschirm“ wählen. Auf Android die Seite direkt in Chrome oder dem Standardbrowser öffnen und „Zum Startbildschirm“ oder „App installieren“ verwenden.";
         });
 
         closeButton.addEventListener("click", function () {
