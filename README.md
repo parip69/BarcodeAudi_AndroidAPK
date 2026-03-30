@@ -50,6 +50,11 @@ Debug-APK bauen:
 .\gradlew.bat assembleDebug
 ```
 
+Dabei wird vor dem eigentlichen Android-Build die komplette Web-App aus
+`app/src/main/assets/` automatisch nach `docs/` synchronisiert. Dadurch
+verwenden APK/WebView und GitHub-Pages-/PWA-Version denselben Stand aller
+Web-App-Dateien aus dem Assets-Ordner.
+
 Die APK liegt danach typischerweise hier:
 
 ```text

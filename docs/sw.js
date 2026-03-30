@@ -1,4 +1,4 @@
-const CACHE_NAME = 'barcode-audi-pages-v1';
+const CACHE_NAME = 'mathe-guru-v183';
 const PRECACHE_URLS = [
   './',
   './index.html',

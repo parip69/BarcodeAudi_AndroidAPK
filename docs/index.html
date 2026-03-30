@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-app-version="42">
+<html lang="de" data-app-version="44">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2463,7 +2463,9 @@
           );
         };
         window.requestBarcodeDocumentFullscreen = async function () {
-          if (window.isBarcodeStandaloneMode()) return true;
+          if (window.matchMedia("(display-mode: fullscreen)").matches) {
+            return true;
+          }
           if (window.isBarcodeDocumentFullscreen()) return true;
 
           const root = document.documentElement;
@@ -2532,7 +2534,7 @@
 
       html {
         min-height: 100%;
-        background: #f6f6f6;
+        background: var(--app-bg, #f6f6f6);
       }
 
       #exportOverlay,
@@ -2557,7 +2559,7 @@
         margin: 0;
         padding: calc(var(--safe-area-top) + 10px)
           calc(var(--safe-area-right) + 10px)
-          calc(var(--safe-area-bottom) + 10px)
+          0
           calc(var(--safe-area-left) + 10px);
         box-sizing: border-box;
         min-height: 100vh;
@@ -2571,12 +2573,12 @@
         text-align: center;
         font-size: 12px;
         color: #777;
-        padding: 6px 12px 8px 12px;
+        padding: 6px 12px calc(var(--safe-area-bottom) + 8px) 12px;
         user-select: none;
       }
 
       .container {
-        width: min(100%, 1120px);
+        width: min(calc(100% - 2px), 1120px);
         margin: 0 auto;
         background: #fff;
         border: 1px solid #d5e7fb;
@@ -4114,11 +4116,13 @@
         --input-text: #111;
       }
 
+      html,
       body {
         background: var(--app-bg) !important;
       }
 
       #appFooter {
+        background: var(--app-bg) !important;
         color: var(--app-muted) !important;
       }
 
@@ -13101,7 +13105,6 @@ In den App-Namensraum importieren?`)
         }
 
         function enableRememberedFullscreenOnNextTap() {
-          if (isStandalone()) return;
           if (getAppStateValue(APP_STATE_FULLSCREEN_FIELD) !== "1") return;
 
           const onceHandler = async function () {
