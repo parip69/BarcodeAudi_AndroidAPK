@@ -2,6 +2,7 @@ package de.parip69.barcodeaudiscanner
 
 import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
@@ -20,6 +21,7 @@ import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -187,8 +189,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
-    private var isBarcodeFullscreenRotationEnabled = false
     private val immersiveModeRunnable = Runnable { applyImmersiveFullscreen() }
+    private val initialOrientationReleaseRunnable = Runnable { releaseInitialPortraitLockIfNeeded() }
+    private var hasReleasedInitialPortraitLock = false
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -201,7 +204,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun configureImmersiveWindow() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
 
@@ -242,10 +244,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        supportActionBar?.hide()
         configureImmersiveWindow()
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        binding.root.postDelayed(initialOrientationReleaseRunnable, 400)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, _ ->
+            scheduleImmersiveFullscreen()
+            WindowInsetsCompat.CONSUMED
+        }
+        binding.webView.setBackgroundColor(Color.TRANSPARENT)
         scheduleImmersiveFullscreen()
 
-        setBarcodeFullscreenRotationEnabled(false)
         configureWebView(binding.webView)
         binding.webView.loadUrl("file:///android_asset/index.html")
 
@@ -265,14 +274,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setBarcodeFullscreenRotationEnabled(enabled: Boolean) {
-        if (isBarcodeFullscreenRotationEnabled == enabled) return
+        releaseInitialPortraitLockIfNeeded()
+    }
 
-        isBarcodeFullscreenRotationEnabled = enabled
-        requestedOrientation = if (enabled) {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
+    private fun releaseInitialPortraitLockIfNeeded() {
+        if (hasReleasedInitialPortraitLock) return
+        hasReleasedInitialPortraitLock = true
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_USER
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -340,6 +348,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 binding.swipeRefresh.isRefreshing = false
+                releaseInitialPortraitLockIfNeeded()
                 scheduleImmersiveFullscreen()
             }
 
@@ -389,6 +398,11 @@ class MainActivity : AppCompatActivity() {
         scheduleImmersiveFullscreen()
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        scheduleImmersiveFullscreen()
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
@@ -399,6 +413,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         if (::binding.isInitialized) {
             binding.root.removeCallbacks(immersiveModeRunnable)
+            binding.root.removeCallbacks(initialOrientationReleaseRunnable)
         }
         binding.webView.destroy()
         super.onDestroy()

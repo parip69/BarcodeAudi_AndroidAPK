@@ -2400,9 +2400,46 @@
         let deferredInstallPrompt = null;
         window.isBarcodeStandaloneMode = function () {
           return (
+            window.matchMedia("(display-mode: fullscreen)").matches ||
             window.matchMedia("(display-mode: standalone)").matches ||
+            window.matchMedia("(display-mode: minimal-ui)").matches ||
             window.navigator.standalone === true
           );
+        };
+        window.isBarcodeDocumentFullscreen = function () {
+          return Boolean(
+            document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.msFullscreenElement,
+          );
+        };
+        window.requestBarcodeDocumentFullscreen = async function () {
+          if (window.isBarcodeStandaloneMode()) return true;
+          if (window.isBarcodeDocumentFullscreen()) return true;
+
+          const root = document.documentElement;
+          const requestNativeFullscreen =
+            root.requestFullscreen ||
+            root.webkitRequestFullscreen ||
+            root.msRequestFullscreen;
+          if (!requestNativeFullscreen) return false;
+
+          try {
+            const maybePromise =
+              requestNativeFullscreen === root.requestFullscreen
+                ? requestNativeFullscreen.call(root, { navigationUI: "hide" })
+                : requestNativeFullscreen.call(root);
+            if (maybePromise && typeof maybePromise.then === "function") {
+              await maybePromise;
+            }
+            return true;
+          } catch (error) {
+            console.warn(
+              "Browser-Vollbild konnte nicht gestartet werden:",
+              error,
+            );
+            return false;
+          }
         };
         window.addEventListener("beforeinstallprompt", function (event) {
           event.preventDefault();
@@ -2454,6 +2491,25 @@
         overscroll-behavior: none;
       }
 
+      :root {
+        --safe-area-top: env(safe-area-inset-top, 0px);
+        --safe-area-right: env(safe-area-inset-right, 0px);
+        --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-area-left: env(safe-area-inset-left, 0px);
+        --viewport-height: 100vh;
+      }
+
+      @supports (height: 100dvh) {
+        :root {
+          --viewport-height: 100dvh;
+        }
+      }
+
+      html {
+        min-height: 100%;
+        background: #f6f6f6;
+      }
+
       #exportOverlay,
       #settingsPopup,
       .popup-container,
@@ -2474,11 +2530,16 @@
         font-family: Arial, sans-serif;
         background: #f6f6f6;
         margin: 0;
-        padding: 10px;
+        padding: calc(var(--safe-area-top) + 10px)
+          calc(var(--safe-area-right) + 10px)
+          calc(var(--safe-area-bottom) + 10px)
+          calc(var(--safe-area-left) + 10px);
         box-sizing: border-box;
         min-height: 100vh;
+        min-height: var(--viewport-height);
         display: flex;
         flex-direction: column;
+        overflow-x: hidden;
       }
 
       #appFooter {
@@ -2490,7 +2551,7 @@
       }
 
       .container {
-        width: 95%;
+        width: min(100%, 1120px);
         margin: 0 auto;
         background: #fff;
         border: 1px solid #d5e7fb;
@@ -2503,6 +2564,7 @@
         display: flex;
         flex-direction: column;
         position: relative;
+        min-height: 0;
       }
 
       /* --- Datum & Hauptbarcode --- */
@@ -2814,7 +2876,7 @@
         /* Kein horizontaler/vertikaler Offset, hoher Blur- und Spread-Wert */
         box-shadow: 0 0 20px 10px rgba(0, 0, 0, 0.3);
         position: relative;
-        max-width: 100vh;
+        max-width: min(100%, 100vh);
         margin: 0 auto;
 
         /* WICHTIG: Damit der Schatten nicht abgeschnitten wird */
@@ -2831,8 +2893,12 @@
       /* Multi-Ansicht (2-3 Barcodes): auseinanderziehen oben / mitte / unten */
       #fullscreenContent.layout-multi {
         width: 100%;
-        height: calc(100vh - 180px);
-        max-height: calc(100vh - 180px);
+        height: calc(
+          var(--viewport-height) - var(--safe-area-top) - var(--safe-area-bottom) - 180px
+        );
+        max-height: calc(
+          var(--viewport-height) - var(--safe-area-top) - var(--safe-area-bottom) - 180px
+        );
 
         display: grid;
         grid-template-rows: 0.8fr auto 0.8fr;
@@ -2850,7 +2916,9 @@
 
         /* Wichtig: NICHT die feste Höhe vom layout-multi erben */
         height: auto !important;
-        max-height: calc(100vh - 160px);
+        max-height: calc(
+          var(--viewport-height) - var(--safe-area-top) - var(--safe-area-bottom) - 160px
+        );
       }
       /* In Duo-Ansicht keine mittlere "Lücke" */
       #fullscreenContent.layout-duo #fullscreenMasterSection {
@@ -2890,7 +2958,8 @@
       }
 
       #fullscreenOverlay svg {
-        width: 100vh;
+        width: min(100%, 100vh);
+        max-width: 100%;
         height: auto;
         position: relative; /* Position relativ, damit die Z-Index-Stapelung funktioniert */
         z-index: 10; /* Stelle sicher, dass SVGs über Hintergrund-Elementen liegen */
@@ -2990,7 +3059,7 @@
       #fullscreenOverlay.landscape-stack #fullscreenExpirationSection,
       #fullscreenOverlay.landscape-stack #fullscreenSlaveSection {
         min-height: calc(
-          100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 120px
+          var(--viewport-height) - var(--safe-area-top) - var(--safe-area-bottom) - 120px
         );
         display: flex;
         flex-direction: column;
@@ -3135,7 +3204,7 @@
       #exportList {
         flex: 1;
         min-height: 100px;
-        max-height: 100vh;
+        max-height: calc(var(--viewport-height) - 24px);
         overflow-y: auto;
         margin: 10px 0;
         padding: 15px;
@@ -9146,6 +9215,7 @@ In den App-Namensraum importieren?`)
         // ——— 3) Öffne Overlay und zeichne Master ———
         const overlay = document.getElementById("fullscreenOverlay");
         if (!isViewportLockedOverlayVisible(overlay)) {
+          void window.requestBarcodeDocumentFullscreen?.();
           history.pushState({ fullscreen: true }, "", "");
           fullscreenHistoryPushed = true;
         }
@@ -9385,6 +9455,7 @@ In den App-Namensraum importieren?`)
 
         // Vollbild-Overlay anzeigen
         const overlay = document.getElementById("fullscreenOverlay");
+        void window.requestBarcodeDocumentFullscreen?.();
         openViewportLockedOverlay(overlay, "fullscreenContent");
         setNativeBarcodeFullscreenRotation(true);
 
@@ -13039,23 +13110,13 @@ In den App-Namensraum importieren?`)
         }
 
         async function requestDocumentFullscreen() {
-          const root = document.documentElement;
-          const fn =
-            root.requestFullscreen ||
-            root.webkitRequestFullscreen ||
-            root.msRequestFullscreen;
-          if (!fn) return false;
-          try {
-            await fn.call(root, { navigationUI: "hide" });
-            nudgeBrowserChromeAway();
-            return true;
-          } catch (error) {
-            console.warn(
-              "Browser-Vollbild konnte nicht gestartet werden:",
-              error,
-            );
-            return false;
-          }
+          const ok =
+            window.requestBarcodeDocumentFullscreen &&
+            typeof window.requestBarcodeDocumentFullscreen === "function"
+              ? await window.requestBarcodeDocumentFullscreen()
+              : false;
+          if (ok) nudgeBrowserChromeAway();
+          return ok;
         }
 
         fullscreenButton.addEventListener("click", async function () {
