@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-app-version="44">
+<html lang="de" data-app-version="45">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2392,60 +2392,11 @@
     />
     <meta name="apple-mobile-web-app-title" content="Barcode Audi" />
     <meta name="application-name" content="Barcode Audi" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <script>
       (function () {
-        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="110" fill="#0f172a"/><rect x="54" y="54" width="404" height="404" rx="74" fill="#111827" stroke="#7dd3fc" stroke-width="16"/><g fill="#ffffff"><rect x="110" y="118" width="24" height="220" rx="8"/><rect x="154" y="118" width="12" height="220" rx="6"/><rect x="182" y="118" width="28" height="220" rx="8"/><rect x="228" y="118" width="14" height="220" rx="6"/><rect x="258" y="118" width="36" height="220" rx="8"/><rect x="312" y="118" width="14" height="220" rx="6"/><rect x="342" y="118" width="24" height="220" rx="8"/></g><text x="256" y="418" font-family="Arial, sans-serif" font-size="72" font-weight="700" text-anchor="middle" fill="#e5e7eb">BA</text></svg>`;
-        const iconDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(iconSvg)}`;
-        const startUrl = window.location.href.split("#")[0];
-        const scopeUrl = startUrl.replace(/[^/]*$/, "");
-        const manifest = {
-          name: "BarcodeScannerAudi",
-          short_name: "Barcode Audi",
-          description:
-            "BarcodeScannerAudi als Vollbild-Startbildschirm-App in einer einzigen HTML-Datei.",
-          display: "fullscreen",
-          display_override: [
-            "fullscreen",
-            "standalone",
-            "minimal-ui",
-            "browser",
-          ],
-          orientation: "any",
-          start_url: startUrl,
-          scope: scopeUrl,
-          background_color: "#0f172a",
-          theme_color: "#0f172a",
-          icons: [
-            {
-              src: iconDataUrl,
-              sizes: "192x192",
-              type: "image/svg+xml",
-              purpose: "any maskable",
-            },
-            {
-              src: iconDataUrl,
-              sizes: "512x512",
-              type: "image/svg+xml",
-              purpose: "any maskable",
-            },
-          ],
-        };
-
-        const manifestLink = document.createElement("link");
-        manifestLink.rel = "manifest";
-        manifestLink.href = `data:application/manifest+json;charset=utf-8,${encodeURIComponent(JSON.stringify(manifest))}`;
-        document.head.appendChild(manifestLink);
-
-        const iconLink = document.createElement("link");
-        iconLink.rel = "icon";
-        iconLink.href = iconDataUrl;
-        document.head.appendChild(iconLink);
-
-        const appleIconLink = document.createElement("link");
-        appleIconLink.rel = "apple-touch-icon";
-        appleIconLink.href = iconDataUrl;
-        document.head.appendChild(appleIconLink);
-
         let deferredInstallPrompt = null;
         window.isBarcodeStandaloneMode = function () {
           return (
@@ -2463,9 +2414,6 @@
           );
         };
         window.requestBarcodeDocumentFullscreen = async function () {
-          if (window.matchMedia("(display-mode: fullscreen)").matches) {
-            return true;
-          }
           if (window.isBarcodeDocumentFullscreen()) return true;
 
           const root = document.documentElement;
@@ -2510,6 +2458,30 @@
         window.hasBarcodeInstallPrompt = function () {
           return !!deferredInstallPrompt;
         };
+
+        if ("serviceWorker" in navigator) {
+          const isHttpLikeContext =
+            window.location.protocol === "https:" ||
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1";
+
+          if (isHttpLikeContext) {
+            window.addEventListener(
+              "load",
+              function () {
+                navigator.serviceWorker
+                  .register("./sw.js")
+                  .catch((error) =>
+                    console.warn(
+                      "Service Worker konnte nicht registriert werden:",
+                      error,
+                    ),
+                  );
+              },
+              { once: true },
+            );
+          }
+        }
       })();
     </script>
     <style>
@@ -2578,7 +2550,7 @@
       }
 
       .container {
-        width: min(calc(100% - 2px), 1120px);
+        width: min(calc(100% - 10px), 1120px);
         margin: 0 auto;
         background: #fff;
         border: 1px solid #d5e7fb;
@@ -2592,6 +2564,7 @@
         flex-direction: column;
         position: relative;
         min-height: 0;
+        overflow-x: clip;
       }
 
       /* --- Datum & Hauptbarcode --- */
@@ -2608,7 +2581,8 @@
       }
 
       #expirationContainer {
-        width: 100%;
+        width: calc(100% - 4px);
+        max-width: calc(100% - 4px);
         border: 1.5px solid #d5e7fb;
         border-radius: 5px;
         background: #f9f9f9;
@@ -2646,8 +2620,8 @@
         display: block;
         justify-content: center;
         align-items: center;
-        width: 100%;
-        max-width: 100%;
+        width: calc(100% - 4px);
+        max-width: calc(100% - 4px);
         height: auto;
         position: relative;
         margin: 10px auto;
@@ -2845,7 +2819,8 @@
 
       @media (max-width: 600px) {
         .barcode-container {
-          width: 100%;
+          width: calc(100% - 4px);
+          max-width: calc(100% - 4px);
         }
 
         .dynamic-input {
@@ -3290,6 +3265,7 @@
 
       #generatedBarcodes {
         text-align: center;
+        overflow-x: clip;
       }
 
       .popup-content {
@@ -5841,6 +5817,13 @@
       function applyThemeToUi(mode, refreshStyles = true) {
         const effectiveMode = mode === "dark" ? "dark" : "light";
         document.body.classList.toggle("theme-dark", effectiveMode === "dark");
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeColorMeta) {
+          themeColorMeta.setAttribute(
+            "content",
+            effectiveMode === "dark" ? "#0f1115" : "#f6f6f6",
+          );
+        }
 
         const btn = document.getElementById("themeToggleButton");
         if (btn) {

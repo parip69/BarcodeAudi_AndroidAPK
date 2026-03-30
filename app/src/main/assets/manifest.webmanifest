@@ -1,7 +1,7 @@
 {
   "id": "./",
   "name": "Barcode Audi Scanner",
-  "short_name": "Barcode Audi Scanner",
+  "short_name": "Barcode Audi",
   "description": "Premium Barcode Scanner mit Audi-Branding.",
   "lang": "de",
   "start_url": "./index.html",

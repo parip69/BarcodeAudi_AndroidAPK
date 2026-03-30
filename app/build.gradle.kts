@@ -3,12 +3,16 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val syncDocsWebApp by tasks.registering(Copy::class) {
+val syncDocsWebApp by tasks.registering(Sync::class) {
     group = "distribution"
     description = "Synchronisiert die komplette Web-App aus app/src/main/assets nach docs/ fuer GitHub Pages und installierte PWAs."
 
     from(layout.projectDirectory.dir("src/main/assets"))
     into(rootProject.layout.projectDirectory.dir("docs"))
+    preserve {
+        include(".nojekyll")
+        include("README-GitHub-Pages.txt")
+    }
 }
 
 android {
@@ -19,8 +23,8 @@ android {
         applicationId = "de.parip69.barcodeaudiscanner"
         minSdk = 24
         targetSdk = 35
-        versionCode = 44
-        versionName = "44"
+        versionCode = 45
+        versionName = "45"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
