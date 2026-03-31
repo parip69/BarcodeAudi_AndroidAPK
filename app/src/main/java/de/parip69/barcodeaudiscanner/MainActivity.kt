@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -21,6 +20,7 @@ import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -159,6 +159,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         @android.webkit.JavascriptInterface
+        fun setSystemThemeMode(mode: String?) {
+            runOnUiThread {
+                applyAppChromeForTheme(mode)
+            }
+        }
+
+        @android.webkit.JavascriptInterface
         fun shareTextFile(fileName: String, content: String) {
             try {
                 val downloads = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS) ?: filesDir
@@ -192,6 +199,7 @@ class MainActivity : AppCompatActivity() {
     private val immersiveModeRunnable = Runnable { applyImmersiveFullscreen() }
     private val initialOrientationReleaseRunnable = Runnable { releaseInitialPortraitLockIfNeeded() }
     private var hasReleasedInitialPortraitLock = false
+    private var currentThemeMode = "light"
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -204,8 +212,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun configureImmersiveWindow() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes = window.attributes.apply {
@@ -225,9 +231,60 @@ class MainActivity : AppCompatActivity() {
         controller.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller.hide(WindowInsetsCompat.Type.systemBars())
-        controller.isAppearanceLightStatusBars = false
+        val useDarkIcons = currentThemeMode == "light"
+        controller.isAppearanceLightStatusBars = useDarkIcons
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            controller.isAppearanceLightNavigationBars = false
+            controller.isAppearanceLightNavigationBars = useDarkIcons
+        }
+    }
+
+    private fun normalizeThemeMode(mode: String?): String {
+        return if (mode?.trim()?.equals("dark", ignoreCase = true) == true) "dark" else "light"
+    }
+
+    private fun resolveChromeBackgroundColor(mode: String): Int {
+        return ContextCompat.getColor(
+            this,
+            if (mode == "dark") R.color.app_background_dark else R.color.app_background_light
+        )
+    }
+
+    private fun applyAppChromeForTheme(mode: String?) {
+        val effectiveMode = normalizeThemeMode(mode)
+        currentThemeMode = effectiveMode
+        val backgroundColor = resolveChromeBackgroundColor(effectiveMode)
+
+        window.statusBarColor = backgroundColor
+        window.navigationBarColor = backgroundColor
+        window.decorView.setBackgroundColor(backgroundColor)
+
+        if (::binding.isInitialized) {
+            binding.root.setBackgroundColor(backgroundColor)
+            binding.swipeRefresh.setBackgroundColor(backgroundColor)
+            binding.webView.setBackgroundColor(backgroundColor)
+        }
+
+        scheduleImmersiveFullscreen()
+    }
+
+    private fun syncThemeFromWebView() {
+        if (!::binding.isInitialized) return
+        binding.webView.evaluateJavascript(
+            """
+            (function() {
+                try {
+                    if (typeof getStoredThemeMode === "function") {
+                        return getStoredThemeMode();
+                    }
+                    if (document.body && document.body.classList.contains("theme-dark")) {
+                        return "dark";
+                    }
+                } catch (e) {}
+                return "light";
+            })();
+            """.trimIndent()
+        ) { value ->
+            applyAppChromeForTheme(value?.trim('"'))
         }
     }
 
@@ -246,13 +303,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         supportActionBar?.hide()
         configureImmersiveWindow()
+        applyAppChromeForTheme("light")
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         binding.root.postDelayed(initialOrientationReleaseRunnable, 400)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, _ ->
             scheduleImmersiveFullscreen()
             WindowInsetsCompat.CONSUMED
         }
-        binding.webView.setBackgroundColor(Color.TRANSPARENT)
         scheduleImmersiveFullscreen()
 
         configureWebView(binding.webView)
@@ -349,6 +406,7 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 binding.swipeRefresh.isRefreshing = false
                 releaseInitialPortraitLockIfNeeded()
+                syncThemeFromWebView()
                 scheduleImmersiveFullscreen()
             }
 

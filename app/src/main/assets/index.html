@@ -5879,6 +5879,12 @@
           );
         }
 
+        try {
+          if (typeof AndroidInterface !== "undefined" && AndroidInterface) {
+            AndroidInterface.setSystemThemeMode(effectiveMode);
+          }
+        } catch (_error) {}
+
         const btn = document.getElementById("themeToggleButton");
         if (btn) {
           btn.textContent = effectiveMode === "dark" ? "☀️" : "🌙";
