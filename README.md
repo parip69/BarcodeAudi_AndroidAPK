@@ -64,7 +64,7 @@ Wichtige Regel fuer Web-Aenderungen:
 Die APK liegt danach typischerweise hier:
 
 ```text
-app/build/outputs/apk/debug/BarcodeAudi_ver_<Version>.apk
+app/build/outputs/apk/debug/BarcodeAudiScanner_ver<Version>.apk
 ```
 
 ## Version erhoehen und direkt bauen
@@ -80,8 +80,8 @@ Mit diesen Skripten wird:
 
 Archiviert werden automatisch:
 
-- `Privat/BarcodeScannerAudi_ver_<Version>.html`
-- `Privat/BarcodeAudiScanner-v<Version>.apk`
+- `Privat/BarcodeAudiScanner_ver<Version>.html`
+- `Privat/BarcodeAudiScanner_ver<Version>.apk`
 
 Windows Batch:
 

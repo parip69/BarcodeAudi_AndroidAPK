@@ -168,7 +168,7 @@ function Copy-BuildArtifactsToPrivat {
         throw "APK-Ausgabeordner nicht gefunden: $apkOutputDir"
     }
 
-    $expectedApkFileName = "BarcodeAudi_ver_${Version}.apk"
+    $expectedApkFileName = "BarcodeAudiScanner_ver${Version}.apk"
     $apkSourcePath = Join-Path $apkOutputDir $expectedApkFileName
 
     if (-not (Test-Path -LiteralPath $apkSourcePath)) {
@@ -183,8 +183,8 @@ function Copy-BuildArtifactsToPrivat {
         $apkSourcePath = $latestApk.FullName
     }
 
-    $htmlArchivePath = Join-Path $privatDir ("BarcodeScannerAudi_ver_{0}.html" -f $Version)
-    $apkArchivePath = Join-Path $privatDir ("BarcodeAudiScanner-v{0}.apk" -f $Version)
+    $htmlArchivePath = Join-Path $privatDir ("BarcodeAudiScanner_ver{0}.html" -f $Version)
+    $apkArchivePath = Join-Path $privatDir ("BarcodeAudiScanner_ver{0}.apk" -f $Version)
 
     Copy-Item -LiteralPath $indexFile -Destination $htmlArchivePath -Force
     Copy-Item -LiteralPath $apkSourcePath -Destination $apkArchivePath -Force

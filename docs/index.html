@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-app-version="48">
+<html lang="de" data-app-version="50">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -7261,11 +7261,7 @@
       }
 
       function buildHtmlExportBaseName() {
-        const safeAppName =
-          sanitizeFilenamePart(getCurrentAppName()) ||
-          sanitizeFilenamePart(APP_NAME_FALLBACK) ||
-          "BarcodeAudiScanner";
-        return `${safeAppName}_ver_${getCurrentAppVersion()}`;
+        return `BarcodeAudiScanner_ver${getCurrentAppVersion()}`;
       }
 
       function buildHtmlExportFilename() {

@@ -181,7 +181,7 @@ function Copy-BuildArtifactsToPrivat {
         throw "APK-Ausgabeordner nicht gefunden: $apkOutputDir"
     }
 
-    $expectedApkFileName = "{{APK_BASENAME}}_ver_${Version}.apk"
+    $expectedApkFileName = "{{APK_BASENAME}}_ver${Version}.apk"
     $apkSourcePath = Join-Path $apkOutputDir $expectedApkFileName
 
     if (-not (Test-Path -LiteralPath $apkSourcePath)) {
@@ -196,8 +196,8 @@ function Copy-BuildArtifactsToPrivat {
         $apkSourcePath = $latestApk.FullName
     }
 
-    $htmlArchivePath = Join-Path $privatDir ("{{HTML_ARCHIVE_BASENAME}}_ver_{0}.html" -f $Version)
-    $apkArchivePath = Join-Path $privatDir ("{{APK_ARCHIVE_BASENAME}}-v{0}.apk" -f $Version)
+    $htmlArchivePath = Join-Path $privatDir ("{{HTML_ARCHIVE_BASENAME}}_ver{0}.html" -f $Version)
+    $apkArchivePath = Join-Path $privatDir ("{{APK_ARCHIVE_BASENAME}}_ver{0}.apk" -f $Version)
 
     Copy-Item -LiteralPath $indexFile -Destination $htmlArchivePath -Force
     Copy-Item -LiteralPath $apkSourcePath -Destination $apkArchivePath -Force

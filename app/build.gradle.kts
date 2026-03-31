@@ -23,8 +23,8 @@ android {
         applicationId = "de.parip69.barcodeaudiscanner"
         minSdk = 24
         targetSdk = 35
-        versionCode = 48
-        versionName = "48"
+        versionCode = 50
+        versionName = "50"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -52,7 +52,7 @@ android {
     applicationVariants.all {
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
-            output.outputFileName = "BarcodeAudi_ver_${versionName}.apk"
+            output.outputFileName = "BarcodeAudiScanner_ver${versionName}.apk"
         }
     }
 }
