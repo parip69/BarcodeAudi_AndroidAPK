@@ -4,9 +4,11 @@ import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.view.WindowManager
 import android.webkit.ConsoleMessage
 import android.webkit.MimeTypeMap
@@ -256,6 +258,7 @@ class MainActivity : AppCompatActivity() {
 
         window.statusBarColor = backgroundColor
         window.navigationBarColor = backgroundColor
+        window.setBackgroundDrawable(ColorDrawable(backgroundColor))
         window.decorView.setBackgroundColor(backgroundColor)
 
         if (::binding.isInitialized) {
@@ -368,6 +371,7 @@ class MainActivity : AppCompatActivity() {
 
         webView.isVerticalScrollBarEnabled = false
         webView.isHorizontalScrollBarEnabled = false
+        webView.overScrollMode = View.OVER_SCROLL_NEVER
         webView.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
                 return true

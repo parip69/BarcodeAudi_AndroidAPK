@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-app-version="50">
+<html lang="de" data-app-version="51">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -4134,6 +4134,7 @@
         --input-text: #111;
       }
 
+      html.theme-dark,
       body.theme-dark {
         --app-bg: #0f1115;
         --app-text: #e9eef5;
@@ -4157,7 +4158,7 @@
 
       html,
       body {
-        background: var(--app-bg) !important;
+        background: var(--app-bg, #f6f6f6) !important;
       }
 
       #appFooter {
@@ -5870,6 +5871,10 @@
 
       function applyThemeToUi(mode, refreshStyles = true) {
         const effectiveMode = mode === "dark" ? "dark" : "light";
+        document.documentElement.classList.toggle(
+          "theme-dark",
+          effectiveMode === "dark",
+        );
         document.body.classList.toggle("theme-dark", effectiveMode === "dark");
         const themeColorMeta = document.querySelector('meta[name="theme-color"]');
         if (themeColorMeta) {
