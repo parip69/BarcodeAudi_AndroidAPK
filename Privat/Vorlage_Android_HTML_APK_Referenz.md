@@ -37,6 +37,11 @@ Neue Projekte sollen standardmaessig:
 |-- gradlew
 |-- gradlew.bat
 |-- local.properties
+|-- docs/
+|   |-- index.html
+|   |-- manifest.webmanifest
+|   |-- sw.js
+|   `-- icons/
 |-- Privat/
 |   |-- sync_version_and_build.ps1
 |   |-- sync_version_and_build.bat
@@ -45,6 +50,7 @@ Neue Projekte sollen standardmaessig:
 |   |   |-- tasks.json
 |   |   `-- launch.json
 |   |-- Prompt_Android_HTML_APK_Projektvorlage.md
+|   |-- Prompt_WebApp_PWA_Update_und_Cache.md
 |   `-- Vorlage_Android_HTML_APK_Referenz.md
 |-- .vscode/
 |   |-- settings.json
@@ -129,6 +135,19 @@ Pflichtverhalten:
 - Browser-Fallback bleibt funktionsfaehig, wenn keine Bridge existiert
 - HTML-Export liest bevorzugt die gebuendelte Asset-Datei
 - optionaler portabler Export schreibt projektbezogene Storage-Daten sicher in die exportierte HTML
+- iPhone nutzt ein eigenes `apple-touch-icon.png` in `180x180`
+
+### Web-Auslieferung und Cache-Standard
+
+- Quelle der Web-App ist `app/src/main/assets/`.
+- `docs/` ist die synchronisierte Auslieferung fuer GitHub Pages und installierte PWAs.
+- `app/build.gradle.kts` enthaelt einen Sync-Task, der `app/src/main/assets/` vor `preBuild` nach `docs/` kopiert.
+- `app/src/main/assets/sw.js` fuehrt `APP_SHELL_CACHE` und `RUNTIME_CACHE` mit einem Versionssuffix wie `-v47`.
+- `Privat/sync_version_and_build.ps1` setzt diese Cache-Schluessel bei jeder neuen Version automatisch mit hoch.
+- Installationsicons werden als Paket gepflegt:
+  - `icons/icon-192.png`
+  - `icons/icon-512.png`
+  - `icons/apple-touch-icon.png`
 
 ### Standardisierte Web-Helfer
 
@@ -152,6 +171,7 @@ Kompatibilitaet:
 - `app/build.gradle.kts`: `versionCode = <Zahl>`
 - `app/build.gradle.kts`: `versionName = "<Zahl>"`
 - `app/src/main/assets/index.html`: `data-app-version="<Zahl>"`
+- `app/src/main/assets/sw.js`: `APP_SHELL_CACHE` und `RUNTIME_CACHE` mit derselben Versionsnummer
 - Footer-Anzeige ueber `footerVersion`
 
 ### Wichtige Regel fuer das Skript
@@ -206,6 +226,7 @@ output.outputFileName = "{{APK_BASENAME}}_ver_${versionName}.apk"
 - Dateikodierung lesen und erhalten
 - Version automatisch hochzaehlen
 - `data-app-version` synchronisieren
+- Service-Worker-Cache-Version synchronisieren
 - `assembleDebug` starten
 - `Privat/` bei Bedarf anlegen
 - HTML und APK archivieren
@@ -271,6 +292,7 @@ Von dort werden die Dateien in das jeweilige Projekt nach `.vscode/` uebernommen
 - `.\gradlew.bat assembleDebug` baut erfolgreich
 - `.\Privat\sync_version_and_build.bat` erhoeht `versionCode` und `versionName`
 - `data-app-version` wird auf dieselbe Version gesetzt
+- `APP_SHELL_CACHE` und `RUNTIME_CACHE` werden auf dieselbe Version gesetzt
 - die Build-APK hat das erwartete Namensmuster
 - HTML und APK werden nach `Privat/` kopiert
 
@@ -292,11 +314,13 @@ Von dort werden die Dateien in das jeweilige Projekt nach `.vscode/` uebernommen
 - Standalone-/Install-Hinweis funktioniert
 - Download-Fallback funktioniert ohne Android-Bridge
 - HTML-Export blendet sich im Browser sinnvoll ein oder aus
+- `docs/` enthaelt nach dem Build denselben Stand wie `app/src/main/assets/`
 
 ### HTML-Version
 
 - Footer zeigt die aktuelle Version aus `data-app-version`
 - nach einem Skriptlauf stimmt die Footer-Version mit `versionName` ueberein
+- nach einem Skriptlauf stimmt die Cache-Version in `sw.js` mit `versionName` ueberein
 
 ## Schnellstart fuer neue Projekte
 

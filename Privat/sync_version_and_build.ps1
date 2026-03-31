@@ -15,6 +15,7 @@ if (-not $projectRoot) {
 
 $gradleFile = Join-Path $projectRoot "app\build.gradle.kts"
 $indexFile = Join-Path $projectRoot "app\src\main\assets\index.html"
+$swFile = Join-Path $projectRoot "app\src\main\assets\sw.js"
 $gradlewBat = Join-Path $projectRoot "gradlew.bat"
 $privatDir = Join-Path $projectRoot "Privat"
 $apkOutputDir = Join-Path $projectRoot "app\build\outputs\apk\debug"
@@ -93,6 +94,60 @@ function Write-TextFilePreserveEncoding {
     }
 
     [System.IO.File]::WriteAllBytes($Path, $contentBytes)
+}
+
+function Update-ServiceWorkerCacheVersion {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [string]$Version
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        Write-Host "[WARNUNG] sw.js nicht gefunden: $Path"
+        return
+    }
+
+    $swData = Read-TextFilePreserveEncoding -Path $Path
+    $updatedSwText = $swData.Text
+    $changed = $false
+
+    foreach ($constantName in @("APP_SHELL_CACHE", "RUNTIME_CACHE")) {
+        $pattern = '(?m)^(\s*const\s+' + [regex]::Escape($constantName) + '\s*=\s*")([^"]+)(";)'
+        $match = [regex]::Match($updatedSwText, $pattern)
+
+        if (-not $match.Success) {
+            Write-Host "[WARNUNG] $constantName in sw.js nicht gefunden."
+            continue
+        }
+
+        $currentValue = $match.Groups[2].Value
+        $prefix = $currentValue
+        $prefixMatch = [regex]::Match($currentValue, '^(.*?)-v[^"]+$')
+
+        if ($prefixMatch.Success) {
+            $prefix = $prefixMatch.Groups[1].Value
+        }
+
+        $newValue = "$prefix-v$Version"
+        if ($newValue -eq $currentValue) {
+            continue
+        }
+
+        $updatedSwText = [regex]::Replace(
+            $updatedSwText,
+            $pattern,
+            ('${1}' + $newValue + '${3}'),
+            1
+        )
+        $changed = $true
+        Write-Host "[INFO] $constantName in sw.js auf ""$newValue"" gesetzt."
+    }
+
+    if ($changed) {
+        Write-TextFilePreserveEncoding -Path $Path -Text $updatedSwText -Encoding $swData.Encoding
+    }
 }
 
 function Copy-BuildArtifactsToPrivat {
@@ -211,6 +266,8 @@ if (Test-Path -LiteralPath $indexFile) {
 } else {
     Write-Host "[WARNUNG] index.html nicht gefunden: $indexFile"
 }
+
+Update-ServiceWorkerCacheVersion -Path $swFile -Version $newVersion
 
 if (-not (Test-Path -LiteralPath $gradlewBat)) {
     Write-Host "[FEHLER] gradlew.bat nicht gefunden: $gradlewBat"

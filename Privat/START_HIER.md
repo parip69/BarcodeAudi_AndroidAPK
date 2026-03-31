@@ -40,6 +40,7 @@ Nutze `Privat` stattdessen als **Vorlagenquelle**.
 - `Privat/sync_version_and_build.template.ps1`
 - `Privat/sync_version_and_build.template.bat`
 - `Privat/Prompt_Android_HTML_APK_Projektvorlage.md`
+- `Privat/Prompt_WebApp_PWA_Update_und_Cache.md`
 - `Privat/Vorlage_Android_HTML_APK_Referenz.md`
 
 ### In den neuen Projektordner nach `.vscode/`
@@ -127,9 +128,23 @@ Nutze in diesem Projekt den Privat-Ordner als Vorlage und Quelle fuer Build-Skri
 - `versionCode` hochzaehlen
 - `versionName` hochzaehlen
 - `data-app-version` in `index.html` synchronisieren
+- `sw.js`-Cache-Version auf dieselbe Versionsnummer setzen
 - `assembleDebug` ausfuehren
 - HTML nach `Privat/` kopieren
 - APK nach `Privat/` kopieren
+
+## Feste Web-Update-Regel
+
+Fuer Web-App, PWA, Manifest, Fullscreen und Installations-Icons gilt:
+
+- Quelle ist `app/src/main/assets/`
+- `docs/` ist nur die synchronisierte Auslieferung
+- fuer verteilte Web-Updates immer `.\Privat\sync_version_and_build.bat` bevorzugen
+- dabei wird auch die Cache-Version in `sw.js` mitgezogen
+
+Wenn du dafuer spaeter wieder einen KI-Prompt brauchst, verwende:
+
+- `Privat/Prompt_WebApp_PWA_Update_und_Cache.md`
 
 ## Reihenfolge fuer ein neues Projekt
 

@@ -55,6 +55,12 @@ Dabei wird vor dem eigentlichen Android-Build die komplette Web-App aus
 verwenden APK/WebView und GitHub-Pages-/PWA-Version denselben Stand aller
 Web-App-Dateien aus dem Assets-Ordner.
 
+Wichtige Regel fuer Web-Aenderungen:
+
+- Die bearbeitbare Quelle ist immer `app/src/main/assets/`.
+- `docs/` ist die synchronisierte Auslieferung fuer GitHub Pages und installierte PWAs.
+- Wenn sich gecachte Web-Dateien aendern, muss auch die Cache-Version in `app/src/main/assets/sw.js` wechseln. Das erledigt `Privat/sync_version_and_build.ps1` automatisch zusammen mit der Versionsnummer.
+
 Die APK liegt danach typischerweise hier:
 
 ```text
@@ -68,6 +74,7 @@ Mit diesen Skripten wird:
 - `versionCode` erhoeht
 - `versionName` angepasst
 - `data-app-version` in `app/src/main/assets/index.html` synchronisiert
+- `APP_SHELL_CACHE` und `RUNTIME_CACHE` in `app/src/main/assets/sw.js` auf die neue Versionsnummer gesetzt
 - anschliessend `assembleDebug` gestartet
 - nach erfolgreichem Build eine Archivkopie in `Privat/` erstellt
 
@@ -87,6 +94,14 @@ PowerShell direkt:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\Privat\sync_version_and_build.ps1
 ```
+
+## Prompt fuer spaetere Web-/PWA-Updates
+
+Wenn spaeter nur Web-App, PWA, Manifest, Vollbild oder Installations-Icons angepasst werden sollen, verwende zusaetzlich diese Vorlage:
+
+- `Privat/Prompt_WebApp_PWA_Update_und_Cache.md`
+
+Sie haelt den festen Ablauf fuer `app/src/main/assets`, `docs/`, `sw.js`, PWA-Cache und iPhone-Installationsicon fest.
 
 ## Entwicklerumgebung in VS Code
 

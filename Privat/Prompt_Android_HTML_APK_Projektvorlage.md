@@ -46,6 +46,7 @@ Baue eine lokale HTML-/JavaScript-App, die:
 - im Vollbildmodus sauber nutzbar ist
 - eine native Android-Bridge fuer Speichern, Teilen, HTML-Export und Vollbild-Rotation besitzt
 - in der HTML-Fusszeile immer die aktuelle Versionsnummer anzeigt
+- `docs/` als synchronisierte Web-/GitHub-Pages-Auslieferung pflegt
 - ueber zwei Build-Skripte Version, HTML und APK synchronisiert und archiviert
 
 ### Pflichtarchitektur
@@ -60,6 +61,11 @@ Lege oder pflege diese Struktur:
 |-- gradlew
 |-- gradlew.bat
 |-- local.properties
+|-- docs/
+|   |-- index.html
+|   |-- manifest.webmanifest
+|   |-- sw.js
+|   `-- icons/
 |-- .vscode/
 |   |-- settings.json
 |   |-- tasks.json
@@ -161,6 +167,12 @@ Pflicht:
 - Standalone-Erkennung
 - Install-Hinweis oder Install-Button
 - Vollbildverhalten fuer Browser/PWA und APK
+- `apple-touch-icon` fuer iPhone mit `sizes="180x180"`
+
+Quellenregel:
+
+- Die editierbare Web-Quelle liegt in `app/src/main/assets/`.
+- `docs/` ist nur die synchronisierte Auslieferung fuer GitHub Pages und installierte PWAs.
 
 Bridge-bezogenes Verhalten:
 
@@ -181,6 +193,7 @@ Die Version muss an genau diesen Stellen gefuehrt und synchronisiert werden:
 - `app/build.gradle.kts`: numerische `versionCode`
 - `app/build.gradle.kts`: numerische `versionName` als String
 - `app/src/main/assets/index.html`: `data-app-version`
+- `app/src/main/assets/sw.js`: Versionssuffix fuer `APP_SHELL_CACHE` und `RUNTIME_CACHE`
 - HTML-Footer: Anzeige ueber `footerVersion`
 
 Wichtig:
@@ -201,6 +214,7 @@ Das PowerShell-Skript muss:
 - `app/build.gradle.kts` lesen
 - `versionCode` und `versionName` um `1` erhoehen
 - `data-app-version` in `app/src/main/assets/index.html` auf dieselbe Version setzen
+- in `app/src/main/assets/sw.js` die Cache-Schluessel `APP_SHELL_CACHE` und `RUNTIME_CACHE` auf dieselbe Version hochziehen
 - `.\gradlew.bat assembleDebug` starten
 - `Privat/` bei Bedarf anlegen
 - nach erfolgreichem Build die HTML-Datei nach `Privat/{{HTML_ARCHIVE_BASENAME}}_ver_<Version>.html` kopieren
@@ -227,6 +241,7 @@ Verwende als Default:
 Lege in `app/build.gradle.kts` fest:
 
 - APK-Dateiname im Build-Ordner: `{{APK_BASENAME}}_ver_${versionName}.apk`
+- Task `syncDocsWebApp`, der `app/src/main/assets/` vor `preBuild` nach `docs/` synchronisiert
 
 ### Entwicklerumgebung
 
@@ -272,6 +287,7 @@ Das neue Projekt soll denselben Anspruch wie das Referenzprojekt haben:
 - Browser/PWA soll Standalone/Vollbild bestmoeglich unterstuetzen
 - Android-Seite darf die Rotation im Barcode-/Fullscreen-Modus gezielt aktivieren und danach wieder auf Portrait zurueckschalten
 - PWA-/Browser-Modus soll einen klaren Install-/Vollbild-Hinweis haben
+- installierte PWAs muessen ueber wechselnde Cache-Schluessel zuverlaessig neue Web-Staende laden
 
 ### Erwartete Lieferung
 
