@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="55">
+<html lang="de" data-app-version="56">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2421,6 +2421,10 @@
             (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
           );
         };
+        window.isBarcodeAndroid = function () {
+          const userAgent = navigator.userAgent || "";
+          return /android/i.test(userAgent);
+        };
         window.isBarcodeInAppBrowser = function () {
           const userAgent = navigator.userAgent || "";
           return /FBAN|FBAV|Instagram|Telegram|Line|WhatsApp|wv/i.test(
@@ -2437,21 +2441,41 @@
           if (window.isBarcodeInAppBrowser()) {
             return {
               mode: "external-browser",
-              showButton: false,
-              hint: "Bitte im normalen Browser öffnen",
+              showButton: true,
+              buttonLabel: "Im Browser oeffnen",
+              hint: "Bitte im normalen Browser oeffnen",
             };
           }
           if (window.isBarcodeIos()) {
             return {
               mode: "ios",
-              showButton: false,
-              hint: "Safari öffnen → Teilen → Zum Home-Bildschirm",
+              showButton: true,
+              buttonLabel: "Zum Home-Bildschirm",
+              hint: "Safari oeffnen -> Teilen -> Zum Home-Bildschirm",
             };
           }
           if (deferredInstallPrompt) {
-            return { mode: "prompt", showButton: true, hint: "" };
+            return {
+              mode: "prompt",
+              showButton: true,
+              buttonLabel: "App installieren",
+              hint: "",
+            };
           }
-          return { mode: "unsupported", showButton: false, hint: "" };
+          if (window.isBarcodeAndroid()) {
+            return {
+              mode: "android-manual",
+              showButton: true,
+              buttonLabel: "Zum Startbildschirm",
+              hint: "Browser-Menue oeffnen -> Zum Startbildschirm",
+            };
+          }
+          return {
+            mode: "unsupported",
+            showButton: false,
+            buttonLabel: "",
+            hint: "",
+          };
         };
         window.isBarcodeStandaloneMode = function () {
           return (
@@ -13184,12 +13208,17 @@ In den App-Namensraum importieren?`)
           if (typeof window.getBarcodeInstallUiState === "function") {
             return window.getBarcodeInstallUiState();
           }
-          return { mode: "unsupported", showButton: false, hint: "" };
+          return {
+            mode: "unsupported",
+            showButton: false,
+            buttonLabel: "",
+            hint: "",
+          };
         }
 
         function updateInstallButton() {
           const uiState = getInstallUiState();
-          installButton.textContent = "App installieren";
+          installButton.textContent = uiState.buttonLabel || "App installieren";
           installButton.style.display = uiState.showButton ? "" : "none";
           installHint.textContent = uiState.hint || "";
           installHint.style.display = uiState.hint ? "block" : "none";
@@ -13201,7 +13230,16 @@ In den App-Namensraum importieren?`)
 
           if (uiState.mode === "ios" && hintSmall) {
             hintSmall.textContent =
-              "Auf iPhone und iPad funktioniert das Hinzufügen nur direkt in Safari.";
+              "Auf iPhone und iPad funktioniert das Hinzufuegen nur direkt in Safari.";
+          }
+
+          if (uiState.mode === "android-manual") {
+            hintText.textContent =
+              "Wenn kein echter Installationsdialog erscheint, kannst du die Seite trotzdem als Verknuepfung auf den Startbildschirm legen.";
+            if (hintSmall) {
+              hintSmall.textContent =
+                "Je nach Android-Browser heisst der Punkt Zum Startbildschirm, Zum Startbildschirm hinzufuegen oder App installieren.";
+            }
           }
 
           if (uiState.mode === "external-browser") {
@@ -13247,7 +13285,10 @@ In den App-Namensraum importieren?`)
           const uiState = getInstallUiState();
           updateInstallButton();
           if (!uiState.showButton) return;
-          if (typeof window.promptBarcodeInstall === "function") {
+          if (
+            uiState.mode === "prompt" &&
+            typeof window.promptBarcodeInstall === "function"
+          ) {
             const choice = await window.promptBarcodeInstall();
             updateInstallButton();
             if ((choice && choice.outcome === "accepted") || isStandalone()) {
@@ -13255,9 +13296,9 @@ In den App-Namensraum importieren?`)
             }
             return;
           }
+          installHint.textContent = uiState.hint || "";
+          installHint.style.display = uiState.hint ? "block" : "none";
           return;
-          hintText.textContent =
-            "Öffne das Browser-Menü und wähle dort ‚Zum Startbildschirm hinzufügen‘. Danach die App vom Startbildschirm starten.";
         });
 
         closeButton.addEventListener("click", function () {
