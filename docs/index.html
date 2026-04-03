@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="58">
+<html lang="de" data-app-version="59">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -5338,7 +5338,7 @@
           id="toggleMainBarcodeButton"
           onclick="toggleMainBarcode()"
         >
-          🏷️ Hauptbarcode: sichtbar
+          🏷️ Hauptbarcode: ausgeblendet
         </button>
         <button
           class="menu-button menu-theme-move"
@@ -12474,8 +12474,8 @@ In den App-Namensraum importieren?`)
         );
         var isHidden = appStorage.getItem("mainBarcodeHidden");
         if (isHidden === null) {
-          appStorage.setItem("mainBarcodeHidden", "false");
-          isHidden = "false";
+          appStorage.setItem("mainBarcodeHidden", "true");
+          isHidden = "true";
         }
         if (mainBarcodeContainer) {
           mainBarcodeContainer.style.display =
