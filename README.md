@@ -59,6 +59,7 @@ Wichtige Regel fuer Web-Aenderungen:
 
 - Die bearbeitbare Quelle ist immer `app/src/main/assets/`.
 - `docs/` ist die synchronisierte Auslieferung fuer GitHub Pages und installierte PWAs.
+- `docs/` nie direkt bearbeiten, weil diese Dateien beim Sync aus `app/src/main/assets/` wieder ueberschrieben werden.
 - Wenn sich gecachte Web-Dateien aendern, muss auch die Cache-Version in `app/src/main/assets/sw.js` wechseln. Das erledigt `Privat/sync_version_and_build.ps1` automatisch zusammen mit der Versionsnummer.
 
 Die APK liegt danach typischerweise hier:
