@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de" data-app-version="54">
+<html lang="de" data-app-version="55">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -2402,6 +2402,56 @@
     <script>
       (function () {
         let deferredInstallPrompt = null;
+        const notifyInstallUiChange = function () {
+          window.dispatchEvent(new Event("barcodeInstallAvailable"));
+        };
+        window.isBarcodeAndroidApk = function () {
+          const currentUrl = String(window.location.href || "");
+          return (
+            (typeof window.AndroidInterface !== "undefined" &&
+              !!window.AndroidInterface) ||
+            currentUrl.indexOf("file:///android_asset/") === 0
+          );
+        };
+        window.isBarcodeIos = function () {
+          const userAgent = navigator.userAgent || "";
+          return (
+            /iphone|ipad|ipod/i.test(userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+          );
+        };
+        window.isBarcodeInAppBrowser = function () {
+          const userAgent = navigator.userAgent || "";
+          return /FBAN|FBAV|Instagram|Telegram|Line|WhatsApp|wv/i.test(
+            userAgent,
+          );
+        };
+        window.getBarcodeInstallUiState = function () {
+          if (window.isBarcodeAndroidApk()) {
+            return { mode: "apk", showButton: false, hint: "" };
+          }
+          if (window.isBarcodeStandaloneMode()) {
+            return { mode: "standalone", showButton: false, hint: "" };
+          }
+          if (window.isBarcodeInAppBrowser()) {
+            return {
+              mode: "external-browser",
+              showButton: false,
+              hint: "Bitte im normalen Browser öffnen",
+            };
+          }
+          if (window.isBarcodeIos()) {
+            return {
+              mode: "ios",
+              showButton: false,
+              hint: "Safari öffnen → Teilen → Zum Home-Bildschirm",
+            };
+          }
+          if (deferredInstallPrompt) {
+            return { mode: "prompt", showButton: true, hint: "" };
+          }
+          return { mode: "unsupported", showButton: false, hint: "" };
+        };
         window.isBarcodeStandaloneMode = function () {
           return (
             window.matchMedia("(display-mode: fullscreen)").matches ||
@@ -2448,7 +2498,7 @@
         window.addEventListener("beforeinstallprompt", function (event) {
           event.preventDefault();
           deferredInstallPrompt = event;
-          window.dispatchEvent(new Event("barcodeInstallAvailable"));
+          notifyInstallUiChange();
         });
         window.promptBarcodeInstall = async function () {
           if (!deferredInstallPrompt) return null;
@@ -2457,12 +2507,16 @@
             () => null,
           );
           deferredInstallPrompt = null;
-          window.dispatchEvent(new Event("barcodeInstallAvailable"));
+          notifyInstallUiChange();
           return choice;
         };
         window.hasBarcodeInstallPrompt = function () {
           return !!deferredInstallPrompt;
         };
+        window.addEventListener("appinstalled", function () {
+          deferredInstallPrompt = null;
+          notifyInstallUiChange();
+        });
 
         if ("serviceWorker" in navigator) {
           const isHttpLikeContext =
@@ -4550,6 +4604,15 @@
         font-size: 0.92em;
         margin-top: 12px;
       }
+
+      #installHint {
+        display: none;
+        margin-top: 12px;
+        color: #e2e8f0;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        font-weight: 600;
+      }
     </style>
   </head>
 
@@ -4570,6 +4633,7 @@
             Schließen
           </button>
         </div>
+        <div id="installHint" aria-live="polite"></div>
         <div id="startupFullscreenHintSmall">
           Hinweis: Telegram-/In-App-Viewer blockieren das oft. Am
           zuverlässigsten ist Starten direkt vom Handy-Startbildschirm.
@@ -13009,10 +13073,15 @@ In den App-Namensraum importieren?`)
         const hintOverlay = document.getElementById("startupFullscreenHint");
         const hintText = document.getElementById("startupFullscreenHintText");
         const hintSmall = document.getElementById("startupFullscreenHintSmall");
+        const installHint = document.getElementById("installHint");
         const installButton = document.getElementById("installAppButton");
         const closeButton = document.getElementById(
           "startupFullscreenLaterButton",
         );
+        const DEFAULT_HINT_TEXT =
+          "Für die beste Darstellung diese Seite vom Startbildschirm öffnen. Die installierte Web-App startet ohne Browser-Tab und verhält sich damit näher an der APK-Ansicht.";
+        const DEFAULT_SMALL_TEXT =
+          "Hinweis: In normalen Browser-Tabs bleiben Browserleisten technisch teilweise sichtbar. Am zuverlässigsten ist Starten direkt vom Handy-Startbildschirm.";
         const storage =
           typeof appStorage !== "undefined" && appStorage
             ? appStorage
@@ -13078,13 +13147,19 @@ In den App-Namensraum importieren?`)
           }
         }
 
-        if (!hintOverlay || !hintText || !installButton || !closeButton) return;
+        if (
+          !hintOverlay ||
+          !hintText ||
+          !installHint ||
+          !installButton ||
+          !closeButton
+        ) {
+          return;
+        }
 
-        hintText.textContent =
-          "Fuer die beste Darstellung diese Seite vom Startbildschirm oeffnen. Die installierte Web-App startet ohne Browser-Tab und verhaelt sich damit naeher an der APK-Ansicht.";
+        hintText.textContent = DEFAULT_HINT_TEXT;
         if (hintSmall) {
-          hintSmall.textContent =
-            "Hinweis: In normalen Browser-Tabs bleiben Browserleisten technisch teilweise sichtbar. Am zuverlaessigsten ist Starten direkt vom Handy-Startbildschirm.";
+          hintSmall.textContent = DEFAULT_SMALL_TEXT;
         }
         closeButton.textContent = "Schliessen";
 
@@ -13097,14 +13172,49 @@ In den App-Namensraum importieren?`)
           );
         }
 
+        function isAndroidApk() {
+          return (
+            typeof window.isBarcodeAndroidApk === "function" &&
+            window.isBarcodeAndroidApk()
+          );
+        }
+
+        function getInstallUiState() {
+          if (typeof window.getBarcodeInstallUiState === "function") {
+            return window.getBarcodeInstallUiState();
+          }
+          return { mode: "unsupported", showButton: false, hint: "" };
+        }
+
         function updateInstallButton() {
-          installButton.textContent =
-            window.hasBarcodeInstallPrompt && window.hasBarcodeInstallPrompt()
-              ? "App installieren"
-              : "Zum Startbildschirm";
+          const uiState = getInstallUiState();
+          installButton.textContent = "App installieren";
+          installButton.style.display = uiState.showButton ? "" : "none";
+          installHint.textContent = uiState.hint || "";
+          installHint.style.display = uiState.hint ? "block" : "none";
+          hintText.textContent = DEFAULT_HINT_TEXT;
+
+          if (hintSmall) {
+            hintSmall.textContent = DEFAULT_SMALL_TEXT;
+          }
+
+          if (uiState.mode === "ios" && hintSmall) {
+            hintSmall.textContent =
+              "Auf iPhone und iPad funktioniert das Hinzufügen nur direkt in Safari.";
+          }
+
+          if (uiState.mode === "external-browser") {
+            hintText.textContent =
+              "Dieser In-App-Browser blockiert die Installation oder den Start als Web-App.";
+            if (hintSmall) {
+              hintSmall.textContent =
+                "Bitte die Seite aus Telegram, WhatsApp oder einem anderen In-App-Browser in Safari oder Chrome öffnen.";
+            }
+          }
         }
 
         function showHint() {
+          if (isAndroidApk()) return;
           if (isStandalone()) return;
           if (getAppStateValue(APP_STATE_HINT_FIELD) === "1") return;
           lastKnownScrollY = window.scrollY || window.pageYOffset || 0;
@@ -13133,17 +13243,18 @@ In den App-Namensraum importieren?`)
         }
 
         installButton.addEventListener("click", async function () {
+          const uiState = getInstallUiState();
           updateInstallButton();
-          if (
-            window.hasBarcodeInstallPrompt &&
-            window.hasBarcodeInstallPrompt()
-          ) {
+          if (!uiState.showButton) return;
+          if (typeof window.promptBarcodeInstall === "function") {
             const choice = await window.promptBarcodeInstall();
+            updateInstallButton();
             if ((choice && choice.outcome === "accepted") || isStandalone()) {
               hideHint(true);
             }
             return;
           }
+          return;
           hintText.textContent =
             "Öffne das Browser-Menü und wähle dort ‚Zum Startbildschirm hinzufügen‘. Danach die App vom Startbildschirm starten.";
         });
@@ -13163,6 +13274,7 @@ In den App-Namensraum importieren?`)
         });
         window.addEventListener("load", function () {
           nudgeBrowserChromeAway();
+          updateInstallButton();
           setTimeout(showHint, 280);
         });
       })();
