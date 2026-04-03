@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="56">
+<html lang="de" data-app-version="57">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -6007,8 +6007,8 @@
 
         let isHidden = appStorage.getItem("mainBarcodeHidden");
         if (isHidden === null) {
-          appStorage.setItem("mainBarcodeHidden", "false");
-          isHidden = "false";
+          appStorage.setItem("mainBarcodeHidden", "true");
+          isHidden = "true";
         }
 
         mainBarcodeContainer.style.display =
@@ -6022,7 +6022,12 @@
         const toggleSection = document.getElementById("toggleSection");
         if (!toggleSection) return;
 
-        const pinGroupSection = appStorage.getItem("pinGroupSection");
+        let pinGroupSection = appStorage.getItem("pinGroupSection");
+        if (pinGroupSection === null) {
+          appStorage.setItem("pinGroupSection", "true");
+          appStorage.setItem("groupSectionVisible", "true");
+          pinGroupSection = "true";
+        }
         if (pinGroupSection === "true") {
           const visible = appStorage.getItem("groupSectionVisible");
           if (visible === "true") {
@@ -9954,7 +9959,12 @@ In den App-Namensraum importieren?`)
       document.addEventListener("DOMContentLoaded", function () {
         const toggleSection = document.getElementById("toggleSection");
         // Prüfe, ob der PIN für den Gruppenbereich aktiviert ist:
-        const pinGroupSection = appStorage.getItem("pinGroupSection");
+        let pinGroupSection = appStorage.getItem("pinGroupSection");
+        if (pinGroupSection === null) {
+          appStorage.setItem("pinGroupSection", "true");
+          appStorage.setItem("groupSectionVisible", "true");
+          pinGroupSection = "true";
+        }
         if (pinGroupSection === "true") {
           // Falls PIN aktiv: Übernehme den gespeicherten Zustand (true = eingeblendet, false = ausgeblendet)
           const visible = appStorage.getItem("groupSectionVisible");
@@ -13086,14 +13096,8 @@ In den App-Namensraum importieren?`)
 
       (function () {
         const APP_STATE_KEY = "BarcodeScannerAudiAppState";
-        const APP_STATE_HINT_FIELD = "installHintDismissed";
-        const LEGACY_HINT_KEYS = [
-          "barcodeStandaloneHintDismissed_v62",
-          "barcodeStandaloneHintDismissed_v63",
-          "barcodeStandaloneHintDismissed_v64",
-          "barcodeStandaloneHintDismissed_v65",
-          "barcodeStandaloneHintDismissed_v66",
-        ];
+        const APP_STATE_HINT_FIELD = "installHintDismissed_v2";
+        const LEGACY_HINT_KEYS = [];
         let lastKnownScrollY = 0;
         const hintOverlay = document.getElementById("startupFullscreenHint");
         const hintText = document.getElementById("startupFullscreenHintText");
