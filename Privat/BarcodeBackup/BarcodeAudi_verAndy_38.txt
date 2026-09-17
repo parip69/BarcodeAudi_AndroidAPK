@@ -1,0 +1,14 @@
+Cicsl/ Logis
+t0011jf/Logis Login[&Stapler]
+RAM10326/PASSWORT[pw:16.07.2026]
+Ft.21.40.01/ Auftrag Bearbeitung (**, 04,e2199N7)
+**	04																		e2199n7/Auftrags Bearbeitung
+ft.21.32.01/ Lagerabgang mit Systemauftrag  ( S  selektieren)
+A1B801Z3/ Stapler Straße ZSB Porsche UPL
+ft.21.30.02/ Einlagerung ohne Daten vom MZ
+ft.21.30.20/ Auslagerfunktionen _ Stornierung Lagerzugang
+Ft.21.32.20/Auslagerfunktionen _ Stornierung Lagerabgang
+ft.21.31.10/ Auskunftfunktionen _ Bestandsauskunft zur Referenznumer
+ft.21.31.91/ Auskunftsfunktionen _ Lagerbelegungs - Liste (1; f02;)
+andreas1.krabes/SyncroTESS
+andreas2.krabes/SyncroTESS
