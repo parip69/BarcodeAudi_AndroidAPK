@@ -6,33 +6,43 @@ Die App und die beiden Barcode-Dateien wurden nicht verändert. Dies ist eine Qu
 
 ## 1. Grundprinzip: Was kommt wohin?
 
-Ein Eintrag besteht aus:
+Jeder Barcode-Eintrag in der Textdatei (TXT) muss **exakt auf einer Zeile** stehen und ist in drei Bereiche aufgeteilt. Das Trennzeichen ist der Schrägstrich `/` und die eckigen Klammern `[...]`.
 
+**Aufbau in der Textdatei:**
 ```text
-BARCODEWERT/Lesbare Bezeichnung [Befehl, Befehl, Befehl]
+BARCODEWERT/Lesbare Bezeichnung [Befehl1, Befehl2, Befehl3]
 ```
 
-- **Vor `/`:** Genau dieser Wert wird als Barcode erzeugt. Leerzeichen, Tabulatoren und Groß-/Kleinschreibung gehören zum Wert.
-- **Nach `/`:** Deine Bezeichnung und die Steuerbefehle.
-- **In `[...]`:** Gruppen, Paarung, Ausblenden, Umschaltzustand oder Passwortdatum.
+- **Teil 1: Vor dem `/` (Der eigentliche Barcode)**
+  Genau dieser Wert wird vom Scanner gelesen. Leerzeichen, Tabulatoren und Groß-/Kleinschreibung (wie `a` vs. `A`) sind hier extrem wichtig!
+- **Teil 2: Nach dem `/` (Deine Bezeichnung)**
+  Dieser Text wird dir in der App als Name angezeigt. Verwende hier **keine** weiteren Schrägstriche (`/`), sonst verschluckt sich die App!
+- **Teil 3: In den `[...]` (Die Steuerbefehle)**
+  Hier legst du fest, was die App mit dem Barcode machen soll (welche Gruppe, ob er gepaart ist etc.). Benutze immer nur **einen** Klammerblock am Ende der Zeile. Trenne die einzelnen Befehle mit einem Komma und einem Leerzeichen.
 
-Benutze pro Eintrag **einen Klammerblock** und trenne die Befehle darin mit Kommas. Die zentrale Auswertung liest nur den ersten Klammerblock. Weitere Blöcke sind deshalb keine zuverlässige Erweiterung. Verwende keine zusätzlichen Schrägstriche in der Bezeichnung: Mehrere Routinen zerlegen den Eintrag an `/` und verwenden nur die ersten beiden Teile.
+### Wie trage ich das in der App ein?
 
-Im Bearbeitungsdialog über **✎** gibt es drei getrennte Felder: „Code vor /“, „Bezeichnung nach /“ und „Inhalt der eckigen Klammern“. Im dritten Feld nur den Inhalt eintragen, **ohne die äußeren `[` und `]`**. Dort darf jeder Befehl auch auf einer eigenen Zeile stehen; beim Speichern verbindet die App die Zeilen mit Kommas. In einer TXT-Datei muss dagegen jeder vollständige Barcode-Eintrag auf einer eigenen Zeile stehen.
+Wenn du einen Barcode in der App über den Stift-Button **✎** bearbeitest, siehst du **drei getrennte Felder**. Die App teilt die Textzeile für dich auf.
 
-Beispiel für das Klammerfeld:
+1. **Feld „Code vor /“:** Hier steht nur der Barcodewert. (z. B. `123456`)
+2. **Feld „Bezeichnung nach /“:** Hier steht nur dein Name. (z. B. `Mein Material`)
+3. **Feld „Inhalt der eckigen Klammern“:** Hier trägst du die Befehle ein – aber **ACHTUNG: OHNE die äußeren eckigen Klammern `[` und `]`!**
 
+**Tipp für das 3. Feld in der App:** Du kannst hier für die Übersichtlichkeit jeden Befehl in eine neue Zeile schreiben. Die App macht beim Speichern automatisch Kommas daraus.
+
+**Beispiel für die Eingabe im 3. Feld in der App:**
 ```text
 P:M:EQ6L:@
 &ZSB10:L
 *:-
 ```
+Wird in der Textdatei beim Export automatisch zu: `[P:M:EQ6L:@, &ZSB10:L, *:-]`
 
 ## 2. Alle relevanten Klammerbefehle
 
 | Eingabe | Bedeutung und Anwendung |
 |---|---|
-| `&Andy` | Gruppe Andy; interne Kennung automatisch `A`, also der erste Buchstabe des Namens. |
+| `&Andy:A` | Anzeigename Andy, interne Gruppenkennung `A`. |
 | `&ZSB10:L` | Anzeigename ZSB10, interne Gruppenkennung `L`. |
 | `&ZSB11:R` | Anzeigename ZSB11, interne Gruppenkennung `R`. |
 | `&Porsche:P` | Anzeigename Porsche, interne Gruppenkennung `P`. |
@@ -68,7 +78,7 @@ Eine Gruppe wird automatisch angelegt, sobald ein Barcode ihren `&...`-Eintrag e
 Für mehrere Gruppen mehrere `&`-Befehle eintragen:
 
 ```text
-DEMO/Anmeldung [&Andy, &ZSB10:L, &ZSB11:R, &Porsche:P, *:+]
+DEMO/Anmeldung [&Andy:A, &ZSB10:L, &ZSB11:R, &Porsche:P, *:+]
 ```
 
 Um einen Barcode aus einer Gruppe zu entfernen, nur den betreffenden `&...`-Befehl löschen. Die anderen Gruppenzuweisungen und Paarungsbefehle bleiben erhalten. Wenn kein Barcode mehr zur Gruppe gehört, verschwindet sie aus dem Dropdown.
@@ -81,7 +91,7 @@ Der Parser verwendet nach dem Doppelpunkt ausschließlich das erste Zeichen als 
 |---|---|
 | `&ZSB10:L` | `L` |
 | `&ZSB11:R` | `R` |
-| `&Andy` | `A` |
+| `&Andy:A` | `A` |
 | `&Syncrotess:Syncrotess` | `S`, keine lange ID „Syncrotess“ |
 | `&Auto:Alpha1` | `A`, keine eigenständige Kennung „Alpha1“ |
 | `&Gruppe:L1` und `&Gruppe:L2` | Beide Gruppe `L` |
@@ -117,7 +127,7 @@ Die vorhandene Bedienung ist:
 
 **Wichtige Einschränkung im aktuellen Code:** Diese Funktion leitet den neuen Gruppenbuchstaben aus dem ersten Buchstaben des neuen Namens ab. Zusätzlich verliert sie bei normalen `&Name:Kennung`-Einträgen die explizite Kennung beim Neuschreiben. Aus `&ZSB10:L` kann bei einem neuen Namen „Links“ beispielsweise `&Links` werden. Damit gehört die Gruppe anschließend zu `L`; bei „Montage“ dagegen zu `M`.
 
-Für „Audi links“ würde die Menüfunktion `A` wählen und bei deiner vorhandenen Gruppe Andy einen Kennungskonflikt melden. Sie ist also keine reine Umbenennung bei unveränderlicher Kennung. Für deine ZSB-Gruppen die oben beschriebene Änderung im Klammerfeld verwenden. Vor umfangreichen Änderungen die aktuelle Liste exportieren.
+Für „Audi links“ würde die Menüfunktion `A` wählen und bei deiner vorhandenen Gruppe Andy (`A`) einen Kennungskonflikt melden. Sie ist also keine reine Umbenennung bei unveränderlicher Kennung. Für deine ZSB-Gruppen die oben beschriebene Änderung im Klammerfeld verwenden. Vor umfangreichen Änderungen die aktuelle Liste exportieren.
 
 ## 5. Paaren: Material, Datum und Behälter zusammen anzeigen
 
@@ -266,14 +276,14 @@ Bei einfachem Aneinanderhängen beider Dateien entstehen **52 Einträge**, darun
 5. Das Passwortdatum gegebenenfalls am bestehenden Eintrag ändern. Dessen Gruppen und Plus-Marker behalten. Beispiel für den Klammerinhalt, wenn der 16.07.2026 tatsächlich richtig ist:
 
    ```text
-   &Andy, &ZSB10:L, &ZSB11:R, &Porsche:P, *:+, pw:16.07.2026
+   &Andy:A, &ZSB10:L, &ZSB11:R, &Porsche:P, *:+, pw:16.07.2026
    ```
 
 6. Die abweichende Großschreibung der ersten Zeile und den fehlenden Tabulator der Syncrotess-Zeile bewusst prüfen. Nicht allein aufgrund unterschiedlicher Beschriftungen neue Barcodes anlegen.
 7. Den zweiten Syncrotess-Zugang bei Bedarf ergänzen. Soll eine Anmeldung in Andy und Syncrotess erscheinen, beide Gruppen am gewünschten Eintrag angeben:
 
    ```text
-   &Andy, &Syncrotess:S
+   &Andy:A, &Syncrotess:S
    ```
 
 8. Danach nacheinander A, L, R, P und S auswählen und die Zuordnung prüfen. Je einen Materialmaster im Vollbild öffnen und den zugehörigen Behälter kontrollieren. Zum Schluss erneut exportieren.
@@ -303,7 +313,7 @@ DEMO/Eintrag [&ZSB10:L, #]
 Gemeinsame Anmeldung auf der Plus-Seite:
 
 ```text
-DEMO/Anmeldung [&Andy, &ZSB10:L, &ZSB11:R, &Porsche:P, *:+]
+DEMO/Anmeldung [&Andy:A, &ZSB10:L, &ZSB11:R, &Porsche:P, *:+]
 ```
 
 Material und versteckter Behälter auf der Minus-Seite:
@@ -316,7 +326,7 @@ BEHAELTER-DEMO/Behälter [P:S:MEINPAAR, &ZSB10:L, #, *:-]
 Passwort-Frist mit Gruppenzuweisung:
 
 ```text
-DEMO/Passwort [&Andy, pw:16.07.2026]
+DEMO/Passwort [&Andy:A, pw:16.07.2026]
 ```
 
 Die DEMO-Werte sind nur Syntaxbeispiele und keine betrieblichen Barcode-Werte.
@@ -337,3 +347,21 @@ Zentrale Stellen in `app/src/main/assets/index.html` im untersuchten Stand:
 - TXT-Import und Konfliktbehandlung: ab 10613 bis 10760.
 
 Der originale Parser wurde isoliert mit den beiden Listen und ausgewählten Syntaxbeispielen ausgeführt. Geprüft wurden Gruppenmitgliedschaften, Paar-IDs, Master-/Slave-Vollständigkeit, identische Zeilen und exakte Barcode-Wert-Konflikte. Die genannten Bedienungsgrenzen ergeben sich aus dem aktuellen Code; sie wurden nicht durch Änderungen an der App behoben.
+
+## 13. Häufige Fragen & Eigene Fehler erkennen (Ist das ein Fehler?)
+
+In der von dir geöffneten Datei `BarcodeAudi_verAndy_38.txt` und deiner 59er Datei gibt es Stellen, bei denen du unsicher warst. Hier die Auflösung:
+
+**1. Fehlende eckige Klammern `[...]` am Ende der Zeile:**
+- **Dein Code (Datei 38, Zeile 1):** `Cicsl/ Logis`
+- **Ist das ein Fehler?** Nein, technisch ist das erlaubt. Die App zeigt diesen Barcode dann einfach in der Hauptliste ("Alle Gruppen") an. Er gehört aber zu keiner Untergruppe. Wenn er z.B. in der Gruppe "Andy" erscheinen soll, musst du das ergänzen: `Cicsl/ Logis [&Andy:A]`
+
+**2. Keine Gruppe zugewiesen, aber ein Passwortdatum:**
+- **Dein Code (Datei 38, Zeile 3):** `RAM10326/PASSWORT[pw:16.07.2026]`
+- **Ist das ein Fehler?** Das funktioniert zwar, aber der Barcode wird in keiner deiner Gruppen (wie Andy oder ZSB) angezeigt, sondern nur unter "Alle". Meistens möchte man solche Barcodes auch einer Gruppe zuordnen. Die Lösung wäre: `RAM10326/PASSWORT[&Andy:A, pw:16.07.2026]`
+
+**3. Zu lange Gruppenkennung nach dem Doppelpunkt:**
+- **Dein Code (Datei 59, Zeile 35):** `andreas1.krabes	/ Syncrotess [&Syncrotess:Syncrotess]`
+- **Ist das ein Fehler?** Die App nutzt nach dem Doppelpunkt `:` immer **nur den ersten Buchstaben**. Aus `:Syncrotess` macht die App intern also automatisch die Kennung `S`. Das funktioniert und ist kein Absturz-Fehler, kann aber verwirrend sein, wenn man später in den Code schaut. Besser und sauberer wäre: `[&Syncrotess:S]`
+
+**Fazit:** Wirkliche „Fehler“, die die App zum Absturz bringen, machst du dort nicht. Es sind eher Feinheiten in der Zuweisung, damit die Barcodes auch in den richtigen Ansichten und Gruppen der App auftauchen.
