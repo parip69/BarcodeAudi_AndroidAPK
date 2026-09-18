@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Barcode Audi Scanner - Ver. 68 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="70">
+<html lang="de" data-app-version="71">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -14553,8 +14553,8 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter" data-app-version="70">
-      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">70</span></span>
+    <footer id="appFooter" data-app-version="71">
+      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">71</span></span>
       <button
         type="button"
         id="appUpdateButton"
@@ -14564,7 +14564,7 @@ In den App-Namensraum importieren?`)
     </footer>
 
     <script>
-      // Footer-Version und Update-Prüfung (Ver. 70)
+      // Footer-Version und Update-Prüfung (Ver. 71)
       (function () {
         const APP_UPDATE_URL_STORAGE_KEY = "updateSourceUrl";
         const DEFAULT_APP_UPDATE_URL = "https://parip69.github.io/BarcodeAudi_AndroidAPK/";
@@ -14582,12 +14582,14 @@ In den App-Namensraum importieren?`)
 
         function getAppUpdateUrl() {
           try {
-            const stored = appStorage.getItem(APP_UPDATE_URL_STORAGE_KEY);
-            if (stored === null) {
+            const stored = String(
+              appStorage.getItem(APP_UPDATE_URL_STORAGE_KEY) || "",
+            ).trim();
+            if (!stored) {
               appStorage.setItem(APP_UPDATE_URL_STORAGE_KEY, DEFAULT_APP_UPDATE_URL);
               return DEFAULT_APP_UPDATE_URL;
             }
-            return String(stored || "").trim();
+            return stored;
           } catch (_) {
             return DEFAULT_APP_UPDATE_URL;
           }
