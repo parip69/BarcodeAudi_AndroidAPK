@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Barcode Audi Scanner - Ver. 64 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="66">
+<html lang="de" data-app-version="67">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -3970,6 +3970,23 @@
       /* Zeichenersetzung: zusätzliche Sonderwünsche DE <-> EN */
       #characterReplacementOverlay {
         background: rgba(0, 0, 0, 0.5) !important;
+        box-sizing: border-box;
+        padding: 8px;
+      }
+
+      /* Wenn in der Zeichenersetzung die Bildschirmtastatur aktiv ist,
+         nutzt das Popup nur den sichtbaren Bereich oberhalb der Tastatur. */
+      #characterReplacementOverlay.character-keyboard-active {
+        align-items: flex-start !important;
+        justify-content: center !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+      }
+
+      #characterReplacementOverlay.character-keyboard-active
+        #characterReplacementContent {
+        margin-top: 0 !important;
+        max-height: calc(var(--character-visible-height, 100dvh) - 8px) !important;
       }
 
       #characterReplacementContent {
@@ -4077,6 +4094,11 @@
         justify-content: flex-end;
         gap: 8px;
         margin-top: 10px;
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        background: #fff;
+        padding: 8px 0 2px 0;
       }
 
       .character-replacement-buttons button {
@@ -5539,6 +5561,7 @@
     >
       <div id="characterReplacementContent">
         <h3>Zeichenersetzung</h3>
+        <div style="font-size:0.82em;color:#555;margin:-4px 0 12px 0;text-align:center;">Sonderwünsche haben Vorrang vor der Standard-Zuordnung.</div>
         <div class="character-replacement-header" aria-hidden="true">
           <span>🇩🇪 Deutsch</span>
           <span></span>
@@ -7185,19 +7208,37 @@
         );
       }
 
+      function getStandardDirectedCharacterReplacementRules(languageMode) {
+        const mode = languageMode === "en" ? "en" : "de";
+        if (mode !== "en") return [];
+        return [
+          { from: "Y", to: "Z", source: "standard" },
+          { from: "y", to: "z", source: "standard" },
+          { from: "Z", to: "Y", source: "standard" },
+          { from: "z", to: "y", source: "standard" },
+        ];
+      }
+
       function applyLanguageCharacterMapping(value, languageMode = getLanguageMode()) {
         const mode = languageMode === "en" ? "en" : "de";
         const source = String(value ?? "");
-        const customRules = getDirectedCharacterReplacementRules(mode);
         if (!source) return source;
 
-        // Priorität 1: benutzerdefinierte Sonderwünsche werden direkt auf dem
-        // Originaltext geprüft. Nur wenn an der aktuellen Position KEINE
-        // Sonderregel passt, greift die feste Standard-Tastaturumsetzung.
+        // WICHTIG: Sonderwünsche aus dem Eingabefenster haben IMMER Priorität 1.
+        // Die feste Standard-Tastaturumsetzung ist nur ein Fallback, wenn an der
+        // aktuellen Stelle keine benutzerdefinierte Regel passt. Ersatztexte aus
+        // einer Sonderregel werden nicht noch einmal durch Standardregeln verändert.
+        const customRules = getDirectedCharacterReplacementRules(mode).map(
+          (rule) => ({ ...rule, source: "custom" }),
+        );
+        const standardRules = getStandardDirectedCharacterReplacementRules(mode);
+
         let output = "";
         let index = 0;
         while (index < source.length) {
           let matchedRule = null;
+
+          // 1) Benutzerdefinierte Sonderwünsche: längster Treffer zuerst.
           for (const rule of customRules) {
             if (source.startsWith(rule.from, index)) {
               matchedRule = rule;
@@ -7205,18 +7246,61 @@
             }
           }
 
+          // 2) Nur wenn KEIN Sonderwunsch passt, darf die interne Standardregel greifen.
+          if (!matchedRule) {
+            for (const rule of standardRules) {
+              if (source.startsWith(rule.from, index)) {
+                matchedRule = rule;
+                break;
+              }
+            }
+          }
+
           if (matchedRule) {
             output += matchedRule.to;
             index += matchedRule.from.length;
-            continue;
+          } else {
+            output += source[index];
+            index += 1;
           }
-
-          const currentChar = source[index];
-          output += mode === "en" ? swapYZ(currentChar) : currentChar;
-          index += 1;
         }
         return output;
       }
+
+      function verifyCharacterReplacementPriorityEngine() {
+        // Interner Selbsttest: Sonderwunsch Y>= und Z>+ muss die feste Y/Z-Regel
+        // vollständig überstimmen. Der Test verändert keine Benutzerdaten.
+        const source = "YZ";
+        const customRules = [
+          { from: "Y", to: "=" },
+          { from: "Z", to: "+" },
+        ];
+        const standardRules = [
+          { from: "Y", to: "Z" },
+          { from: "Z", to: "Y" },
+        ];
+        let output = "";
+        let index = 0;
+        while (index < source.length) {
+          let matchedRule = customRules.find((rule) => source.startsWith(rule.from, index));
+          if (!matchedRule) {
+            matchedRule = standardRules.find((rule) => source.startsWith(rule.from, index));
+          }
+          if (matchedRule) {
+            output += matchedRule.to;
+            index += matchedRule.from.length;
+          } else {
+            output += source[index++];
+          }
+        }
+        if (output !== "=+") {
+          console.error("Zeichenersetzung-Prioritätstest fehlgeschlagen:", output);
+          return false;
+        }
+        return true;
+      }
+
+      verifyCharacterReplacementPriorityEngine();
 
       function addCharacterReplacementRow(deValue = "", enValue = "") {
         const rows = document.getElementById("characterReplacementRows");
@@ -7271,6 +7355,57 @@
         if (errorElement) errorElement.textContent = message;
       }
 
+      function syncCharacterReplacementKeyboardViewport() {
+        const overlay = document.getElementById("characterReplacementOverlay");
+        if (!overlay || overlay.classList.contains("hidden")) return;
+
+        const activeElement = document.activeElement;
+        const editingReplacement = Boolean(
+          activeElement &&
+          overlay.contains(activeElement) &&
+          activeElement.matches(".character-replacement-row input"),
+        );
+
+        if (!editingReplacement) return;
+
+        const viewport = window.visualViewport;
+        const visibleHeight = Math.max(
+          220,
+          Math.floor(viewport?.height || window.innerHeight || 0),
+        );
+        const visibleTop = Math.max(0, Math.floor(viewport?.offsetTop || 0));
+
+        overlay.classList.add("character-keyboard-active");
+        overlay.style.top = `${visibleTop}px`;
+        overlay.style.height = `${visibleHeight}px`;
+        overlay.style.bottom = "auto";
+        overlay.style.setProperty("--character-visible-height", `${visibleHeight}px`);
+
+        requestAnimationFrame(() => {
+          try {
+            activeElement.scrollIntoView({ block: "center", inline: "nearest" });
+          } catch (_) {
+            activeElement.scrollIntoView(false);
+          }
+        });
+      }
+
+      function resetCharacterReplacementKeyboardViewport() {
+        const overlay = document.getElementById("characterReplacementOverlay");
+        if (!overlay) return;
+        overlay.classList.remove("character-keyboard-active");
+        overlay.style.top = "";
+        overlay.style.height = "";
+        overlay.style.bottom = "";
+        overlay.style.removeProperty("--character-visible-height");
+      }
+
+      function scheduleCharacterReplacementKeyboardViewportSync() {
+        syncCharacterReplacementKeyboardViewport();
+        window.setTimeout(syncCharacterReplacementKeyboardViewport, 60);
+        window.setTimeout(syncCharacterReplacementKeyboardViewport, 220);
+      }
+
       function openCharacterReplacementPopup() {
         closeMenuOverlayMain();
         const rows = document.getElementById("characterReplacementRows");
@@ -7291,8 +7426,7 @@
           {
             closeOnBackdrop: true,
             afterOpen: () => {
-              const firstInput = rows.querySelector("input");
-              if (firstInput) firstInput.focus();
+              resetCharacterReplacementKeyboardViewport();
             },
           },
         );
@@ -7300,6 +7434,7 @@
 
       function closeCharacterReplacementPopup() {
         setCharacterReplacementError("");
+        resetCharacterReplacementKeyboardViewport();
         closeViewportLockedOverlay("characterReplacementOverlay");
       }
 
@@ -7390,6 +7525,42 @@
           );
         }
       }
+
+      const characterReplacementOverlayElement = document.getElementById(
+        "characterReplacementOverlay",
+      );
+
+      characterReplacementOverlayElement?.addEventListener("focusin", (event) => {
+        if (!(event.target instanceof HTMLInputElement)) return;
+        if (!event.target.matches(".character-replacement-row input")) return;
+        scheduleCharacterReplacementKeyboardViewportSync();
+      });
+
+      characterReplacementOverlayElement?.addEventListener("focusout", () => {
+        window.setTimeout(() => {
+          const overlay = document.getElementById("characterReplacementOverlay");
+          const activeElement = document.activeElement;
+          const stillEditing = Boolean(
+            overlay &&
+            activeElement &&
+            overlay.contains(activeElement) &&
+            activeElement.matches?.(".character-replacement-row input"),
+          );
+          if (!stillEditing) resetCharacterReplacementKeyboardViewport();
+        }, 180);
+      });
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener(
+          "resize",
+          syncCharacterReplacementKeyboardViewport,
+        );
+        window.visualViewport.addEventListener(
+          "scroll",
+          syncCharacterReplacementKeyboardViewport,
+        );
+      }
+      window.addEventListener("resize", syncCharacterReplacementKeyboardViewport);
 
       document
         .getElementById("addCharacterReplacementRow")
@@ -13869,8 +14040,8 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter" data-app-version="63">
-      Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">63</span>
+    <footer id="appFooter" data-app-version="65">
+      Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">65</span>
 
     <script>
       // Setze die Versionsnummer im Footer und überall zentral
