@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="60">
+<html lang="de" data-app-version="61">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -10844,11 +10844,8 @@ In den App-Namensraum importieren?`)
           .replace(/y/g, "-")
           .replace(/Z/g, "Y")
           .replace(/z/g, "y")
-          .replace(/\*/g, "\u0001") // Platzhalter, um * <-> } zu tauschen (gleiche Tastenposition DE/EN)
-          .replace(/\}/g, "*")
           .replace(/_/g, "Z")
-          .replace(/-/g, "z")
-          .replace(/\u0001/g, "}");
+          .replace(/-/g, "z");
       }
       function reloadBarcodes() {
         languageMode = getLanguageMode();
