@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 64 -->
+<!-- Barcode Audi Scanner - Ver. 68 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="68">
+<html lang="de" data-app-version="70">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -3707,6 +3707,135 @@
         color: #fff;
       }
 
+      /* Update-Button im Footer (Ver. 70) */
+      #appFooter {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
+
+      #appUpdateButton {
+        margin-left: 2px;
+        padding: 2px 7px;
+        min-height: 22px;
+        border: 1px solid #7aa7c7;
+        border-radius: 6px;
+        background: #eef7ff;
+        color: #165b87;
+        font-size: 11px;
+        line-height: 1.15;
+        font-weight: 700;
+        cursor: pointer;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #appUpdateButton:active { transform: translateY(1px); }
+      #appUpdateButton[disabled] { opacity: 0.65; cursor: default; }
+
+      #appUpdateSettingsContent,
+      #appUpdateAvailableContent {
+        width: min(92vw, 430px);
+        max-width: 430px;
+        max-height: min(88vh, 620px);
+        overflow: auto;
+        background: #fff;
+        color: #000;
+        border-radius: 10px;
+        padding: 18px;
+        box-sizing: border-box;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.28);
+        text-align: left;
+        color-scheme: light;
+      }
+
+      /* Update-Link: bei eingeblendeter Bildschirmtastatur den Dialog
+         komplett in den sichtbaren Bereich oberhalb der Tastatur schieben. */
+      #appUpdateSettingsOverlay.app-update-keyboard-active {
+        align-items: flex-start !important;
+        justify-content: center !important;
+        box-sizing: border-box;
+        padding: 4px 8px !important;
+      }
+
+      #appUpdateSettingsOverlay.app-update-keyboard-active
+        #appUpdateSettingsContent {
+        margin-top: 0 !important;
+        max-height: calc(var(--app-update-visible-height, 100dvh) - 8px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #appUpdateSettingsContent .app-update-buttons {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        background: #fff;
+        padding-top: 8px;
+      }
+
+      #appUpdateSettingsContent h3,
+      #appUpdateAvailableContent h3 {
+        margin: 0 0 12px 0;
+        text-align: center;
+        color: #000;
+      }
+
+      #appUpdateUrlInput {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border: 1px solid #aaa;
+        border-radius: 6px;
+        background: #fff;
+        color: #000;
+        font-size: 14px;
+      }
+
+      .app-update-hint {
+        margin: 8px 0 12px 0;
+        color: #555;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .app-update-status {
+        margin: 10px 0 14px 0;
+        padding: 10px;
+        border-radius: 7px;
+        background: #f3f7fb;
+        color: #111;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .app-update-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+
+      .app-update-buttons button {
+        border: none;
+        border-radius: 6px;
+        padding: 8px 12px;
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      #appUpdateSettingsCancelButton,
+      #appUpdateAvailableCancelButton,
+      #appUpdateClearUrlButton { background: #ff5c5c; }
+      #appUpdateSettingsSaveButton { background: #4caf50; }
+      #appUpdateStartButton { background: #007bff; }
+
       /* Hamburger-Menü */
       .main-settings-button {
         position: absolute;
@@ -4133,6 +4262,72 @@
           grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 28px;
           gap: 4px;
         }
+      }
+
+      /* Einheitliche Sonderzeichen-Leiste fuer Barcode-Eingaben und Zeichenersetzung */
+      .special-char-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding: 2px 1px;
+        margin: 1px 0 5px 0;
+        scrollbar-width: thin;
+      }
+
+      .special-char-toolbar .special-char-label {
+        flex: 0 0 auto;
+        font-size: 0.66em;
+        color: #555 !important;
+        -webkit-text-fill-color: #555 !important;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .special-char-toolbar button {
+        flex: 0 0 auto;
+        min-width: 32px;
+        margin: 0 !important;
+        padding: 3px 5px !important;
+        border: 1px solid #8aa0b5 !important;
+        border-radius: 5px !important;
+        background: #eef7ff !important;
+        color: #123f66 !important;
+        -webkit-text-fill-color: #123f66 !important;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.72em !important;
+        line-height: 1.15;
+        font-weight: 700;
+        cursor: pointer;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+
+      /* Hauptansicht: Sonderzeichen erst bei aktiver Barcode-Eingabe zeigen. */
+      #mainSpecialCharToolbar {
+        display: none;
+      }
+
+      #mainSpecialCharToolbar.is-visible {
+        display: flex;
+      }
+
+      .special-char-toolbar button:active {
+        transform: scale(0.97);
+      }
+
+      #characterReplacementContent .special-char-toolbar {
+        margin-top: 5px;
+        margin-bottom: 3px;
+      }
+
+      #characterReplacementContent .special-char-toolbar button {
+        color-scheme: light !important;
       }
 
       .pair-dot {
@@ -4910,6 +5105,18 @@
             🇩🇪
           </button>
         </div>
+        <div
+          class="special-char-toolbar"
+          id="mainSpecialCharToolbar"
+          aria-label="Sonderzeichen in Barcode einfuegen"
+        >
+          <span class="special-char-label">Sonderzeichen:</span>
+          <button type="button" data-special-marker="␠" title="Leerzeichen (Space)">␠ Leer</button>
+          <button type="button" data-special-marker="␉" title="Tabulator (HT / TAB)">␉ TAB</button>
+          <button type="button" data-special-marker="␍" title="Enter (CR)">␍ CR</button>
+          <button type="button" data-special-marker="␊" title="Zeilenumbruch (LF)">␊ LF</button>
+          <button type="button" data-special-marker="␍␊" title="Windows-Enter (CRLF)">␍␊ CRLF</button>
+        </div>
         <div style="height: 10px"></div>
         <div id="generatedBarcodes">
           <div style="height: 10px"></div>
@@ -5572,6 +5779,19 @@
           <span></span>
         </div>
         <div id="characterReplacementRows"></div>
+        <div
+          class="special-char-toolbar"
+          id="characterReplacementSpecialCharToolbar"
+          aria-label="Sonderzeichen in die aktive Zeichenersetzung einfuegen"
+        >
+          <span class="special-char-label">Sonderzeichen:</span>
+          <button type="button" data-special-marker="␠" title="Leerzeichen (Space)">␠ Leer</button>
+          <button type="button" data-special-marker="␉" title="Tabulator (HT / TAB)">␉ TAB</button>
+          <button type="button" data-special-marker="␍" title="Enter (CR)">␍ CR</button>
+          <button type="button" data-special-marker="␊" title="Zeilenumbruch (LF)">␊ LF</button>
+          <button type="button" data-special-marker="␍␊" title="Windows-Enter (CRLF)">␍␊ CRLF</button>
+        </div>
+        <div style="font-size:0.75em;color:#666;margin:0 0 4px 0;text-align:left;">␠ = Space · ␉ = TAB · ␍ = CR · ␊ = LF · ␍␊ = CRLF. Zuerst links oder rechts antippen, dann Zeichen wählen.</div>
         <button type="button" id="addCharacterReplacementRow">
           + Zuordnung hinzufügen
         </button>
@@ -5730,6 +5950,18 @@
             id="editCodeInput"
             style="width: 95%; padding: 8px 12px; margin-bottom: 10px"
           />
+        </div>
+        <div
+          class="special-char-toolbar"
+          id="editCodeSpecialCharToolbar"
+          aria-label="Sonderzeichen in Barcode-Code einfuegen"
+        >
+          <span class="special-char-label">Sonderzeichen:</span>
+          <button type="button" data-special-marker="␠" title="Leerzeichen (Space)">␠ Leer</button>
+          <button type="button" data-special-marker="␉" title="Tabulator (HT / TAB)">␉ TAB</button>
+          <button type="button" data-special-marker="␍" title="Enter (CR)">␍ CR</button>
+          <button type="button" data-special-marker="␊" title="Zeilenumbruch (LF)">␊ LF</button>
+          <button type="button" data-special-marker="␍␊" title="Windows-Enter (CRLF)">␍␊ CRLF</button>
         </div>
         <div>
           <label for="editLabelInput">Bezeichnung nach /:</label>
@@ -5900,6 +6132,35 @@
         </div>
       </div>
     </div>
+    <!-- Update-Link: langer Druck auf den Footer-Button -->
+    <div id="appUpdateSettingsOverlay" class="popup-container hidden" aria-hidden="true">
+      <div id="appUpdateSettingsContent" role="dialog" aria-modal="true" aria-labelledby="appUpdateSettingsTitle">
+        <h3 id="appUpdateSettingsTitle">Update-Link</h3>
+        <label for="appUpdateUrlInput" style="display:block;font-weight:700;margin-bottom:5px;">Adresse der Update-Seite:</label>
+        <input id="appUpdateUrlInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" />
+        <div class="app-update-hint">
+          Kurz auf „Update“ drücken = Version prüfen. Lange drücken = diesen Link ändern.
+        </div>
+        <div class="app-update-buttons">
+          <button type="button" id="appUpdateClearUrlButton">Link löschen</button>
+          <button type="button" id="appUpdateSettingsCancelButton">Abbrechen</button>
+          <button type="button" id="appUpdateSettingsSaveButton">Speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ergebnis einer erfolgreichen Update-Prüfung -->
+    <div id="appUpdateAvailableOverlay" class="popup-container hidden" aria-hidden="true">
+      <div id="appUpdateAvailableContent" role="dialog" aria-modal="true" aria-labelledby="appUpdateAvailableTitle">
+        <h3 id="appUpdateAvailableTitle">Neue Version verfügbar</h3>
+        <div id="appUpdateAvailableStatus" class="app-update-status"></div>
+        <div class="app-update-buttons">
+          <button type="button" id="appUpdateAvailableCancelButton">Abbrechen</button>
+          <button type="button" id="appUpdateStartButton">Update starten</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Consent-Popup (zunaechst verborgen) -->
     <div id="consentPopupOverlay" class="popup-container hidden">
       <div class="popup-content">
@@ -5927,7 +6188,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "62";
+      const APP_VERSION_FALLBACK = "70";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
 
       function getAndroidBridge() {
@@ -6046,6 +6307,7 @@
         "themeMode",
         "mainBarcodeHidden",
         "characterReplacementRules",
+        "updateSourceUrl",
       ];
       const APP_STORAGE_PREFIX_KEYS = ["groupOrdering_", "languageMode_"];
       const LOCAL_STORAGE_IMPORT_METADATA_KEYS = new Set([
@@ -6365,20 +6627,94 @@
         refreshThemeDependentStyles();
       }
 
-      // Funktionen zum Escapen und Wiederherstellen nicht druckbarer Zeichen
+      // Funktionen zum sichtbaren Darstellen und Wiederherstellen nicht druckbarer Zeichen.
+      // Kanonische Anzeige: ␠ Space, ␉ TAB, ␍ CR, ␊ LF, ␍␊ CRLF.
+      // Das alte LF-Zeichen ␤ bleibt beim Einlesen aus Kompatibilitaetsgruenden gueltig.
       function escapeNonPrintableChars(text) {
-        return text
-          .replace(/\n/g, "␤")
+        return String(text ?? "")
+          .replace(/\r\n/g, "␍␊")
           .replace(/\r/g, "␍")
+          .replace(/\n/g, "␊")
           .replace(/\t/g, "␉")
           .replace(/ /g, "␠");
       }
       function restoreSpecialChars(text) {
-        return text
+        return String(text ?? "")
+          .replace(/␍␊/g, "\r\n")
           .replace(/␤/g, "\n")
+          .replace(/␊/g, "\n")
           .replace(/␍/g, "\r")
           .replace(/␉/g, "\t")
           .replace(/␠/g, " ");
+      }
+
+      function restoreSpecialCharsOnlyInBarcodeCode(fullText) {
+        const text = String(fullText ?? "");
+        const slashIndex = text.indexOf("/");
+        if (slashIndex < 0) return restoreSpecialChars(text);
+        return (
+          restoreSpecialChars(text.substring(0, slashIndex)) +
+          text.substring(slashIndex)
+        );
+      }
+
+      function rememberSpecialCharCaret(input) {
+        if (!input || typeof input.selectionStart !== "number") return;
+        input.dataset.specialCaretStart = String(input.selectionStart);
+        input.dataset.specialCaretEnd = String(input.selectionEnd ?? input.selectionStart);
+      }
+
+      function insertVisibleSpecialMarker(input, marker) {
+        if (!input) return false;
+        const value = String(input.value ?? "");
+        const fallbackStart = Number.parseInt(input.dataset.specialCaretStart || "", 10);
+        const fallbackEnd = Number.parseInt(input.dataset.specialCaretEnd || "", 10);
+        const start =
+          typeof input.selectionStart === "number"
+            ? input.selectionStart
+            : Number.isFinite(fallbackStart)
+              ? fallbackStart
+              : value.length;
+        const end =
+          typeof input.selectionEnd === "number"
+            ? input.selectionEnd
+            : Number.isFinite(fallbackEnd)
+              ? fallbackEnd
+              : start;
+        const token = String(marker ?? "");
+        input.value = value.substring(0, start) + token + value.substring(end);
+        const nextCaret = start + token.length;
+        input.dataset.specialCaretStart = String(nextCaret);
+        input.dataset.specialCaretEnd = String(nextCaret);
+        input.focus({ preventScroll: true });
+        try {
+          input.setSelectionRange(nextCaret, nextCaret);
+        } catch (_) {}
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      }
+
+      function bindSpecialCharToolbar(toolbarId, targetResolver) {
+        const toolbar = document.getElementById(toolbarId);
+        if (!toolbar || typeof targetResolver !== "function") return;
+        toolbar.querySelectorAll("button[data-special-marker]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const target = targetResolver();
+            if (!target) {
+              showToast("Zuerst ein Eingabefeld antippen.", "warning");
+              return;
+            }
+            insertVisibleSpecialMarker(target, button.dataset.specialMarker || "");
+          });
+        });
+      }
+
+      function bindCaretMemory(input) {
+        if (!input || input.dataset.specialCaretBound === "true") return;
+        ["focus", "click", "keyup", "select", "input"].forEach((eventName) => {
+          input.addEventListener(eventName, () => rememberSpecialCharCaret(input));
+        });
+        input.dataset.specialCaretBound = "true";
       }
 
       function getAllGroupOrderingKeys() {
@@ -7081,7 +7417,9 @@
       const DEFAULT_CHARACTER_REPLACEMENT_RULES = [{ de: "**", en: "}." }];
 
       function escapeCharacterReplacementPart(value) {
-        return String(value ?? "")
+        // Nicht druckbare Zeichen bleiben im gespeicherten Einzeiler lesbar
+        // (z. B. ␉ statt echtem TAB). Komma, > und Backslash werden escaped.
+        return escapeNonPrintableChars(String(value ?? ""))
           .replace(/\\/g, "\\\\")
           .replace(/>/g, "\\>")
           .replace(/,/g, "\\,");
@@ -7099,7 +7437,11 @@
 
         function finishRule() {
           if (left !== "" || right !== "" || readingRight) {
-            rules.push({ de: left, en: right, hasSeparator: readingRight });
+            rules.push({
+              de: restoreSpecialChars(left),
+              en: restoreSpecialChars(right),
+              hasSeparator: readingRight,
+            });
           }
           left = "";
           right = "";
@@ -7342,6 +7684,32 @@
 
       verifyCharacterReplacementPriorityEngine();
 
+      (function verifySpecialCharacterReplacementRoundTrip() {
+        const testRules = [
+          { de: "\t", en: "TAB" },
+          { de: "\r\n", en: "ENTER" },
+          { de: "\n", en: "LF" },
+        ];
+        const serialized = serializeCharacterReplacementRules(testRules);
+        const parsed = parseCharacterReplacementRules(serialized).filter(
+          (rule) => rule.hasSeparator,
+        );
+        const output = applyCharacterReplacementPriorityEngine(
+          "A\tB\r\nC\nD",
+          getDirectedCharacterReplacementRules("en", parsed),
+          [],
+        );
+        const expected = "ATABBENTERCLFD";
+        if (output !== expected) {
+          console.error(
+            "Sonderzeichen-Zeichenersetzungstest fehlgeschlagen:",
+            { serialized, output, expected },
+          );
+        }
+      })();
+
+      let lastCharacterReplacementInput = null;
+
       function addCharacterReplacementRow(deValue = "", enValue = "") {
         const rows = document.getElementById("characterReplacementRows");
         if (!rows) return null;
@@ -7352,7 +7720,7 @@
         const deInput = document.createElement("input");
         deInput.type = "text";
         deInput.className = "character-replacement-de";
-        deInput.value = String(deValue ?? "");
+        deInput.value = escapeNonPrintableChars(String(deValue ?? ""));
         deInput.setAttribute("aria-label", "Deutsch");
         deInput.autocomplete = "off";
         deInput.spellcheck = false;
@@ -7365,10 +7733,20 @@
         const enInput = document.createElement("input");
         enInput.type = "text";
         enInput.className = "character-replacement-en";
-        enInput.value = String(enValue ?? "");
+        enInput.value = escapeNonPrintableChars(String(enValue ?? ""));
         enInput.setAttribute("aria-label", "Englisch");
         enInput.autocomplete = "off";
         enInput.spellcheck = false;
+
+        [deInput, enInput].forEach((input) => {
+          bindCaretMemory(input);
+          input.addEventListener("focus", () => {
+            lastCharacterReplacementInput = input;
+          });
+          input.addEventListener("click", () => {
+            lastCharacterReplacementInput = input;
+          });
+        });
 
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
@@ -7452,6 +7830,7 @@
         if (!rows) return;
 
         rows.innerHTML = "";
+        lastCharacterReplacementInput = null;
         setCharacterReplacementError("");
         const rules = getCharacterReplacementRules();
         if (rules.length === 0) {
@@ -7488,8 +7867,10 @@
 
         for (let index = 0; index < rowElements.length; index++) {
           const row = rowElements[index];
-          const de = row.querySelector(".character-replacement-de")?.value ?? "";
-          const en = row.querySelector(".character-replacement-en")?.value ?? "";
+          const deDisplay = row.querySelector(".character-replacement-de")?.value ?? "";
+          const enDisplay = row.querySelector(".character-replacement-en")?.value ?? "";
+          const de = restoreSpecialChars(deDisplay);
+          const en = restoreSpecialChars(enDisplay);
           const rowNumber = index + 1;
 
           if (de === "" && en === "") continue;
@@ -7501,12 +7882,12 @@
 
           if (seenDe.has(de)) {
             throw new Error(
-              `Deutsch „${de}“ ist doppelt eingetragen (Zeilen ${seenDe.get(de)} und ${rowNumber}).`,
+              `Deutsch „${escapeNonPrintableChars(de)}“ ist doppelt eingetragen (Zeilen ${seenDe.get(de)} und ${rowNumber}).`,
             );
           }
           if (seenEn.has(en)) {
             throw new Error(
-              `Englisch „${en}“ ist doppelt eingetragen (Zeilen ${seenEn.get(en)} und ${rowNumber}).`,
+              `Englisch „${escapeNonPrintableChars(en)}“ ist doppelt eingetragen (Zeilen ${seenEn.get(en)} und ${rowNumber}).`,
             );
           }
 
@@ -7621,8 +8002,85 @@
         .getElementById("addCharacterReplacementRow")
         ?.addEventListener("click", () => {
           const row = addCharacterReplacementRow();
-          row?.querySelector("input")?.focus();
+          const input = row?.querySelector("input");
+          if (input) {
+            lastCharacterReplacementInput = input;
+            input.focus();
+            scheduleCharacterReplacementKeyboardViewportSync();
+          }
         });
+
+      // Sonderzeichen-Paletten: sichtbare Marker an der Cursorposition einfuegen.
+      // Erst beim Speichern/Erzeugen werden sie zu echten Steuerzeichen.
+      // In der Hauptansicht bleibt die Leiste platzsparend verborgen und wird
+      // erst sichtbar, wenn das Barcode-Eingabefeld aktiv benutzt wird.
+      const mainBarcodeInputForSpecialChars = document.getElementById("inputField");
+      const mainSpecialCharToolbar = document.getElementById("mainSpecialCharToolbar");
+
+      function setMainSpecialCharToolbarVisible(visible) {
+        if (!mainSpecialCharToolbar) return;
+        mainSpecialCharToolbar.classList.toggle("is-visible", Boolean(visible));
+      }
+
+      if (mainBarcodeInputForSpecialChars && mainSpecialCharToolbar) {
+        const showMainSpecialCharToolbar = () =>
+          setMainSpecialCharToolbarVisible(true);
+
+        mainBarcodeInputForSpecialChars.addEventListener(
+          "focus",
+          showMainSpecialCharToolbar,
+        );
+        mainBarcodeInputForSpecialChars.addEventListener(
+          "pointerdown",
+          showMainSpecialCharToolbar,
+        );
+
+        document.addEventListener(
+          "pointerdown",
+          (event) => {
+            const target = event.target;
+            if (
+              target === mainBarcodeInputForSpecialChars ||
+              mainSpecialCharToolbar.contains(target)
+            ) {
+              return;
+            }
+            setMainSpecialCharToolbarVisible(false);
+          },
+          true,
+        );
+
+        document.addEventListener("focusin", (event) => {
+          const target = event.target;
+          if (
+            target === mainBarcodeInputForSpecialChars ||
+            mainSpecialCharToolbar.contains(target)
+          ) {
+            return;
+          }
+          setMainSpecialCharToolbarVisible(false);
+        });
+      }
+
+      bindCaretMemory(document.getElementById("inputField"));
+      bindCaretMemory(document.getElementById("editCodeInput"));
+      bindSpecialCharToolbar("mainSpecialCharToolbar", () =>
+        document.getElementById("inputField"),
+      );
+      bindSpecialCharToolbar("editCodeSpecialCharToolbar", () =>
+        document.getElementById("editCodeInput"),
+      );
+      bindSpecialCharToolbar(
+        "characterReplacementSpecialCharToolbar",
+        () =>
+          lastCharacterReplacementInput &&
+          document.getElementById("characterReplacementOverlay")?.contains(
+            lastCharacterReplacementInput,
+          )
+            ? lastCharacterReplacementInput
+            : null,
+      );
+
       document
         .getElementById("cancelCharacterReplacementButton")
         ?.addEventListener("click", closeCharacterReplacementPopup);
@@ -11538,7 +11996,7 @@ In den App-Namensraum importieren?`)
           if (event.key === "Enter") {
             event.preventDefault();
             const input = event.target;
-            let text = input.value;
+            let text = restoreSpecialCharsOnlyInBarcodeCode(input.value);
 
             if (text) {
               // STRENGE KONTROLLE: Neuen Barcode zur globalen Liste hinzufügen
@@ -14095,20 +14553,352 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter" data-app-version="66">
-      Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">66</span>
+    <footer id="appFooter" data-app-version="70">
+      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">70</span></span>
+      <button
+        type="button"
+        id="appUpdateButton"
+        title="Kurz drücken: Update prüfen · Lang drücken: Update-Link ändern"
+        aria-label="Update prüfen. Lange drücken, um den Update-Link zu ändern."
+      >↻ Update</button>
+    </footer>
 
     <script>
-      // Setze die Versionsnummer im Footer und überall zentral
-      document.addEventListener("DOMContentLoaded", function () {
-        var version = document.documentElement.getAttribute("data-app-version") || "?";
-        var footerVersion = document.getElementById("footerVersion");
-        if (footerVersion) footerVersion.textContent = version;
-        // Optional: weitere Stellen automatisch ersetzen
-        // z.B. document.querySelectorAll('.version-text').forEach(el => el.textContent = version);
-      });
+      // Footer-Version und Update-Prüfung (Ver. 70)
+      (function () {
+        const APP_UPDATE_URL_STORAGE_KEY = "updateSourceUrl";
+        const DEFAULT_APP_UPDATE_URL = "https://parip69.github.io/BarcodeAudi_AndroidAPK/";
+        const APP_UPDATE_LONG_PRESS_MS = 650;
+        let appUpdateLongPressTimer = null;
+        let appUpdateLongPressTriggered = false;
+
+        function updateFooterVersion() {
+          const version = document.documentElement.getAttribute("data-app-version") || "?";
+          const footer = document.getElementById("appFooter");
+          const footerVersion = document.getElementById("footerVersion");
+          if (footer) footer.setAttribute("data-app-version", version);
+          if (footerVersion) footerVersion.textContent = version;
+        }
+
+        function getAppUpdateUrl() {
+          try {
+            const stored = appStorage.getItem(APP_UPDATE_URL_STORAGE_KEY);
+            if (stored === null) {
+              appStorage.setItem(APP_UPDATE_URL_STORAGE_KEY, DEFAULT_APP_UPDATE_URL);
+              return DEFAULT_APP_UPDATE_URL;
+            }
+            return String(stored || "").trim();
+          } catch (_) {
+            return DEFAULT_APP_UPDATE_URL;
+          }
+        }
+
+        function setAppUpdateUrl(value) {
+          const normalized = String(value || "").trim();
+          appStorage.setItem(APP_UPDATE_URL_STORAGE_KEY, normalized);
+          return normalized;
+        }
+
+        function normalizeUpdateUrl(rawUrl) {
+          const value = String(rawUrl || "").trim();
+          if (!value) return "";
+          try {
+            const parsed = new URL(value, window.location.href);
+            if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+              throw new Error("Nur http/https erlaubt");
+            }
+            return parsed.toString();
+          } catch (_) {
+            throw new Error("Bitte einen gültigen http- oder https-Link eingeben.");
+          }
+        }
+
+        function syncAppUpdateKeyboardViewport() {
+          const overlay = document.getElementById("appUpdateSettingsOverlay");
+          const input = document.getElementById("appUpdateUrlInput");
+          if (!overlay || !input || overlay.classList.contains("hidden")) return;
+          if (document.activeElement !== input) return;
+
+          const viewport = window.visualViewport;
+          const visibleHeight = Math.max(220, Math.floor(viewport?.height || window.innerHeight || 0));
+          const visibleTop = Math.max(0, Math.floor(viewport?.offsetTop || 0));
+
+          overlay.classList.add("app-update-keyboard-active");
+          overlay.style.top = `${visibleTop}px`;
+          overlay.style.height = `${visibleHeight}px`;
+          overlay.style.bottom = "auto";
+          overlay.style.setProperty("--app-update-visible-height", `${visibleHeight}px`);
+
+          requestAnimationFrame(() => {
+            try {
+              input.scrollIntoView({ block: "nearest", inline: "nearest" });
+            } catch (_) {
+              input.scrollIntoView(false);
+            }
+          });
+        }
+
+        function resetAppUpdateKeyboardViewport() {
+          const overlay = document.getElementById("appUpdateSettingsOverlay");
+          if (!overlay) return;
+          overlay.classList.remove("app-update-keyboard-active");
+          overlay.style.top = "";
+          overlay.style.height = "";
+          overlay.style.bottom = "";
+          overlay.style.removeProperty("--app-update-visible-height");
+        }
+
+        function scheduleAppUpdateKeyboardViewportSync() {
+          syncAppUpdateKeyboardViewport();
+          window.setTimeout(syncAppUpdateKeyboardViewport, 60);
+          window.setTimeout(syncAppUpdateKeyboardViewport, 220);
+          window.setTimeout(syncAppUpdateKeyboardViewport, 420);
+        }
+
+        function openAppUpdateSettings() {
+          const overlay = document.getElementById("appUpdateSettingsOverlay");
+          const input = document.getElementById("appUpdateUrlInput");
+          if (!overlay || !input) return;
+          input.value = getAppUpdateUrl();
+          resetAppUpdateKeyboardViewport();
+          overlay.classList.remove("hidden");
+          overlay.setAttribute("aria-hidden", "false");
+          setTimeout(() => {
+            try {
+              input.focus({ preventScroll: true });
+              input.setSelectionRange(input.value.length, input.value.length);
+            } catch (_) {}
+            scheduleAppUpdateKeyboardViewportSync();
+          }, 80);
+        }
+
+        function closeAppUpdateSettings() {
+          const overlay = document.getElementById("appUpdateSettingsOverlay");
+          if (!overlay) return;
+          resetAppUpdateKeyboardViewport();
+          overlay.classList.add("hidden");
+          overlay.setAttribute("aria-hidden", "true");
+        }
+
+        function closeAppUpdateAvailable() {
+          const overlay = document.getElementById("appUpdateAvailableOverlay");
+          if (!overlay) return;
+          overlay.classList.add("hidden");
+          overlay.setAttribute("aria-hidden", "true");
+        }
+
+        function showAppUpdateAvailable(currentVersion, remoteVersion) {
+          const overlay = document.getElementById("appUpdateAvailableOverlay");
+          const status = document.getElementById("appUpdateAvailableStatus");
+          if (!overlay || !status) return;
+          status.textContent = `Installiert: Ver.${currentVersion} · Verfügbar: Ver.${remoteVersion}`;
+          overlay.classList.remove("hidden");
+          overlay.setAttribute("aria-hidden", "false");
+        }
+
+        function extractPublishedVersion(htmlText) {
+          const text = String(htmlText || "");
+          if (!text) return "";
+          try {
+            const parsed = new DOMParser().parseFromString(text, "text/html");
+            const htmlVersion = String(parsed.documentElement?.getAttribute("data-app-version") || "").trim();
+            if (htmlVersion) return htmlVersion;
+            const footerVersion = String(parsed.getElementById("appFooter")?.getAttribute("data-app-version") || "").trim();
+            if (footerVersion) return footerVersion;
+            const footerText = String(parsed.getElementById("appFooter")?.textContent || "");
+            const match = footerText.match(/\bVer\.\s*([0-9A-Za-z._-]+)\b/i);
+            if (match) return match[1];
+          } catch (_) {}
+          const attrMatch = text.match(/data-app-version=["']([^"']+)["']/i);
+          return attrMatch ? attrMatch[1].trim() : "";
+        }
+
+        function splitVersionParts(version) {
+          const matches = String(version || "").match(/\d+/g);
+          return matches ? matches.map((value) => Number(value)) : [];
+        }
+
+        function compareAppVersions(left, right) {
+          const a = splitVersionParts(left);
+          const b = splitVersionParts(right);
+          if (!a.length || !b.length) {
+            return String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: "base" });
+          }
+          const length = Math.max(a.length, b.length);
+          for (let i = 0; i < length; i++) {
+            const av = a[i] || 0;
+            const bv = b[i] || 0;
+            if (av > bv) return 1;
+            if (av < bv) return -1;
+          }
+          return 0;
+        }
+
+        function showAppUpdateMessage(message, type = "success") {
+          if (typeof showToast === "function") showToast(message, type);
+          else window.alert(message);
+        }
+
+        async function checkForAppUpdate() {
+          const button = document.getElementById("appUpdateButton");
+          const storedUrl = getAppUpdateUrl();
+          if (!storedUrl) {
+            openAppUpdateSettings();
+            return;
+          }
+
+          let updateUrl;
+          try {
+            updateUrl = normalizeUpdateUrl(storedUrl);
+          } catch (error) {
+            showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+            openAppUpdateSettings();
+            return;
+          }
+
+          if (button) {
+            button.disabled = true;
+            button.textContent = "Prüfe…";
+          }
+
+          try {
+            const checkUrl = new URL(updateUrl);
+            checkUrl.searchParams.set("_barcodeUpdateCheck", String(Date.now()));
+            const response = await fetch(checkUrl.toString(), {
+              method: "GET",
+              cache: "no-store",
+              redirect: "follow",
+              credentials: "omit",
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const remoteVersion = extractPublishedVersion(await response.text());
+            if (!remoteVersion) throw new Error("Auf der Update-Seite wurde keine Versionsnummer gefunden.");
+
+            const currentVersion = String(getCurrentAppVersion() || "").trim();
+            if (compareAppVersions(remoteVersion, currentVersion) > 0) {
+              showAppUpdateAvailable(currentVersion, remoteVersion);
+            } else {
+              showAppUpdateMessage(
+                `Keine neue Version. Installiert: Ver.${currentVersion} · Online: Ver.${remoteVersion}`,
+                "success",
+              );
+            }
+          } catch (error) {
+            console.warn("Update-Prüfung fehlgeschlagen", error);
+            showAppUpdateMessage(
+              `Update-Prüfung nicht möglich: ${error?.message || "Verbindungsfehler"}`,
+              "error",
+            );
+          } finally {
+            if (button) {
+              button.disabled = false;
+              button.textContent = "↻ Update";
+            }
+          }
+        }
+
+        function startAppUpdate() {
+          const updateUrl = getAppUpdateUrl();
+          if (!updateUrl) {
+            closeAppUpdateAvailable();
+            openAppUpdateSettings();
+            return;
+          }
+          closeAppUpdateAvailable();
+          try {
+            window.location.href = normalizeUpdateUrl(updateUrl);
+          } catch (error) {
+            showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+          }
+        }
+
+        function cancelAppUpdateLongPress() {
+          if (appUpdateLongPressTimer !== null) {
+            clearTimeout(appUpdateLongPressTimer);
+            appUpdateLongPressTimer = null;
+          }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+          updateFooterVersion();
+          getAppUpdateUrl();
+
+          const updateButton = document.getElementById("appUpdateButton");
+          const settingsInput = document.getElementById("appUpdateUrlInput");
+
+          settingsInput?.addEventListener("focus", scheduleAppUpdateKeyboardViewportSync);
+          settingsInput?.addEventListener("click", scheduleAppUpdateKeyboardViewportSync);
+          settingsInput?.addEventListener("focusout", function () {
+            window.setTimeout(() => {
+              if (document.activeElement !== settingsInput) {
+                resetAppUpdateKeyboardViewport();
+              }
+            }, 180);
+          });
+
+          if (window.visualViewport) {
+            window.visualViewport.addEventListener("resize", syncAppUpdateKeyboardViewport);
+            window.visualViewport.addEventListener("scroll", syncAppUpdateKeyboardViewport);
+          }
+          window.addEventListener("resize", syncAppUpdateKeyboardViewport);
+
+          updateButton?.addEventListener("pointerdown", function () {
+            cancelAppUpdateLongPress();
+            appUpdateLongPressTriggered = false;
+            appUpdateLongPressTimer = window.setTimeout(function () {
+              appUpdateLongPressTimer = null;
+              appUpdateLongPressTriggered = true;
+              try { navigator.vibrate?.(30); } catch (_) {}
+              openAppUpdateSettings();
+            }, APP_UPDATE_LONG_PRESS_MS);
+          });
+          ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+            updateButton?.addEventListener(eventName, cancelAppUpdateLongPress);
+          });
+          updateButton?.addEventListener("contextmenu", (event) => event.preventDefault());
+          updateButton?.addEventListener("click", function (event) {
+            if (appUpdateLongPressTriggered) {
+              appUpdateLongPressTriggered = false;
+              event.preventDefault();
+              return;
+            }
+            checkForAppUpdate();
+          });
+
+          document.getElementById("appUpdateSettingsSaveButton")?.addEventListener("click", function () {
+            try {
+              const normalized = normalizeUpdateUrl(settingsInput?.value || "");
+              setAppUpdateUrl(normalized);
+              closeAppUpdateSettings();
+              showAppUpdateMessage("Update-Link gespeichert.", "success");
+            } catch (error) {
+              showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+              settingsInput?.focus();
+            }
+          });
+          document.getElementById("appUpdateClearUrlButton")?.addEventListener("click", function () {
+            setAppUpdateUrl("");
+            if (settingsInput) settingsInput.value = "";
+            closeAppUpdateSettings();
+            showAppUpdateMessage("Update-Link gelöscht.", "success");
+          });
+          document.getElementById("appUpdateSettingsCancelButton")?.addEventListener("click", closeAppUpdateSettings);
+          document.getElementById("appUpdateAvailableCancelButton")?.addEventListener("click", closeAppUpdateAvailable);
+          document.getElementById("appUpdateStartButton")?.addEventListener("click", startAppUpdate);
+
+          [
+            document.getElementById("appUpdateSettingsContent"),
+            document.getElementById("appUpdateAvailableContent"),
+          ].forEach((content) => {
+            ["pointerdown", "mousedown", "touchstart", "click"].forEach((eventName) => {
+              content?.addEventListener(eventName, (event) => event.stopPropagation(), {
+                passive: eventName !== "touchstart",
+              });
+            });
+          });
+        });
+      })();
     </script>
-    </footer>
 
     <script>
       (function() {
