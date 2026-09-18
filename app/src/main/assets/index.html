@@ -1,6 +1,7 @@
 <!doctype html>
+<!-- Barcode Audi Scanner - Ver. 63 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="61">
+<html lang="de" data-app-version="64">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -3966,6 +3967,149 @@
         background: var(--menu-button-hover-bg);
       }
 
+      /* Zeichenersetzung: zusätzliche Sonderwünsche DE <-> EN */
+      #characterReplacementOverlay {
+        background: rgba(0, 0, 0, 0.5) !important;
+      }
+
+      #characterReplacementContent {
+        width: min(430px, calc(100vw - 24px));
+        max-height: min(78vh, 620px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        box-sizing: border-box;
+        background: #fff !important;
+        color: #000 !important;
+        border-radius: 10px;
+        padding: 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        color-scheme: light !important;
+      }
+
+      #characterReplacementContent h3 {
+        margin: 0 0 12px 0;
+        text-align: center;
+        color: #000 !important;
+        -webkit-text-fill-color: #000 !important;
+      }
+
+      .character-replacement-header,
+      .character-replacement-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) 30px;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .character-replacement-header {
+        margin-bottom: 6px;
+        font-size: 0.92em;
+        font-weight: bold;
+      }
+
+      .character-replacement-header span:nth-child(2),
+      .character-replacement-row .character-replacement-arrow {
+        text-align: center;
+      }
+
+      .character-replacement-row {
+        margin: 7px 0;
+      }
+
+      .character-replacement-row input {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        padding: 9px 8px;
+        border: 1px solid #aaa;
+        border-radius: 5px;
+        background: #fff !important;
+        color: #000 !important;
+        -webkit-text-fill-color: #000 !important;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 1em;
+      }
+
+      .character-replacement-arrow {
+        font-size: 1.15em;
+        color: #555;
+        user-select: none;
+      }
+
+      .character-replacement-delete {
+        width: 28px;
+        height: 28px;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none;
+        border-radius: 50%;
+        background: #ff5c5c;
+        color: #fff !important;
+        -webkit-text-fill-color: #fff !important;
+        font-size: 18px;
+        line-height: 28px;
+        cursor: pointer;
+      }
+
+      #addCharacterReplacementRow {
+        width: 100%;
+        margin: 10px 0 4px 0;
+        padding: 9px 10px;
+        border: 1px dashed #5b7fa5;
+        border-radius: 5px;
+        background: #eef7ff;
+        color: #124b7d;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      #characterReplacementError {
+        min-height: 1.2em;
+        margin-top: 8px;
+        color: #c62828 !important;
+        -webkit-text-fill-color: #c62828 !important;
+        font-size: 0.86em;
+        text-align: left;
+      }
+
+      .character-replacement-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .character-replacement-buttons button {
+        margin: 0;
+        padding: 9px 14px;
+        border: none;
+        border-radius: 5px;
+        color: #fff !important;
+        -webkit-text-fill-color: #fff !important;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      #cancelCharacterReplacementButton {
+        background: #ff5c5c;
+      }
+
+      #saveCharacterReplacementButton {
+        background: #4caf50;
+      }
+
+      @media (max-width: 420px) {
+        #characterReplacementContent {
+          width: calc(100vw - 16px);
+          padding: 12px;
+        }
+        .character-replacement-header,
+        .character-replacement-row {
+          grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 28px;
+          gap: 4px;
+        }
+      }
+
       .pair-dot {
         display: inline-block;
         width: 6px;
@@ -5361,6 +5505,12 @@
         </button>
         <button
           class="menu-button menu-theme-storage"
+          onclick="openCharacterReplacementPopup()"
+        >
+          🔁 Zeichenersetzung
+        </button>
+        <button
+          class="menu-button menu-theme-storage"
           onclick="openLocalStorageDeletionPopup()"
         >
           🗂️ Lokale Daten & Settings
@@ -5381,6 +5531,36 @@
         </button>
       </div>
     </div>
+    <!-- Zeichenersetzung: zusätzliche Sonderwünsche zur bestehenden DE/EN-Logik -->
+    <div
+      id="characterReplacementOverlay"
+      class="popup-container hidden"
+      aria-hidden="true"
+    >
+      <div id="characterReplacementContent">
+        <h3>Zeichenersetzung</h3>
+        <div class="character-replacement-header" aria-hidden="true">
+          <span>🇩🇪 Deutsch</span>
+          <span></span>
+          <span>🇬🇧 Englisch</span>
+          <span></span>
+        </div>
+        <div id="characterReplacementRows"></div>
+        <button type="button" id="addCharacterReplacementRow">
+          + Zuordnung hinzufügen
+        </button>
+        <div id="characterReplacementError" role="alert" aria-live="polite"></div>
+        <div class="character-replacement-buttons">
+          <button type="button" id="cancelCharacterReplacementButton">
+            Abbrechen
+          </button>
+          <button type="button" id="saveCharacterReplacementButton">
+            Speichern
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Menü-Overlay für dynamische Barcodes -->
     <div id="menuOverlayDynamic" class="popup-container hidden">
       <div id="menuOverlayDynamicContent">
@@ -5721,7 +5901,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "89";
+      const APP_VERSION_FALLBACK = "62";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
 
       function getAndroidBridge() {
@@ -5839,6 +6019,7 @@
         "selectedGroup",
         "themeMode",
         "mainBarcodeHidden",
+        "characterReplacementRules",
       ];
       const APP_STORAGE_PREFIX_KEYS = ["groupOrdering_", "languageMode_"];
       const LOCAL_STORAGE_IMPORT_METADATA_KEYS = new Set([
@@ -6715,6 +6896,11 @@
       }
 
       setupViewportLockedOverlay("menuOverlayMain", "menuOverlayMainContent");
+      setupViewportLockedOverlay(
+        "characterReplacementOverlay",
+        "characterReplacementContent",
+        { closeOnBackdrop: true },
+      );
       setupViewportLockedOverlay("menuOverlayDynamic", "menuOverlayDynamicContent");
       setupViewportLockedOverlay("fullscreenOverlay", "fullscreenContent", {
         allowTarget: (target) => {
@@ -6864,6 +7050,360 @@
       function closeMenuOverlayMain() {
         closeViewportLockedOverlay("menuOverlayMain");
       }
+
+      const CHARACTER_REPLACEMENT_STORAGE_KEY = "characterReplacementRules";
+      const DEFAULT_CHARACTER_REPLACEMENT_RULES = [{ de: "**", en: "}." }];
+
+      function escapeCharacterReplacementPart(value) {
+        return String(value ?? "")
+          .replace(/\\/g, "\\\\")
+          .replace(/>/g, "\\>")
+          .replace(/,/g, "\\,");
+      }
+
+      function parseCharacterReplacementRules(serialized) {
+        const source = String(serialized || "");
+        if (!source) return [];
+
+        const rules = [];
+        let left = "";
+        let right = "";
+        let readingRight = false;
+        let escaped = false;
+
+        function finishRule() {
+          if (left !== "" || right !== "" || readingRight) {
+            rules.push({ de: left, en: right, hasSeparator: readingRight });
+          }
+          left = "";
+          right = "";
+          readingRight = false;
+        }
+
+        for (let index = 0; index < source.length; index++) {
+          const char = source[index];
+
+          if (escaped) {
+            if (readingRight) right += char;
+            else left += char;
+            escaped = false;
+            continue;
+          }
+
+          if (char === "\\") {
+            escaped = true;
+            continue;
+          }
+
+          if (char === ">" && !readingRight) {
+            readingRight = true;
+            continue;
+          }
+
+          if (char === ",") {
+            finishRule();
+            continue;
+          }
+
+          if (readingRight) right += char;
+          else left += char;
+        }
+
+        if (escaped) {
+          if (readingRight) right += "\\";
+          else left += "\\";
+        }
+        finishRule();
+
+        return rules;
+      }
+
+      function serializeCharacterReplacementRules(rules) {
+        return (rules || [])
+          .map(
+            (rule) =>
+              `${escapeCharacterReplacementPart(rule.de)}>${escapeCharacterReplacementPart(rule.en)}`,
+          )
+          .join(",");
+      }
+
+      function getCharacterReplacementRules() {
+        const storedValue = appStorage.getItem(CHARACTER_REPLACEMENT_STORAGE_KEY);
+        if (storedValue === null) {
+          return DEFAULT_CHARACTER_REPLACEMENT_RULES.map((rule) => ({ ...rule }));
+        }
+        return parseCharacterReplacementRules(storedValue).filter(
+          (rule) => rule.hasSeparator && rule.de !== "" && rule.en !== "",
+        );
+      }
+
+      function replaceByLongestMatchOnce(input, directedRules) {
+        const source = String(input ?? "");
+        const rules = (directedRules || [])
+          .filter((rule) => rule.from !== "")
+          .sort((a, b) => b.from.length - a.from.length);
+        if (!source || rules.length === 0) return source;
+
+        let output = "";
+        let index = 0;
+        while (index < source.length) {
+          let matchedRule = null;
+          for (const rule of rules) {
+            if (source.startsWith(rule.from, index)) {
+              matchedRule = rule;
+              break;
+            }
+          }
+
+          if (matchedRule) {
+            output += matchedRule.to;
+            index += matchedRule.from.length;
+          } else {
+            output += source[index];
+            index += 1;
+          }
+        }
+        return output;
+      }
+
+      function getDirectedCharacterReplacementRules(languageMode) {
+        const mode = languageMode === "en" ? "en" : "de";
+        return getCharacterReplacementRules()
+          .map((rule) =>
+            mode === "en"
+              ? { from: rule.de, to: rule.en }
+              : { from: rule.en, to: rule.de },
+          )
+          .filter((rule) => rule.from !== "")
+          .sort((a, b) => b.from.length - a.from.length);
+      }
+
+      function applyCustomCharacterReplacement(value, languageMode) {
+        return replaceByLongestMatchOnce(
+          value,
+          getDirectedCharacterReplacementRules(languageMode),
+        );
+      }
+
+      function applyLanguageCharacterMapping(value, languageMode = getLanguageMode()) {
+        const mode = languageMode === "en" ? "en" : "de";
+        const source = String(value ?? "");
+        const customRules = getDirectedCharacterReplacementRules(mode);
+        if (!source) return source;
+
+        // Priorität 1: benutzerdefinierte Sonderwünsche werden direkt auf dem
+        // Originaltext geprüft. Nur wenn an der aktuellen Position KEINE
+        // Sonderregel passt, greift die feste Standard-Tastaturumsetzung.
+        let output = "";
+        let index = 0;
+        while (index < source.length) {
+          let matchedRule = null;
+          for (const rule of customRules) {
+            if (source.startsWith(rule.from, index)) {
+              matchedRule = rule;
+              break;
+            }
+          }
+
+          if (matchedRule) {
+            output += matchedRule.to;
+            index += matchedRule.from.length;
+            continue;
+          }
+
+          const currentChar = source[index];
+          output += mode === "en" ? swapYZ(currentChar) : currentChar;
+          index += 1;
+        }
+        return output;
+      }
+
+      function addCharacterReplacementRow(deValue = "", enValue = "") {
+        const rows = document.getElementById("characterReplacementRows");
+        if (!rows) return null;
+
+        const row = document.createElement("div");
+        row.className = "character-replacement-row";
+
+        const deInput = document.createElement("input");
+        deInput.type = "text";
+        deInput.className = "character-replacement-de";
+        deInput.value = String(deValue ?? "");
+        deInput.setAttribute("aria-label", "Deutsch");
+        deInput.autocomplete = "off";
+        deInput.spellcheck = false;
+
+        const arrow = document.createElement("div");
+        arrow.className = "character-replacement-arrow";
+        arrow.textContent = "↔";
+        arrow.setAttribute("aria-hidden", "true");
+
+        const enInput = document.createElement("input");
+        enInput.type = "text";
+        enInput.className = "character-replacement-en";
+        enInput.value = String(enValue ?? "");
+        enInput.setAttribute("aria-label", "Englisch");
+        enInput.autocomplete = "off";
+        enInput.spellcheck = false;
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "character-replacement-delete";
+        deleteButton.textContent = "×";
+        deleteButton.title = "Zuordnung löschen";
+        deleteButton.setAttribute("aria-label", "Zuordnung löschen");
+        deleteButton.addEventListener("click", () => {
+          row.remove();
+          const remaining = rows.querySelectorAll(".character-replacement-row");
+          if (remaining.length === 0) addCharacterReplacementRow();
+        });
+
+        row.appendChild(deInput);
+        row.appendChild(arrow);
+        row.appendChild(enInput);
+        row.appendChild(deleteButton);
+        rows.appendChild(row);
+        return row;
+      }
+
+      function setCharacterReplacementError(message = "") {
+        const errorElement = document.getElementById("characterReplacementError");
+        if (errorElement) errorElement.textContent = message;
+      }
+
+      function openCharacterReplacementPopup() {
+        closeMenuOverlayMain();
+        const rows = document.getElementById("characterReplacementRows");
+        if (!rows) return;
+
+        rows.innerHTML = "";
+        setCharacterReplacementError("");
+        const rules = getCharacterReplacementRules();
+        if (rules.length === 0) {
+          addCharacterReplacementRow();
+        } else {
+          rules.forEach((rule) => addCharacterReplacementRow(rule.de, rule.en));
+        }
+
+        openViewportLockedOverlay(
+          "characterReplacementOverlay",
+          "characterReplacementContent",
+          {
+            closeOnBackdrop: true,
+            afterOpen: () => {
+              const firstInput = rows.querySelector("input");
+              if (firstInput) firstInput.focus();
+            },
+          },
+        );
+      }
+
+      function closeCharacterReplacementPopup() {
+        setCharacterReplacementError("");
+        closeViewportLockedOverlay("characterReplacementOverlay");
+      }
+
+      function readCharacterReplacementRowsForSave() {
+        const rowElements = Array.from(
+          document.querySelectorAll("#characterReplacementRows .character-replacement-row"),
+        );
+        const rules = [];
+        const seenDe = new Map();
+        const seenEn = new Map();
+
+        for (let index = 0; index < rowElements.length; index++) {
+          const row = rowElements[index];
+          const de = row.querySelector(".character-replacement-de")?.value ?? "";
+          const en = row.querySelector(".character-replacement-en")?.value ?? "";
+          const rowNumber = index + 1;
+
+          if (de === "" && en === "") continue;
+          if (de === "" || en === "") {
+            throw new Error(
+              `Zeile ${rowNumber}: Deutsch und Englisch müssen beide ausgefüllt sein.`,
+            );
+          }
+
+          if (seenDe.has(de)) {
+            throw new Error(
+              `Deutsch „${de}“ ist doppelt eingetragen (Zeilen ${seenDe.get(de)} und ${rowNumber}).`,
+            );
+          }
+          if (seenEn.has(en)) {
+            throw new Error(
+              `Englisch „${en}“ ist doppelt eingetragen (Zeilen ${seenEn.get(en)} und ${rowNumber}).`,
+            );
+          }
+
+          seenDe.set(de, rowNumber);
+          seenEn.set(en, rowNumber);
+          rules.push({ de, en });
+        }
+
+        return rules;
+      }
+
+      function refreshBarcodesAfterCharacterReplacementChange() {
+        try {
+          reloadBarcodes();
+        } catch (error) {
+          console.warn("Barcode-Liste konnte nach Zeichenersetzung nicht aktualisiert werden", error);
+        }
+        try {
+          updateMainBarcode();
+        } catch (error) {
+          console.warn("Hauptbarcode konnte nach Zeichenersetzung nicht aktualisiert werden", error);
+        }
+        try {
+          if (
+            document.getElementById("fullscreenOverlay") &&
+            isViewportLockedOverlayVisible("fullscreenOverlay") &&
+            currentFullscreenIndex >= 0
+          ) {
+            showFullscreenBarcodeByIndex(currentFullscreenIndex);
+          }
+        } catch (error) {
+          console.warn("Vollbildbarcode konnte nach Zeichenersetzung nicht aktualisiert werden", error);
+        }
+      }
+
+      function saveCharacterReplacementRulesFromPopup() {
+        try {
+          const rules = readCharacterReplacementRowsForSave();
+          appStorage.setItem(
+            CHARACTER_REPLACEMENT_STORAGE_KEY,
+            serializeCharacterReplacementRules(rules),
+          );
+          closeCharacterReplacementPopup();
+          refreshBarcodesAfterCharacterReplacementChange();
+          showToast(
+            rules.length === 0
+              ? "Zeichenersetzung geleert."
+              : `Zeichenersetzung gespeichert (${rules.length} Zuordnung${rules.length === 1 ? "" : "en"}).`,
+            "success",
+          );
+        } catch (error) {
+          setCharacterReplacementError(
+            error && error.message
+              ? error.message
+              : "Zeichenersetzung konnte nicht gespeichert werden.",
+          );
+        }
+      }
+
+      document
+        .getElementById("addCharacterReplacementRow")
+        ?.addEventListener("click", () => {
+          const row = addCharacterReplacementRow();
+          row?.querySelector("input")?.focus();
+        });
+      document
+        .getElementById("cancelCharacterReplacementButton")
+        ?.addEventListener("click", closeCharacterReplacementPopup);
+      document
+        .getElementById("saveCharacterReplacementButton")
+        ?.addEventListener("click", saveCharacterReplacementRulesFromPopup);
+
       async function exportBundledIndexHtml() {
         closeMenuOverlayMain();
         if (!supportsBundledIndexHtmlExport()) {
@@ -8254,12 +8794,13 @@ In den App-Namensraum importieren?`)
           "." +
           plusDaysDate.getFullYear();
 
-        JsBarcode("#barcodeZukunft", datumPlusDays, {
+        const displayDatumPlusDays = applyLanguageCharacterMapping(datumPlusDays);
+        JsBarcode("#barcodeZukunft", displayDatumPlusDays, {
           format: "CODE128",
           width: 2,
           height: 100,
           displayValue: true,
-          text: escapeNonPrintableChars(datumPlusDays),
+          text: escapeNonPrintableChars(displayDatumPlusDays),
           fontSize: 16,
           margin: 5,
           textMargin: 5,
@@ -8556,12 +9097,13 @@ In den App-Namensraum importieren?`)
           "svg",
         );
         barcodeSvg.classList.add("barcode-svg-dynamic");
-        JsBarcode(barcodeSvg, codePart, {
+        const displayCode = applyLanguageCharacterMapping(codePart);
+        JsBarcode(barcodeSvg, displayCode, {
           format: "CODE128",
           width: 2.5,
           height: 100,
           displayValue: true,
-          text: escapeNonPrintableChars(codePart),
+          text: escapeNonPrintableChars(displayCode),
           fontSize: 30,
           margin: 10,
           textMargin: 5,
@@ -9157,8 +9699,10 @@ In den App-Namensraum importieren?`)
               "fullscreenExpirationBarcode",
             );
             let languageMode = getLanguageMode();
-            let displayExpiration =
-              languageMode === "en" ? swapYZ(formattedDate) : formattedDate;
+            let displayExpiration = applyLanguageCharacterMapping(
+              formattedDate,
+              languageMode,
+            );
             JsBarcode(
               expirationBarcodeElem,
               displayExpiration,
@@ -9404,8 +9948,7 @@ In den App-Namensraum importieren?`)
         } else {
           masterLabelElem.style.display = "none";
         }
-        const displayCode =
-          getLanguageMode() === "en" ? swapYZ(codePart) : codePart;
+        const displayCode = applyLanguageCharacterMapping(codePart);
         JsBarcode(
           masterBarcodeElem,
           displayCode,
@@ -9502,8 +10045,7 @@ In den App-Namensraum importieren?`)
           const expText = document
             .getElementById("zukunftDatumText")
             .textContent.split(": ")[1];
-          const displayExp =
-            getLanguageMode() === "en" ? swapYZ(expText) : expText;
+          const displayExp = applyLanguageCharacterMapping(expText);
           JsBarcode(
             expirationBarcodeElem,
             displayExp,
@@ -9534,8 +10076,7 @@ In den App-Namensraum importieren?`)
           const slaveBarcodeElem = document.getElementById(
             "fullscreenSlaveBarcode",
           );
-          const displaySlave =
-            getLanguageMode() === "en" ? swapYZ(sCode) : sCode;
+          const displaySlave = applyLanguageCharacterMapping(sCode);
           JsBarcode(
             slaveBarcodeElem,
             displaySlave,
@@ -9678,8 +10219,10 @@ In den App-Namensraum importieren?`)
             expirationDate.getFullYear();
 
           let languageMode = getLanguageMode();
-          let displayDate =
-            languageMode === "en" ? swapYZ(formattedDate) : formattedDate;
+          let displayDate = applyLanguageCharacterMapping(
+            formattedDate,
+            languageMode,
+          );
 
           // Aktualisiere den Barcode im Expiration-Bereich
           const expirationBarcodeElem = document.getElementById(
@@ -10855,7 +11398,7 @@ In den App-Namensraum importieren?`)
           let originalText = container.dataset.text;
           let parts = originalText.split("/");
           let codePart = parts[0] || "";
-          let displayCode = languageMode === "en" ? swapYZ(codePart) : codePart;
+          let displayCode = applyLanguageCharacterMapping(codePart, languageMode);
           let barcodeSvg = container.querySelector("svg");
           if (barcodeSvg) {
             JsBarcode(barcodeSvg, displayCode, {
@@ -13326,8 +13869,8 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter">
-      Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion"></span>
+    <footer id="appFooter" data-app-version="63">
+      Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">63</span>
 
     <script>
       // Setze die Versionsnummer im Footer und überall zentral
