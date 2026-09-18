@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Barcode Audi Scanner - Ver. 64 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="67">
+<html lang="de" data-app-version="68">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -4045,6 +4045,9 @@
         -webkit-text-fill-color: #000 !important;
         font-family: Consolas, "Courier New", monospace;
         font-size: 1em;
+        touch-action: manipulation;
+        position: relative;
+        z-index: 2;
       }
 
       .character-replacement-arrow {
@@ -5561,7 +5564,7 @@
     >
       <div id="characterReplacementContent">
         <h3>Zeichenersetzung</h3>
-        <div style="font-size:0.82em;color:#555;margin:-4px 0 12px 0;text-align:center;">Sonderwünsche haben Vorrang vor der Standard-Zuordnung.</div>
+        <div style="font-size:0.82em;color:#555;margin:-4px 0 12px 0;text-align:center;">Sonderwünsche überschreiben die Standard-Zuordnung. Schließen nur mit Abbrechen oder Speichern.</div>
         <div class="character-replacement-header" aria-hidden="true">
           <span>🇩🇪 Deutsch</span>
           <span></span>
@@ -6922,7 +6925,7 @@
       setupViewportLockedOverlay(
         "characterReplacementOverlay",
         "characterReplacementContent",
-        { closeOnBackdrop: true },
+        { closeOnBackdrop: false },
       );
       setupViewportLockedOverlay("menuOverlayDynamic", "menuOverlayDynamicContent");
       setupViewportLockedOverlay("fullscreenOverlay", "fullscreenContent", {
@@ -7189,13 +7192,16 @@
         return output;
       }
 
-      function getDirectedCharacterReplacementRules(languageMode) {
+      function getDirectedCharacterReplacementRules(languageMode, explicitRules = null) {
         const mode = languageMode === "en" ? "en" : "de";
-        return getCharacterReplacementRules()
+        const sourceRules = Array.isArray(explicitRules)
+          ? explicitRules
+          : getCharacterReplacementRules();
+        return sourceRules
           .map((rule) =>
             mode === "en"
-              ? { from: rule.de, to: rule.en }
-              : { from: rule.en, to: rule.de },
+              ? { from: rule.de, to: rule.en, source: "custom" }
+              : { from: rule.en, to: rule.de, source: "custom" },
           )
           .filter((rule) => rule.from !== "")
           .sort((a, b) => b.from.length - a.from.length);
@@ -7219,36 +7225,46 @@
         ];
       }
 
-      function applyLanguageCharacterMapping(value, languageMode = getLanguageMode()) {
-        const mode = languageMode === "en" ? "en" : "de";
+      function applyCharacterReplacementPriorityEngine(
+        value,
+        customRules,
+        standardRules,
+      ) {
         const source = String(value ?? "");
         if (!source) return source;
 
-        // WICHTIG: Sonderwünsche aus dem Eingabefenster haben IMMER Priorität 1.
-        // Die feste Standard-Tastaturumsetzung ist nur ein Fallback, wenn an der
-        // aktuellen Stelle keine benutzerdefinierte Regel passt. Ersatztexte aus
-        // einer Sonderregel werden nicht noch einmal durch Standardregeln verändert.
-        const customRules = getDirectedCharacterReplacementRules(mode).map(
-          (rule) => ({ ...rule, source: "custom" }),
-        );
-        const standardRules = getStandardDirectedCharacterReplacementRules(mode);
+        // Sonderwünsche sind echte Overrides: Sobald dieselbe Quell-Zeichenfolge
+        // benutzerdefiniert vorhanden ist, wird die entsprechende Standardregel
+        // vollständig aus dem Fallback entfernt.
+        const sortedCustomRules = (customRules || [])
+          .filter((rule) => rule && rule.from !== "")
+          .slice()
+          .sort((a, b) => b.from.length - a.from.length);
+        const customSources = new Set(sortedCustomRules.map((rule) => rule.from));
+        const fallbackStandardRules = (standardRules || [])
+          .filter(
+            (rule) =>
+              rule && rule.from !== "" && !customSources.has(rule.from),
+          )
+          .slice()
+          .sort((a, b) => b.from.length - a.from.length);
 
         let output = "";
         let index = 0;
         while (index < source.length) {
           let matchedRule = null;
 
-          // 1) Benutzerdefinierte Sonderwünsche: längster Treffer zuerst.
-          for (const rule of customRules) {
+          // PRIORITÄT 1: Benutzerdefinierte Zuordnungen aus dem Popup.
+          for (const rule of sortedCustomRules) {
             if (source.startsWith(rule.from, index)) {
               matchedRule = rule;
               break;
             }
           }
 
-          // 2) Nur wenn KEIN Sonderwunsch passt, darf die interne Standardregel greifen.
+          // PRIORITÄT 2: Standard nur dann, wenn hier KEIN Sonderwunsch passt.
           if (!matchedRule) {
-            for (const rule of standardRules) {
+            for (const rule of fallbackStandardRules) {
               if (source.startsWith(rule.from, index)) {
                 matchedRule = rule;
                 break;
@@ -7257,6 +7273,7 @@
           }
 
           if (matchedRule) {
+            // Ersatz wird direkt ausgegeben und NICHT erneut verarbeitet.
             output += matchedRule.to;
             index += matchedRule.from.length;
           } else {
@@ -7267,34 +7284,57 @@
         return output;
       }
 
+      function applyLanguageCharacterMapping(
+        value,
+        languageMode = getLanguageMode(),
+      ) {
+        const mode = languageMode === "en" ? "en" : "de";
+        return applyCharacterReplacementPriorityEngine(
+          value,
+          getDirectedCharacterReplacementRules(mode),
+          getStandardDirectedCharacterReplacementRules(mode),
+        );
+      }
+
       function verifyCharacterReplacementPriorityEngine() {
-        // Interner Selbsttest: Sonderwunsch Y>= und Z>+ muss die feste Y/Z-Regel
-        // vollständig überstimmen. Der Test verändert keine Benutzerdaten.
-        const source = "YZ";
-        const customRules = [
-          { from: "Y", to: "=" },
-          { from: "Z", to: "+" },
-        ];
-        const standardRules = [
-          { from: "Y", to: "Z" },
-          { from: "Z", to: "Y" },
-        ];
-        let output = "";
-        let index = 0;
-        while (index < source.length) {
-          let matchedRule = customRules.find((rule) => source.startsWith(rule.from, index));
-          if (!matchedRule) {
-            matchedRule = standardRules.find((rule) => source.startsWith(rule.from, index));
-          }
-          if (matchedRule) {
-            output += matchedRule.to;
-            index += matchedRule.from.length;
-          } else {
-            output += source[index++];
-          }
+        // Testet denselben Parser, dieselbe Richtungslogik und dieselbe Engine,
+        // die auch im echten Betrieb verwendet werden.
+        const testRules = parseCharacterReplacementRules(
+          serializeCharacterReplacementRules([
+            { de: "*", en: "}." },
+            { de: "Z", en: "+" },
+            { de: "Y", en: "=" },
+          ]),
+        ).filter(
+          (rule) => rule.hasSeparator && rule.de !== "" && rule.en !== "",
+        );
+
+        const customEn = getDirectedCharacterReplacementRules("en", testRules);
+        const outputEn = applyCharacterReplacementPriorityEngine(
+          "*ZYyz",
+          customEn,
+          getStandardDirectedCharacterReplacementRules("en"),
+        );
+        // * -> }. , Z -> + , Y -> = ; y/z bleiben Standard-Fallback.
+        if (outputEn !== "}.+=zy") {
+          console.error(
+            "Zeichenersetzung-Prioritätstest EN fehlgeschlagen:",
+            outputEn,
+          );
+          return false;
         }
-        if (output !== "=+") {
-          console.error("Zeichenersetzung-Prioritätstest fehlgeschlagen:", output);
+
+        const customDe = getDirectedCharacterReplacementRules("de", testRules);
+        const outputDe = applyCharacterReplacementPriorityEngine(
+          "}.+=",
+          customDe,
+          getStandardDirectedCharacterReplacementRules("de"),
+        );
+        if (outputDe !== "*ZY") {
+          console.error(
+            "Zeichenersetzung-Prioritätstest DE fehlgeschlagen:",
+            outputDe,
+          );
           return false;
         }
         return true;
@@ -7383,7 +7423,7 @@
 
         requestAnimationFrame(() => {
           try {
-            activeElement.scrollIntoView({ block: "center", inline: "nearest" });
+            activeElement.scrollIntoView({ block: "nearest", inline: "nearest" });
           } catch (_) {
             activeElement.scrollIntoView(false);
           }
@@ -7424,7 +7464,7 @@
           "characterReplacementOverlay",
           "characterReplacementContent",
           {
-            closeOnBackdrop: true,
+            closeOnBackdrop: false,
             afterOpen: () => {
               resetCharacterReplacementKeyboardViewport();
             },
@@ -7529,6 +7569,21 @@
       const characterReplacementOverlayElement = document.getElementById(
         "characterReplacementOverlay",
       );
+      const characterReplacementContentElement = document.getElementById(
+        "characterReplacementContent",
+      );
+
+      // Dieses Popup darf ausschließlich über „Abbrechen“ oder „Speichern“
+      // geschlossen werden. Besonders auf Android/WebView kann sich die Position
+      // beim Öffnen der Tastatur zwischen touchstart und click verändern.
+      // Deshalb stoppen wir Interaktionen innerhalb des Dialogs explizit.
+      ["pointerdown", "mousedown", "touchstart", "click"].forEach((eventName) => {
+        characterReplacementContentElement?.addEventListener(
+          eventName,
+          (event) => event.stopPropagation(),
+          { passive: eventName !== "touchstart" },
+        );
+      });
 
       characterReplacementOverlayElement?.addEventListener("focusin", (event) => {
         if (!(event.target instanceof HTMLInputElement)) return;
@@ -14040,8 +14095,8 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter" data-app-version="65">
-      Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">65</span>
+    <footer id="appFooter" data-app-version="66">
+      Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">66</span>
 
     <script>
       // Setze die Versionsnummer im Footer und überall zentral
