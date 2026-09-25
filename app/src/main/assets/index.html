@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 79 -->
+<!-- Barcode Audi Scanner - Ver. 81 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="80">
+<html lang="de" data-app-version="81">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -2555,32 +2555,9 @@
           notifyInstallUiChange();
         });
 
-        if ("serviceWorker" in navigator) {
-          const isHttpLikeContext =
-            window.location.protocol === "https:" ||
-            window.location.hostname === "localhost" ||
-            window.location.hostname === "127.0.0.1";
-
-          if (isHttpLikeContext) {
-            window.addEventListener(
-              "load",
-              function () {
-                // Nur registrieren. Keine automatische update()-Prüfung, kein SKIP_WAITING
-                // und kein automatischer Reload. Aktualisierung erfolgt ausschließlich
-                // nach ausdrücklicher Bestätigung über den Update-Button.
-                navigator.serviceWorker
-                  .register("./sw.js")
-                  .catch((error) =>
-                    console.warn(
-                      "Service Worker konnte nicht registriert werden:",
-                      error,
-                    ),
-                  );
-              },
-              { once: true },
-            );
-          }
-        }
+        // Service-Worker-Registrierung wird weiter unten erst dann gesteuert,
+        // wenn die gespeicherte Update-Einstellung (Manuell/Automatisch) bekannt ist.
+        // Dadurch darf der Seitenstart im manuellen Modus keine Update-Prüfung auslösen.
       })();
     </script>
     <style>
@@ -3691,6 +3668,13 @@
         -webkit-tap-highlight-color: transparent;
       }
 
+      #appUpdateButton {
+        touch-action: none;
+        -webkit-touch-callout: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
       #appShareButton {
         min-width: 27px;
         padding-left: 6px;
@@ -4765,7 +4749,7 @@
         -webkit-text-fill-color: #000 !important;
       }
 
-      /* Dialoge / Menüs außerhalb Hauptansicht + Vollbild immer im Hell-/Original-Look – Ver. 79 */
+      /* Dialoge / Menüs außerhalb Hauptansicht + Vollbild immer im Hell-/Original-Look – Ver. 81 */
       .popup-container,
       .popup-content,
       .popup-content * {
@@ -6189,11 +6173,11 @@
           <div style="font-weight:700;margin-bottom:6px;">Update-Prüfung:</div>
           <label style="display:flex;align-items:flex-start;gap:8px;margin:7px 0;cursor:pointer;">
             <input type="radio" name="appUpdateMode" value="manual" checked style="margin-top:3px;">
-            <span><strong>Manuell</strong><br><small>Nur prüfen, wenn du auf den Update-Button drückst.</small></span>
+            <span><strong>Manuell</strong><br><small>Beim Öffnen oder Aktualisieren nicht prüfen und nicht aktualisieren. Nur der Update-Button darf prüfen.</small></span>
           </label>
           <label style="display:flex;align-items:flex-start;gap:8px;margin:7px 0;cursor:pointer;">
             <input type="radio" name="appUpdateMode" value="auto" style="margin-top:3px;">
-            <span><strong>Automatisch prüfen</strong><br><small>Beim Start nur nach einer neuen Version suchen. Installation immer erst nach deiner Bestätigung.</small></span>
+            <span><strong>Automatisch</strong><br><small>Beim Öffnen oder Aktualisieren darf automatisch geprüft und auf die neue Version gewechselt werden.</small></span>
           </label>
         </div>
         <label for="appUpdateUrlInput" style="display:block;font-weight:700;margin-bottom:5px;">Adresse der Update-Seite:</label>
@@ -14511,8 +14495,8 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="79">
-      <span>Entwickelt von: Bachner Gerhard - Ver.<span id="footerVersion">79</span></span>
+    <footer id="appFooter" data-app-version="81">
+      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">79</span></span>
       <button
         type="button"
         id="appShareButton"
@@ -14995,55 +14979,145 @@ In den App-Namensraum importieren?`)
           }
         }
 
-        async function startAppUpdate() {
+        function isServiceWorkerContextAvailable() {
+          return (
+            "serviceWorker" in navigator &&
+            (window.location.protocol === "https:" ||
+              window.location.hostname === "localhost" ||
+              window.location.hostname === "127.0.0.1")
+          );
+        }
+
+        function postUpdateModeToWorker(worker, mode) {
+          if (!worker || typeof worker.postMessage !== "function") return;
+          try {
+            worker.postMessage({ type: "SET_UPDATE_MODE", mode: mode === "auto" ? "auto" : "manual" });
+          } catch (_) {}
+        }
+
+        async function getOrCreateServiceWorkerRegistration(mode, allowUpdateCheck = false) {
+          if (!isServiceWorkerContextAvailable()) return null;
+
+          let registration = await navigator.serviceWorker.getRegistration();
+          if (!registration) {
+            // Erste Registrierung ist nötig, damit die Web-/PWA-Version künftig
+            // im manuellen Modus auf der installierten Version stehen bleiben kann.
+            registration = await navigator.serviceWorker.register("./sw.js");
+          } else if (allowUpdateCheck) {
+            await registration.update();
+          }
+
+          const effectiveMode = mode === "auto" ? "auto" : "manual";
+          postUpdateModeToWorker(navigator.serviceWorker.controller, effectiveMode);
+          postUpdateModeToWorker(registration.active, effectiveMode);
+          postUpdateModeToWorker(registration.waiting, effectiveMode);
+          postUpdateModeToWorker(registration.installing, effectiveMode);
+          return registration;
+        }
+
+        async function syncServiceWorkerUpdateMode(mode) {
+          try {
+            return await getOrCreateServiceWorkerRegistration(mode, false);
+          } catch (error) {
+            console.warn("Service-Worker-Modus konnte nicht synchronisiert werden", error);
+            return null;
+          }
+        }
+
+        async function waitForServiceWorkerInstalled(worker, timeoutMs = 7000) {
+          if (!worker) return null;
+          if (["installed", "activated"].includes(worker.state)) return worker;
+          await new Promise((resolve) => {
+            const timeout = window.setTimeout(resolve, timeoutMs);
+            const onState = () => {
+              if (["installed", "activated", "redundant"].includes(worker.state)) {
+                clearTimeout(timeout);
+                worker.removeEventListener("statechange", onState);
+                resolve();
+              }
+            };
+            worker.addEventListener("statechange", onState);
+          });
+          return worker;
+        }
+
+        async function activateWaitingServiceWorker(registration, mode) {
+          if (!registration) return false;
+          let worker = registration.waiting || registration.installing;
+          if (worker?.state === "installing") {
+            await waitForServiceWorkerInstalled(worker);
+          }
+          worker = registration.waiting || worker;
+          if (!worker || worker.state === "redundant") return false;
+
+          postUpdateModeToWorker(worker, mode);
+          const controllerChanged = new Promise((resolve) => {
+            const timeout = window.setTimeout(resolve, 5000);
+            navigator.serviceWorker.addEventListener(
+              "controllerchange",
+              () => {
+                clearTimeout(timeout);
+                resolve();
+              },
+              { once: true },
+            );
+          });
+          worker.postMessage({ type: "SKIP_WAITING" });
+          await controllerChanged;
+          return true;
+        }
+
+        async function startAppUpdate(options = {}) {
+          const automatic = !!options.automatic;
           const updateUrl = getAppUpdateUrl();
           if (!updateUrl) {
-            closeAppUpdateAvailable();
-            openAppUpdateSettings();
+            if (!automatic) {
+              closeAppUpdateAvailable();
+              openAppUpdateSettings();
+            }
             return;
           }
           closeAppUpdateAvailable();
           const normalized = (() => {
             try { return normalizeUpdateUrl(updateUrl); }
             catch (error) {
-              showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+              if (!automatic) showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
               return "";
             }
           })();
           if (!normalized) return;
 
+          const mode = getAppUpdateMode();
           try {
-            if ("serviceWorker" in navigator) {
-              const registration = await navigator.serviceWorker.getRegistration();
-              if (registration) {
-                await registration.update();
-                let worker = registration.waiting || registration.installing;
-                if (worker && worker.state !== "installed") {
-                  await new Promise((resolve) => {
-                    const timeout = setTimeout(resolve, 6000);
-                    worker.addEventListener("statechange", function onState() {
-                      if (worker.state === "installed" || worker.state === "activated" || worker.state === "redundant") {
-                        clearTimeout(timeout);
-                        worker.removeEventListener("statechange", onState);
-                        resolve();
-                      }
-                    });
-                  });
-                }
-                worker = registration.waiting || worker;
-                if (worker && typeof worker.postMessage === "function") {
-                  worker.postMessage({ type: "SKIP_WAITING" });
-                  await new Promise((resolve) => setTimeout(resolve, 250));
-                }
+            if (isServiceWorkerContextAvailable()) {
+              // Nur hier (bewusster Klick bzw. Automatik-Modus) darf aktiv nach
+              // einem neuen Service Worker gesucht werden.
+              const registration = await getOrCreateServiceWorkerRegistration(mode, true);
+              const activated = await activateWaitingServiceWorker(registration, mode);
+
+              // Die neue Version wird nach dem expliziten Update aus dem neuen
+              // App-Shell-Cache geladen. Im manuellen Modus bleibt sie danach fest.
+              if (activated || navigator.serviceWorker.controller) {
+                window.location.reload();
+                return;
               }
             }
           } catch (error) {
             console.warn("Service-Worker-Update konnte nicht vollständig ausgeführt werden", error);
           }
 
+          // Fallback für die native/local-file Variante ohne Service Worker.
           const installTarget = new URL(normalized);
           installTarget.searchParams.set("_barcodeUpdateInstall", String(Date.now()));
           window.location.href = installTarget.toString();
+        }
+
+        async function runAutomaticUpdateOnStart() {
+          if (getAppUpdateMode() !== "auto") return;
+          const result = await checkForAppUpdate({ silent: true });
+          if (result?.available && getAppUpdateMode() === "auto") {
+            await startAppUpdate({ automatic: true });
+          }
         }
 
         function cancelAppUpdateLongPress() {
@@ -15073,11 +15147,14 @@ In den App-Namensraum importieren?`)
           // Falls die App über einen Share-Link geöffnet wurde, Daten anbieten.
           setTimeout(importSharedDataFromUrl, 120);
 
-          // Standard ist manuell. Nur bei ausdrücklicher Einstellung "Automatisch prüfen"
-          // wird beim Start still nach einer neuen Version gesucht. Es wird niemals automatisch installiert.
-          if (updateMode === "auto") {
-            window.setTimeout(() => checkForAppUpdate({ silent: true }), 700);
-          }
+          // Zuerst den Service Worker auf den gespeicherten Modus setzen.
+          // MANUELL: kein Versionscheck, kein registration.update(), kein automatischer Wechsel.
+          // AUTOMATISCH: beim Start darf geprüft und bei neuer Version aktualisiert werden.
+          syncServiceWorkerUpdateMode(updateMode).then(() => {
+            if (updateMode === "auto") {
+              window.setTimeout(runAutomaticUpdateOnStart, 500);
+            }
+          });
 
           settingsInput?.addEventListener("focus", scheduleAppUpdateKeyboardViewportSync);
           settingsInput?.addEventListener("click", scheduleAppUpdateKeyboardViewportSync);
@@ -15095,9 +15172,11 @@ In den App-Namensraum importieren?`)
           }
           window.addEventListener("resize", syncAppUpdateKeyboardViewport);
 
-          updateButton?.addEventListener("pointerdown", function () {
+          updateButton?.addEventListener("pointerdown", function (event) {
+            if (event.pointerType === "mouse" && event.button !== 0) return;
             cancelAppUpdateLongPress();
             appUpdateLongPressTriggered = false;
+            try { updateButton.setPointerCapture?.(event.pointerId); } catch (_) {}
             appUpdateLongPressTimer = window.setTimeout(function () {
               appUpdateLongPressTimer = null;
               appUpdateLongPressTriggered = true;
@@ -15105,14 +15184,22 @@ In den App-Namensraum importieren?`)
               openAppUpdateSettings();
             }, APP_UPDATE_LONG_PRESS_MS);
           });
-          ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
-            updateButton?.addEventListener(eventName, cancelAppUpdateLongPress);
+          updateButton?.addEventListener("pointerup", function (event) {
+            cancelAppUpdateLongPress();
+            try { updateButton.releasePointerCapture?.(event.pointerId); } catch (_) {}
           });
-          updateButton?.addEventListener("contextmenu", (event) => event.preventDefault());
+          updateButton?.addEventListener("pointercancel", cancelAppUpdateLongPress);
+          updateButton?.addEventListener("contextmenu", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+          });
+          updateButton?.addEventListener("selectstart", (event) => event.preventDefault());
+          updateButton?.addEventListener("dragstart", (event) => event.preventDefault());
           updateButton?.addEventListener("click", function (event) {
             if (appUpdateLongPressTriggered) {
               appUpdateLongPressTriggered = false;
               event.preventDefault();
+              event.stopPropagation();
               return;
             }
             checkForAppUpdate();
@@ -15127,11 +15214,13 @@ In den App-Namensraum importieren?`)
               closeAppUpdateSettings();
               showAppUpdateMessage(
                 selectedMode === "auto"
-                  ? "Update-Einstellung gespeichert: automatisch prüfen, niemals automatisch installieren."
-                  : "Update-Einstellung gespeichert: manuell prüfen.",
+                  ? "Update-Einstellung gespeichert: automatisch prüfen und aktualisieren."
+                  : "Update-Einstellung gespeichert: vollständig manuell. Start und Wischen prüfen nicht.",
                 "success"
               );
-              if (selectedMode === "auto") window.setTimeout(() => checkForAppUpdate({ silent: true }), 150);
+              syncServiceWorkerUpdateMode(selectedMode).then(() => {
+                if (selectedMode === "auto") window.setTimeout(runAutomaticUpdateOnStart, 150);
+              });
             } catch (error) {
               showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
               settingsInput?.focus();
