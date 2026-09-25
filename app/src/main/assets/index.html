@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 101 -->
+<!-- Barcode Audi Scanner - Ver. 102 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="102">
+<html lang="de" data-app-version="101">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3640,13 +3640,24 @@
         color: #fff;
       }
 
-      /* Update-Button im Footer (Ver. 70) */
+      /* Footer bündig mit dem übergeordneten Hauptcontainer (Ver. 102) */
       #appFooter {
         display: flex;
         align-items: center;
         justify-content: flex-start;
         gap: 5px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        width: min(100%, 1126px);
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 0;
+        padding-right: 0;
+        box-sizing: border-box;
+      }
+
+      #appFooter > span {
+        min-width: 0;
+        white-space: nowrap;
       }
 
       #appShareButton,
@@ -14922,11 +14933,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="101">
+    <footer id="appFooter" data-app-version="102">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">101</span>
+        - Ver.<span id="footerVersion">102</span>
       </span>
       <button
         type="button"
