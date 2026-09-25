@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 78 -->
+<!-- Barcode Audi Scanner - Ver. 79 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="78">
+<html lang="de" data-app-version="79">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -2560,71 +2560,16 @@
             window.location.protocol === "https:" ||
             window.location.hostname === "localhost" ||
             window.location.hostname === "127.0.0.1";
-          let didRefreshForServiceWorker = false;
-
-          const requestLatestServiceWorker = function (registration) {
-            if (!registration || typeof registration.update !== "function") {
-              return Promise.resolve();
-            }
-            return registration.update().catch((error) =>
-              console.warn(
-                "Service Worker konnte nicht aktualisiert werden:",
-                error,
-              ),
-            );
-          };
 
           if (isHttpLikeContext) {
-            navigator.serviceWorker.addEventListener(
-              "controllerchange",
-              function () {
-                if (didRefreshForServiceWorker) return;
-                didRefreshForServiceWorker = true;
-                window.location.reload();
-              },
-              { once: true },
-            );
-
             window.addEventListener(
               "load",
               function () {
+                // Nur registrieren. Keine automatische update()-Prüfung, kein SKIP_WAITING
+                // und kein automatischer Reload. Aktualisierung erfolgt ausschließlich
+                // nach ausdrücklicher Bestätigung über den Update-Button.
                 navigator.serviceWorker
                   .register("./sw.js")
-                  .then(function (registration) {
-                    const promoteWaitingWorker = function (worker) {
-                      if (!worker || typeof worker.postMessage !== "function") {
-                        return;
-                      }
-                      worker.postMessage({ type: "SKIP_WAITING" });
-                    };
-
-                    if (registration.waiting) {
-                      promoteWaitingWorker(registration.waiting);
-                    }
-
-                    registration.addEventListener("updatefound", function () {
-                      const nextWorker = registration.installing;
-                      if (!nextWorker) return;
-                      nextWorker.addEventListener("statechange", function () {
-                        if (
-                          nextWorker.state === "installed" &&
-                          navigator.serviceWorker.controller
-                        ) {
-                          promoteWaitingWorker(nextWorker);
-                        }
-                      });
-                    });
-
-                    requestLatestServiceWorker(registration);
-                    window.addEventListener("focus", function () {
-                      requestLatestServiceWorker(registration);
-                    });
-                    document.addEventListener("visibilitychange", function () {
-                      if (!document.hidden) {
-                        requestLatestServiceWorker(registration);
-                      }
-                    });
-                  })
                   .catch((error) =>
                     console.warn(
                       "Service Worker konnte nicht registriert werden:",
@@ -6239,11 +6184,22 @@
     <!-- Update-Link: langer Druck auf den Footer-Button -->
     <div id="appUpdateSettingsOverlay" class="popup-container hidden" aria-hidden="true">
       <div id="appUpdateSettingsContent" role="dialog" aria-modal="true" aria-labelledby="appUpdateSettingsTitle">
-        <h3 id="appUpdateSettingsTitle">Update-Link</h3>
+        <h3 id="appUpdateSettingsTitle">Update-Einstellungen</h3>
+        <div style="margin-bottom:12px;">
+          <div style="font-weight:700;margin-bottom:6px;">Update-Prüfung:</div>
+          <label style="display:flex;align-items:flex-start;gap:8px;margin:7px 0;cursor:pointer;">
+            <input type="radio" name="appUpdateMode" value="manual" checked style="margin-top:3px;">
+            <span><strong>Manuell</strong><br><small>Nur prüfen, wenn du auf den Update-Button drückst.</small></span>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;margin:7px 0;cursor:pointer;">
+            <input type="radio" name="appUpdateMode" value="auto" style="margin-top:3px;">
+            <span><strong>Automatisch prüfen</strong><br><small>Beim Start nur nach einer neuen Version suchen. Installation immer erst nach deiner Bestätigung.</small></span>
+          </label>
+        </div>
         <label for="appUpdateUrlInput" style="display:block;font-weight:700;margin-bottom:5px;">Adresse der Update-Seite:</label>
         <input id="appUpdateUrlInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" />
         <div class="app-update-hint">
-          Kurz auf „Update“ drücken = Version prüfen. Lange drücken = diesen Link ändern.
+          Kurz drücken = jetzt prüfen. Lange drücken = Update-Einstellungen öffnen.
         </div>
         <div class="app-update-buttons">
           <button type="button" id="appUpdateClearUrlButton">Link löschen</button>
@@ -6292,7 +6248,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "78";
+      const APP_VERSION_FALLBACK = "79";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
 
       function getAndroidBridge() {
@@ -14555,8 +14511,8 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="78">
-      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">78</span></span>
+    <footer id="appFooter" data-app-version="79">
+      <span>Entwickelt von: Bachner Gerhard - Ver.<span id="footerVersion">79</span></span>
       <button
         type="button"
         id="appShareButton"
@@ -14566,8 +14522,8 @@ In den App-Namensraum importieren?`)
       <button
         type="button"
         id="appUpdateButton"
-        title="Kurz drücken: Update prüfen · Lang drücken: Update-Link ändern"
-        aria-label="Update prüfen. Lange drücken, um den Update-Link zu ändern."
+        title="Kurz drücken: Update prüfen · Lang drücken: Update-Einstellungen"
+        aria-label="Update prüfen. Lange drücken, um die Update-Einstellungen zu öffnen."
       >↻ Update</button>
     </footer>
 
@@ -14575,6 +14531,7 @@ In den App-Namensraum importieren?`)
       // Footer-Version, Update-Prüfung und Teilen (Ver. 73)
       (function () {
         const APP_UPDATE_URL_STORAGE_KEY = "updateSourceUrl";
+        const APP_UPDATE_MODE_STORAGE_KEY = "updateCheckMode";
         const DEFAULT_APP_UPDATE_URL = "https://parip69.github.io/BarcodeAudi_AndroidAPK/";
         const APP_UPDATE_LONG_PRESS_MS = 650;
         let appUpdateLongPressTimer = null;
@@ -14805,6 +14762,29 @@ In den App-Namensraum importieren?`)
           return normalized;
         }
 
+        function getAppUpdateMode() {
+          const value = String(appStorage.getItem(APP_UPDATE_MODE_STORAGE_KEY) || "manual").toLowerCase();
+          return value === "auto" ? "auto" : "manual";
+        }
+
+        function setAppUpdateMode(value) {
+          const mode = value === "auto" ? "auto" : "manual";
+          appStorage.setItem(APP_UPDATE_MODE_STORAGE_KEY, mode);
+          return mode;
+        }
+
+        function setUpdateButtonVersion(remoteVersion) {
+          const button = document.getElementById("appUpdateButton");
+          if (!button) return;
+          const version = String(remoteVersion || "").trim();
+          button.dataset.availableVersion = version;
+          button.textContent = version ? `↻ Update → ${version}` : "↻ Update";
+          button.classList.toggle("update-available", !!version);
+          button.title = version
+            ? `Neue Version ${version} verfügbar · Kurz drücken zum Aktualisieren · Lang drücken für Einstellungen`
+            : "Kurz drücken: Update prüfen · Lang drücken: Update-Einstellungen";
+        }
+
         function normalizeUpdateUrl(rawUrl) {
           const value = String(rawUrl || "").trim();
           if (!value) return "";
@@ -14866,16 +14846,12 @@ In den App-Namensraum importieren?`)
           const input = document.getElementById("appUpdateUrlInput");
           if (!overlay || !input) return;
           input.value = getAppUpdateUrl();
+          const mode = getAppUpdateMode();
+          const modeInput = document.querySelector(`input[name="appUpdateMode"][value="${mode}"]`);
+          if (modeInput) modeInput.checked = true;
           resetAppUpdateKeyboardViewport();
           overlay.classList.remove("hidden");
           overlay.setAttribute("aria-hidden", "false");
-          setTimeout(() => {
-            try {
-              input.focus({ preventScroll: true });
-              input.setSelectionRange(input.value.length, input.value.length);
-            } catch (_) {}
-            scheduleAppUpdateKeyboardViewportSync();
-          }, 80);
         }
 
         function closeAppUpdateSettings() {
@@ -14945,24 +14921,28 @@ In den App-Namensraum importieren?`)
           else window.alert(message);
         }
 
-        async function checkForAppUpdate() {
+        async function checkForAppUpdate(options = {}) {
+          const silent = !!options.silent;
           const button = document.getElementById("appUpdateButton");
           const storedUrl = getAppUpdateUrl();
           if (!storedUrl) {
-            openAppUpdateSettings();
-            return;
+            if (!silent) openAppUpdateSettings();
+            return null;
           }
 
           let updateUrl;
           try {
             updateUrl = normalizeUpdateUrl(storedUrl);
           } catch (error) {
-            showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
-            openAppUpdateSettings();
-            return;
+            if (!silent) {
+              showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+              openAppUpdateSettings();
+            }
+            return null;
           }
 
-          if (button) {
+          const oldText = button?.textContent || "↻ Update";
+          if (button && !silent) {
             button.disabled = true;
             button.textContent = "Prüfe…";
           }
@@ -14982,28 +14962,40 @@ In den App-Namensraum importieren?`)
 
             const currentVersion = String(getCurrentAppVersion() || "").trim();
             if (compareAppVersions(remoteVersion, currentVersion) > 0) {
-              showAppUpdateAvailable(currentVersion, remoteVersion);
-            } else {
+              setUpdateButtonVersion(remoteVersion);
+              if (!silent) showAppUpdateAvailable(currentVersion, remoteVersion);
+              return { available: true, currentVersion, remoteVersion };
+            }
+
+            setUpdateButtonVersion("");
+            if (!silent) {
               showAppUpdateMessage(
                 `Keine neue Version. Installiert: Ver.${currentVersion} · Online: Ver.${remoteVersion}`,
                 "success",
               );
             }
+            return { available: false, currentVersion, remoteVersion };
           } catch (error) {
             console.warn("Update-Prüfung fehlgeschlagen", error);
-            showAppUpdateMessage(
-              `Update-Prüfung nicht möglich: ${error?.message || "Verbindungsfehler"}`,
-              "error",
-            );
+            if (!silent) {
+              showAppUpdateMessage(
+                `Update-Prüfung nicht möglich: ${error?.message || "Verbindungsfehler"}`,
+                "error",
+              );
+            }
+            return null;
           } finally {
-            if (button) {
+            if (button && !silent) {
               button.disabled = false;
-              button.textContent = "↻ Update";
+              const available = button.dataset.availableVersion || "";
+              button.textContent = available ? `↻ Update → ${available}` : "↻ Update";
+            } else if (button && silent && button.textContent === "Prüfe…") {
+              button.textContent = oldText;
             }
           }
         }
 
-        function startAppUpdate() {
+        async function startAppUpdate() {
           const updateUrl = getAppUpdateUrl();
           if (!updateUrl) {
             closeAppUpdateAvailable();
@@ -15011,11 +15003,47 @@ In den App-Namensraum importieren?`)
             return;
           }
           closeAppUpdateAvailable();
+          const normalized = (() => {
+            try { return normalizeUpdateUrl(updateUrl); }
+            catch (error) {
+              showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+              return "";
+            }
+          })();
+          if (!normalized) return;
+
           try {
-            window.location.href = normalizeUpdateUrl(updateUrl);
+            if ("serviceWorker" in navigator) {
+              const registration = await navigator.serviceWorker.getRegistration();
+              if (registration) {
+                await registration.update();
+                let worker = registration.waiting || registration.installing;
+                if (worker && worker.state !== "installed") {
+                  await new Promise((resolve) => {
+                    const timeout = setTimeout(resolve, 6000);
+                    worker.addEventListener("statechange", function onState() {
+                      if (worker.state === "installed" || worker.state === "activated" || worker.state === "redundant") {
+                        clearTimeout(timeout);
+                        worker.removeEventListener("statechange", onState);
+                        resolve();
+                      }
+                    });
+                  });
+                }
+                worker = registration.waiting || worker;
+                if (worker && typeof worker.postMessage === "function") {
+                  worker.postMessage({ type: "SKIP_WAITING" });
+                  await new Promise((resolve) => setTimeout(resolve, 250));
+                }
+              }
+            }
           } catch (error) {
-            showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+            console.warn("Service-Worker-Update konnte nicht vollständig ausgeführt werden", error);
           }
+
+          const installTarget = new URL(normalized);
+          installTarget.searchParams.set("_barcodeUpdateInstall", String(Date.now()));
+          window.location.href = installTarget.toString();
         }
 
         function cancelAppUpdateLongPress() {
@@ -15028,6 +15056,8 @@ In den App-Namensraum importieren?`)
         document.addEventListener("DOMContentLoaded", function () {
           updateFooterVersion();
           getAppUpdateUrl();
+          const updateMode = getAppUpdateMode();
+          setUpdateButtonVersion("");
 
           const updateButton = document.getElementById("appUpdateButton");
           const shareButton = document.getElementById("appShareButton");
@@ -15042,6 +15072,12 @@ In den App-Namensraum importieren?`)
 
           // Falls die App über einen Share-Link geöffnet wurde, Daten anbieten.
           setTimeout(importSharedDataFromUrl, 120);
+
+          // Standard ist manuell. Nur bei ausdrücklicher Einstellung "Automatisch prüfen"
+          // wird beim Start still nach einer neuen Version gesucht. Es wird niemals automatisch installiert.
+          if (updateMode === "auto") {
+            window.setTimeout(() => checkForAppUpdate({ silent: true }), 700);
+          }
 
           settingsInput?.addEventListener("focus", scheduleAppUpdateKeyboardViewportSync);
           settingsInput?.addEventListener("click", scheduleAppUpdateKeyboardViewportSync);
@@ -15086,8 +15122,16 @@ In den App-Namensraum importieren?`)
             try {
               const normalized = normalizeUpdateUrl(settingsInput?.value || "");
               setAppUpdateUrl(normalized);
+              const selectedMode = document.querySelector('input[name="appUpdateMode"]:checked')?.value || "manual";
+              setAppUpdateMode(selectedMode);
               closeAppUpdateSettings();
-              showAppUpdateMessage("Update-Link gespeichert.", "success");
+              showAppUpdateMessage(
+                selectedMode === "auto"
+                  ? "Update-Einstellung gespeichert: automatisch prüfen, niemals automatisch installieren."
+                  : "Update-Einstellung gespeichert: manuell prüfen.",
+                "success"
+              );
+              if (selectedMode === "auto") window.setTimeout(() => checkForAppUpdate({ silent: true }), 150);
             } catch (error) {
               showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
               settingsInput?.focus();
