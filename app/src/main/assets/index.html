@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 75 -->
+<!-- Barcode Audi Scanner - Ver. 77 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="76">
+<html lang="de" data-app-version="77">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -6291,7 +6291,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "75";
+      const APP_VERSION_FALLBACK = "77";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
 
       function getAndroidBridge() {
@@ -10331,7 +10331,7 @@ In den App-Namensraum importieren?`)
         const role=editor74Field(optionGrid,'Funktion','select'); role.id='e74Role';
         [['','Normal'],['M','Master'],['S','Slave']].forEach(([v,t])=>editor74Option(role,v,t));
         const toggle=editor74Field(optionGrid,'Gruppen-Umschalter','select'); toggle.id='e74Toggle';
-        [['','Ohne'],['+','Plus (+)'],['-','Minus (−)']].forEach(([v,t])=>editor74Option(toggle,v,t));
+        [['','Ohne'],['+','Hauptansicht (+)'],['-','Zweitansicht (−)']].forEach(([v,t])=>editor74Option(toggle,v,t));
         const date=editor74Field(optionGrid,'Startdatum der 90-Tage-Frist','date'); date.id='e74Date';
         const pairBox=editor74El('fieldset',null,host); editor74El('legend','Kopplung',pairBox);
         const pairChoice=editor74Field(pairBox,'Vorhandene Kopplung auswählen','select'); pairChoice.id='e74PairChoice';
@@ -14540,8 +14540,8 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="75">
-      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">72</span></span>
+    <footer id="appFooter" data-app-version="77">
+      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">77</span></span>
       <button
         type="button"
         id="appShareButton"
