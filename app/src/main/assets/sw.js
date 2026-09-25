@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = "barcode-audi-shell-installed-v89";
-const RUNTIME_CACHE = "barcode-audi-runtime-v89";
+const APP_SHELL_CACHE = "barcode-audi-shell-installed-v90";
+const RUNTIME_CACHE = "barcode-audi-runtime-v90";
 const SETTINGS_CACHE = "barcode-audi-settings-v1";
 const UPDATE_MODE_URL = new URL("__update_mode__", self.registration.scope).toString();
 
@@ -44,14 +44,17 @@ async function setUpdateMode(mode) {
 }
 
 function versionFromLegacyCacheName(name) {
-  const match = String(name || "").match(/^barcode-audi-shell-v(\d+)$/i);
+  const match = String(name || "").match(/^barcode-audi-shell-(?:installed-)?v(\d+)$/i);
   return match ? Number(match[1]) : -1;
 }
 
 async function findBestLegacyShellCache() {
   const keys = await caches.keys();
   return keys
-    .filter((key) => /^barcode-audi-shell-v\d+$/i.test(key))
+    .filter((key) =>
+      key !== APP_SHELL_CACHE &&
+      /^barcode-audi-shell-(?:installed-)?v\d+$/i.test(key)
+    )
     .sort((a, b) => versionFromLegacyCacheName(b) - versionFromLegacyCacheName(a))[0] || "";
 }
 
@@ -164,7 +167,7 @@ self.addEventListener("activate", (event) => {
         keys
           .filter(
             (key) =>
-              (/^barcode-audi-shell-v\d+$/i.test(key) || /^barcode-audi-runtime-v\d+$/i.test(key) || key.startsWith("mathe-guru-")) &&
+              (/^barcode-audi-shell-v\d+$/i.test(key) || /^barcode-audi-shell-installed-v\d+$/i.test(key) || /^barcode-audi-runtime-v\d+$/i.test(key) || key.startsWith("mathe-guru-")) &&
               key !== APP_SHELL_CACHE &&
               key !== RUNTIME_CACHE &&
               key !== SETTINGS_CACHE,
@@ -209,23 +212,6 @@ async function installedShellFirst(request, url) {
   return response;
 }
 
-async function autoNetworkFirst(request, fallbackUrl) {
-  const cache = await caches.open(APP_SHELL_CACHE);
-  try {
-    const response = await fetch(request, { cache: "no-store" });
-    if (isCacheableResponse(response)) await cache.put(request, response.clone());
-    return response;
-  } catch (error) {
-    const cached = await cache.match(request, { ignoreSearch: true });
-    if (cached) return cached;
-    if (fallbackUrl) {
-      const fallback = await cache.match(fallbackUrl, { ignoreSearch: true });
-      if (fallback) return fallback;
-    }
-    throw error;
-  }
-}
-
 async function runtimeCacheFirst(request) {
   const cache = await caches.open(RUNTIME_CACHE);
   const cached = await cache.match(request, { ignoreSearch: true });
@@ -254,13 +240,13 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (isAppShellRequest(request, url)) {
+    // WICHTIG: Ein normaler Start/Reload darf niemals selbst eine neue
+    // index.html installieren. Immer die zuletzt ausdrücklich installierte
+    // Version ausliefern. Ob MANUELL nur geprüft oder AUTOMATISCH wirklich
+    // aktualisiert wird, entscheidet erst die bereits geladene Seite.
     event.respondWith(
       (async () => {
         await ensureInstalledShell();
-        const mode = await getUpdateMode();
-        if (mode === "auto") {
-          return autoNetworkFirst(request, "./index.html").catch(() => installedShellFirst(request, url));
-        }
         return installedShellFirst(request, url);
       })(),
     );
