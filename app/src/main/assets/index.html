@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 74 -->
+<!-- Barcode Audi Scanner - Ver. 75 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="74">
+<html lang="de" data-app-version="75">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -5091,10 +5091,8 @@
       #editor74Fields button, .e74-manager button { border:0; border-radius:7px; background:#087a56; color:#fff !important; -webkit-text-fill-color:#fff !important; padding:10px 13px; cursor:pointer; font-size:14px; }
       #editor74Fields button:active, .e74-manager button:active { transform:scale(.96); }
       .e74-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:10px 0; }
-      .e74-group-row { display:flex; align-items:center; gap:8px; border:1px solid #aab6c2; border-radius:7px; padding:7px; }
+      .e74-group-row { display:flex; align-items:center; min-height:42px; gap:8px; border:1px solid #aab6c2; border-radius:7px; padding:7px; }
       .e74-group-row > label:first-child { display:flex; align-items:center; gap:7px; flex:1; min-width:0; overflow-wrap:anywhere; cursor:pointer; }
-      .e74-group-row .e74-field { width:64px; margin:0; font-size:11px; }
-      .e74-group-row .e74-field input { padding:5px; min-height:32px; }
       .e74-help { font-size:13px; line-height:1.45; opacity:.85; }
       .e74-error { color:#c12626; font-weight:600; }
       .e74-linked { background:rgba(0,130,90,.09); border-radius:8px; padding:10px; margin-top:10px; overflow-wrap:anywhere; }
@@ -6110,7 +6108,7 @@
           • <em>*:+ / *:-</em> – Gruppen-Umschalter: Ändert Zustand/Sichtbarkeit
           für Barcodes derselben Gruppe (siehe Hauptansicht).<br />
           • <em>&Gruppe:ID</em> – Gruppenzuordnung: Weist Barcode einer 'Gruppe'
-          mit interner 'ID' zu (z.B. für Filter).<br />
+          zu. Die interne Kennung wird beim Erstellen automatisch vergeben.<br />
           • Mehrere Befehle (kommagetrennt) und Gruppen sind möglich. Das
           Zeichen # am Anfang oder Ende der Klammerinhalte versteckt den Barcode
           in der Liste.<br /><br /><strong
@@ -6291,7 +6289,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "74";
+      const APP_VERSION_FALLBACK = "75";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
 
       function getAndroidBridge() {
@@ -9109,41 +9107,6 @@ In den App-Namensraum importieren?`)
         }
       }
 
-      /**
-       * Aktualisiert die Order der Gruppentokens für alle Barcode‑Container, die zu einer bestimmten Gruppe gehören.
-       * @param {string} targetGroupLetter - z. B. "A"
-       */
-      function updateGroupOrders(targetGroupLetter) {
-        const parent = document.getElementById("generatedBarcodes");
-        const containers = Array.from(
-          parent.querySelectorAll(".barcode-container"),
-        );
-        let newOrder = 1;
-        containers.forEach((container) => {
-          let fullLabel = container.dataset.fullLabel || "";
-          let info = parsePairInfo(fullLabel);
-          if (
-            info.groups.some(
-              (g) =>
-                g.groupLetter.toUpperCase() === targetGroupLetter.toUpperCase(),
-            )
-          ) {
-            let barcodeText = container.dataset.text;
-            let newBarcodeText = barcodeText.replace(
-              /(&[^,\]]+):([A-Za-z])(\d+)/g,
-              function (match, prefix, letter, num) {
-                if (letter.toUpperCase() === targetGroupLetter.toUpperCase()) {
-                  return prefix + ":" + letter + newOrder++;
-                }
-                return match;
-              },
-            );
-            container.dataset.text = newBarcodeText;
-          }
-        });
-        saveBarcodes();
-      }
-
       /******************************************
        * BARCODE‑FUNKTIONEN
        ******************************************/
@@ -9246,13 +9209,15 @@ In den App-Namensraum importieren?`)
             }
           });
         });
-        let sortedKeys = Array.from(groupMap.keys()).sort();
+        let sortedKeys = Array.from(groupMap.keys()).sort((a, b) =>
+          groupMap.get(a).localeCompare(groupMap.get(b), 'de', {numeric:true, sensitivity:'base'})
+        );
         const select = document.getElementById("groupFilter");
         select.innerHTML = '<option value="">Alle Gruppen anzeigen</option>';
         sortedKeys.forEach((letter) => {
           const option = document.createElement("option");
           option.value = letter;
-          option.textContent = groupMap.get(letter) + " (" + letter + ")";
+          option.textContent = groupMap.get(letter);
           select.appendChild(option);
         });
       }
@@ -9962,7 +9927,7 @@ In den App-Namensraum importieren?`)
             ? "💞 " + pairInfo.pairingInfo
             : "";
         let groupDisplay = pairInfo.groups
-          .map((g) => `${g.groupName} (${g.groupLetter})`)
+          .map((g) => g.groupName)
           .join(", ");
         if (marker === "plus") groupDisplay += " (Ein)";
         else if (marker === "minus") groupDisplay += " (Aus)";
@@ -10284,10 +10249,21 @@ In den App-Namensraum importieren?`)
       function editor74Button(parent, label, fn) {
         const b = editor74El('button', label, parent); b.type = 'button'; b.onclick = fn; return b;
       }
+      // Ver. 75: Kennungen werden automatisch vergeben; vorhandene bleiben stabil.
+      function editor75NewGroupID(name, catalogue) {
+        const used=new Set(catalogue.map(g=>g.key));
+        const preferred=name.trim().charAt(0).toUpperCase();
+        for(const letter of [preferred,...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']) {
+          if(/^[A-Z]$/.test(letter) && !used.has(letter))return letter;
+        }
+        return '';
+      }
       function editor74GroupCheck(name, id, catalogue, exclude) {
-        if (!name || /[:,\[\]#\r\n]/.test(name)) return 'Bitte einen Gruppennamen ohne Komma, Doppelpunkt, # oder Klammern eingeben.';
-        if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(id) || /^[A-Za-z]\d+$/.test(id)) return 'Kennung: ein Buchstabe oder ein Wort ohne Leerzeichen. Eine Zahl direkt hinter einem einzelnen Buchstaben ist für die Position reserviert.';
-        if (catalogue.some(g => g.key !== exclude && g.key === id.charAt(0).toUpperCase())) return 'Der Anfangsbuchstabe dieser Kennung ist bereits belegt. Bitte eine andere Kennung verwenden.';
+        if (!name || /[:,\[\]#\r\n/]/.test(name)) return 'Bitte einen Gruppennamen ohne Komma, Doppelpunkt, Schrägstrich, # oder Klammern eingeben.';
+        const normalized=name.normalize('NFC').toLocaleLowerCase('de');
+        if(catalogue.some(g=>g.key!==exclude && g.name.normalize('NFC').toLocaleLowerCase('de')===normalized)) return 'Dieser Gruppenname ist bereits vorhanden. Bitte die vorhandene Gruppe auswählen oder einen anderen Namen verwenden.';
+        if(!id)return 'Alle 26 internen Gruppenkennungen sind belegt. Bitte eine vorhandene Gruppe auswählen.';
+        if(catalogue.some(g=>g.key!==exclude && g.key===id.charAt(0).toUpperCase())) return 'Diese Gruppe ist bereits vorhanden.';
         return '';
       }
       function editor74PatchRaw(raw, kind, values) {
@@ -10319,33 +10295,25 @@ In den App-Namensraum importieren?`)
         function patch(kind, tokens) { raw.value=editor74PatchRaw(raw.value,kind,tokens); sync(); }
         function writeGroups() {
           const current=editor74Parse(raw.value).groups;
-          patch('groups',groupRows.filter(r=>r.check.checked).map(r=> {
-            const previous=current.find(g=>g.key===r.g.key);
-            if(previous && previous.order===r.order.value) return previous.token;
-            return '&'+r.g.name+':'+r.g.base+(r.order.value || '');
-          }));
+          const selected=groupRows.filter(r=>r.check.checked);
+          const keys=new Set(selected.map(r=>r.g.key));
+          const tokens=current.filter(g=>keys.has(g.key)).map(g=>g.token);
+          selected.forEach(r=>{if(!current.some(g=>g.key===r.g.key))tokens.push('&'+r.g.name+':'+r.g.base);});
+          patch('groups',tokens);
         }
         editor74Button(actions,'Alle auswählen',()=>{groupRows.forEach(r=>r.check.checked=true);writeGroups();});
         editor74Button(actions,'Keine',()=>{groupRows.forEach(r=>r.check.checked=false);writeGroups();});
         const create=editor74El('details',null,groupBox); editor74El('summary','＋ Neue Gruppe erstellen',create);
-        const createGrid=editor74El('div',null,create); createGrid.className='e74-grid';
+        const createGrid=editor74El('div',null,create);
         const newName=editor74Field(createGrid,'Gruppenname');
-        const newID=editor74Field(createGrid,'Kennung / Index'); newID.placeholder='z. B. W';
-        newName.oninput=()=>{
-          if(newID.dataset.manual) return;
-          const first=newName.value.trim().charAt(0).toUpperCase();
-          const candidates=[first,...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
-          newID.value=candidates.find(c=>/^[A-Z]$/.test(c)&&!draftGroups.has(c)) || '';
-        };
-        newID.oninput=()=>newID.dataset.manual='1';
         const groupError=editor74El('p','',create); groupError.className='e74-error'; groupError.setAttribute('role','alert');
         editor74Button(create,'Gruppe hinzufügen',()=> {
-          const name=newName.value.trim(), base=newID.value.trim();
+          const name=newName.value.trim(), base=editor75NewGroupID(name,[...draftGroups.values()]);
           const error=editor74GroupCheck(name,base,[...draftGroups.values()]);
           groupError.textContent=error; if(error)return;
           const g={name,base,key:base.charAt(0).toUpperCase()}; draftGroups.set(g.key,g);
           const selected=editor74Parse(raw.value).groups.map(x=>x.token); selected.push('&'+name+':'+base);
-          patch('groups',selected); newName.value='';newID.value='';delete newID.dataset.manual;create.open=false;
+          patch('groups',selected); newName.value='';create.open=false;
         });
         const optionBox=editor74El('fieldset',null,host); editor74El('legend','Barcode-Optionen',optionBox);
         const optionGrid=editor74El('div',null,optionBox); optionGrid.className='e74-grid';
@@ -10379,11 +10347,9 @@ In den App-Namensraum importieren?`)
             const row=editor74El('div',null,groupList);row.className='e74-group-row';
             const label=editor74El('label',null,row);
             const check=editor74El('input',null,label);check.type='checkbox';check.dataset.group=g.key;
-            editor74El('span',g.name+' ('+g.base+')',label);
+            editor74El('span',g.name,label);
             const selected=meta.groups.find(x=>x.key===g.key);check.checked=!!selected;check.onchange=writeGroups;
-            const order=editor74Field(row,'Position','number');order.min='0';order.step='1';order.placeholder='Auto';order.value=selected?selected.order:'';
-            order.disabled=!check.checked||!/^[a-z]$/i.test(g.base); order.onchange=()=>{if(order.value && !/^\d+$/.test(order.value)){order.value='';}writeGroups();};
-            groupRows.push({g,check,order});
+            groupRows.push({g,check});
           });
           if(!draftGroups.size)editor74El('p','Noch keine Gruppen. Lege hier deine erste Gruppe an.',groupList);
           hide.checked=meta.hide;role.value=meta.role;toggle.value=meta.toggle;
@@ -10431,17 +10397,17 @@ In den App-Namensraum importieren?`)
         const panel=editor74El('div',null,overlay);panel.className='popup-content e74-manager';
         editor74El('h3','Gruppen verwalten',panel);
         const choice=editor74Field(panel,'Gruppe auswählen','select');
-        const name=editor74Field(panel,'Gruppenname');const id=editor74Field(panel,'Kennung / Index');
-        editor74El('p','Name und Kennung sind unabhängig. Änderungen gelten für alle Barcodes der ausgewählten Gruppe. Der erste Buchstabe der Kennung muss frei sein.',panel).className='e74-help';
+        const name=editor74Field(panel,'Gruppenname');
+        editor74El('p','Der neue Name gilt für alle Barcodes dieser Gruppe. Deine gespeicherte Reihenfolge bleibt erhalten.',panel).className='e74-help';
         const error=editor74El('p','',panel);error.className='e74-error';error.setAttribute('role','alert');
         let catalog=editor74Catalog();
-        const refresh=()=>{choice.replaceChildren();editor74Option(choice,'','＋ Neue Gruppe');catalog.forEach(g=>editor74Option(choice,g.key,g.name+' ('+g.base+')'));};
+        const refresh=()=>{choice.replaceChildren();editor74Option(choice,'','＋ Neue Gruppe');catalog.forEach(g=>editor74Option(choice,g.key,g.name));};
         refresh();if(catalog.length)choice.value=catalog[0].key;
-        const select=()=>{const g=catalog.find(g=>g.key===choice.value);name.value=g?g.name:'';id.value=g?g.base:'';error.textContent='';};choice.onchange=select;select();
+        const select=()=>{const g=catalog.find(g=>g.key===choice.value);name.value=g?g.name:'';error.textContent='';};choice.onchange=select;select();
         const actions=editor74El('div',null,panel);actions.className='e74-actions';
         const close=()=>closeViewportLockedOverlay(overlay,{removeFromDom:true});
         editor74Button(actions,'Speichern',()=>{
-          const old=catalog.find(g=>g.key===choice.value), newName=name.value.trim(), base=id.value.trim();
+          const old=catalog.find(g=>g.key===choice.value), newName=name.value.trim(), base=old?old.base:editor75NewGroupID(newName,catalog);
           error.textContent=editor74GroupCheck(newName,base,catalog,old?.key);if(error.textContent)return;
           const key=base.charAt(0).toUpperCase();
           const rename=text=>{
@@ -10449,7 +10415,7 @@ In den App-Namensraum importieren?`)
             return text.slice(0,slash+1)+text.slice(slash+1).replace(/\[([^\]]*)\]/g,(whole,content)=>'['+content.split(',').map(part=>{
               const token=part.replace(/#/g,'').trim();const g=editor74Parse(token).groups[0];
               if(!g||g.key!==old.key)return part;
-              const replacement='&'+newName+':'+base+g.order;
+              const replacement='&'+newName+':'+g.id;
               return part.replace(token,()=>replacement);
             }).join(',')+']');
           };
@@ -10457,11 +10423,6 @@ In den App-Namensraum importieren?`)
           if(old&&!saveBarcodesStrict(after,'editor')){error.textContent='Speichern fehlgeschlagen.';return;}
           // Jede gespeicherte Gruppenreihenfolge referenziert vollständige Barcode-Zeilen.
           getAllGroupOrderingKeys().forEach(k=>{try{const list=JSON.parse(appStorage.getItem(k)||'[]');appStorage.setItem(k,JSON.stringify(list.map(rename)));}catch(_) {}});
-          if(old&&old.key!==key){
-            ['groupOrdering_','languageMode_'].forEach(prefix=>{const value=appStorage.getItem(prefix+old.key);if(value!==null){appStorage.setItem(prefix+key,value);appStorage.removeItem(prefix+old.key);}});
-            if(appStorage.getItem('selectedGroup')===old.key)appStorage.setItem('selectedGroup',key);
-            if(groupMarkerState[old.key]){groupMarkerState[key]=groupMarkerState[old.key];delete groupMarkerState[old.key];}
-          }
           catalog=catalog.filter(g=>g.key!==old?.key);catalog.push({name:newName,base,key});
           appStorage.setItem('editorGroupsV74',JSON.stringify(catalog));
           const filter=document.getElementById('groupFilter');const selected=old&&filter.value===old.key?key:filter.value;
@@ -14011,7 +13972,7 @@ In den App-Namensraum importieren?`)
           filterAndSortBarcodesByGroup(selectedGroup);
           updateFlag(); // Hier wird jetzt der gruppenspezifische Modus geladen
           reloadBarcodes();
-          showToast("Filter angewendet: " + (selectedGroup || "Alle Gruppen"));
+          showToast("Filter angewendet: " + (this.selectedOptions[0]?.textContent || "Alle Gruppen"));
           updateToggleButtonText();
         });
 
@@ -14553,7 +14514,7 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="74">
+    <footer id="appFooter" data-app-version="75">
       <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">72</span></span>
       <button
         type="button"
