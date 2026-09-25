@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 98 -->
+<!-- Barcode Audi Scanner - Ver. 99 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="98">
+<html lang="de" data-app-version="99">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3688,14 +3688,23 @@
       #appUpdateButton[disabled] { opacity: 0.65; cursor: default; }
 
       #appShareOverlay {
-        position: fixed;
-        inset: 0;
-        z-index: 10050;
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        width: 100dvw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        z-index: 2147482990 !important;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 16px;
+        padding: max(12px, env(safe-area-inset-top, 0px))
+          max(12px, env(safe-area-inset-right, 0px))
+          max(12px, env(safe-area-inset-bottom, 0px))
+          max(12px, env(safe-area-inset-left, 0px));
         box-sizing: border-box;
+        overflow: hidden !important;
+        overscroll-behavior: contain !important;
         background: rgba(0, 0, 0, 0.48);
       }
       #appShareOverlay.hidden { display: none !important; }
@@ -14913,11 +14922,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="98">
+    <footer id="appFooter" data-app-version="99">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">98</span>
+        - Ver.<span id="footerVersion">99</span>
       </span>
       <button
         type="button"
@@ -14947,12 +14956,30 @@ In den App-Namensraum importieren?`)
 
         function openAppShareMenu() {
           const overlay = document.getElementById("appShareOverlay");
-          if (overlay) overlay.classList.remove("hidden");
+          if (!overlay) return;
+
+          // Genau wie beim Update-Dialog: direkt unter <body> legen und an den
+          // aktuell sichtbaren Viewport koppeln. So bleibt das Fenster auch bei
+          // weit nach unten gescrollten Barcode-Listen immer sichtbar.
+          placeUpdateOverlayOnScreen(overlay);
+          const wasHidden = overlay.classList.contains("hidden");
+          overlay.classList.remove("hidden");
+          overlay.setAttribute("aria-hidden", "false");
+          if (wasHidden) lockAppUpdateViewport();
         }
 
         function closeAppShareMenu() {
           const overlay = document.getElementById("appShareOverlay");
-          if (overlay) overlay.classList.add("hidden");
+          if (!overlay || overlay.classList.contains("hidden")) return;
+          overlay.classList.add("hidden");
+          overlay.setAttribute("aria-hidden", "true");
+          unlockAppUpdateViewport();
+        }
+
+        function syncAppShareViewport() {
+          const overlay = document.getElementById("appShareOverlay");
+          if (!overlay || overlay.classList.contains("hidden")) return;
+          placeUpdateOverlayOnScreen(overlay);
         }
 
         function openDeveloperInfo() {
@@ -15843,8 +15870,11 @@ In den App-Namensraum importieren?`)
           if (window.visualViewport) {
             window.visualViewport.addEventListener("resize", syncAppUpdateKeyboardViewport);
             window.visualViewport.addEventListener("scroll", syncAppUpdateKeyboardViewport);
+            window.visualViewport.addEventListener("resize", syncAppShareViewport);
+            window.visualViewport.addEventListener("scroll", syncAppShareViewport);
           }
           window.addEventListener("resize", syncAppUpdateKeyboardViewport);
+          window.addEventListener("resize", syncAppShareViewport);
 
           updateButton?.addEventListener("pointerdown", function (event) {
             if (event.pointerType === "mouse" && event.button !== 0) return;

@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = "barcode-audi-shell-installed-v98";
-const RUNTIME_CACHE = "barcode-audi-runtime-v98";
+const APP_SHELL_CACHE = "barcode-audi-shell-installed-v99";
+const RUNTIME_CACHE = "barcode-audi-runtime-v99";
 const SETTINGS_CACHE = "barcode-audi-settings-v1";
 const UPDATE_MODE_URL = new URL("__update_mode__", self.registration.scope).toString();
 
