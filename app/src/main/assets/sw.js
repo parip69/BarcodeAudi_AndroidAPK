@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = "barcode-audi-shell-v85";
-const RUNTIME_CACHE = "barcode-audi-runtime-v85";
+const APP_SHELL_CACHE = "barcode-audi-shell-installed-v86";
+const RUNTIME_CACHE = "barcode-audi-runtime-v86";
 const SETTINGS_CACHE = "barcode-audi-settings-v1";
 const UPDATE_MODE_URL = new URL("__update_mode__", self.registration.scope).toString();
 
@@ -43,21 +43,74 @@ async function setUpdateMode(mode) {
   return normalized;
 }
 
-function isAppShellRequest(request, url) {
-  const scopePath = new URL(self.registration.scope).pathname;
-  const scopeRoot =
-    scopePath.endsWith("/") && scopePath.length > 1
-      ? scopePath.slice(0, -1)
-      : scopePath;
+function versionFromLegacyCacheName(name) {
+  const match = String(name || "").match(/^barcode-audi-shell-v(\d+)$/i);
+  return match ? Number(match[1]) : -1;
+}
 
-  return (
-    request.mode === "navigate" ||
-    url.pathname === scopePath ||
-    url.pathname === scopeRoot ||
-    url.pathname.endsWith("/index.html") ||
-    url.pathname.endsWith("/manifest.webmanifest") ||
-    url.pathname.endsWith("/sw.js")
-  );
+async function findBestLegacyShellCache() {
+  const keys = await caches.keys();
+  return keys
+    .filter((key) => /^barcode-audi-shell-v\d+$/i.test(key))
+    .sort((a, b) => versionFromLegacyCacheName(b) - versionFromLegacyCacheName(a))[0] || "";
+}
+
+async function copyLegacyInstalledVersion(targetCache) {
+  const legacyName = await findBestLegacyShellCache();
+  if (!legacyName) return false;
+  const legacy = await caches.open(legacyName);
+  const indexResponse =
+    (await legacy.match("./index.html", { ignoreSearch: true })) ||
+    (await legacy.match("./", { ignoreSearch: true }));
+  if (!indexResponse) return false;
+
+  await targetCache.put("./index.html", indexResponse.clone());
+  await targetCache.put("./", indexResponse.clone());
+
+  for (const url of PRECACHE_URLS.slice(2)) {
+    const response = await legacy.match(url, { ignoreSearch: true });
+    if (response) await targetCache.put(url, response.clone());
+  }
+  return true;
+}
+
+async function fetchFresh(url) {
+  const requestUrl = new URL(url, self.registration.scope);
+  requestUrl.searchParams.set("_barcodeInstall", String(Date.now()));
+  const response = await fetch(requestUrl.toString(), { cache: "no-store" });
+  if (!isCacheableResponse(response)) {
+    throw new Error(`HTTP ${response ? response.status : "?"} bei ${url}`);
+  }
+  return response;
+}
+
+async function refreshInstalledShell() {
+  const cache = await caches.open(APP_SHELL_CACHE);
+  for (const url of PRECACHE_URLS) {
+    const response = await fetchFresh(url);
+    await cache.put(url, response.clone());
+  }
+}
+
+async function ensureInstalledShell() {
+  const cache = await caches.open(APP_SHELL_CACHE);
+  const existing = await cache.match("./index.html", { ignoreSearch: true });
+  if (existing) return;
+
+  // Beim Wechsel von älteren Versionen die zuletzt wirklich installierte
+  // Version übernehmen. Eine nur online gefundene neue Version wird dadurch
+  // NICHT automatisch installiert.
+  if (await copyLegacyInstalledVersion(cache)) return;
+
+  // Nur bei einer echten Erstinstallation gibt es noch keine installierte
+  // Version, deshalb wird dann einmalig der aktuelle Stand übernommen.
+  await refreshInstalledShell();
+}
+
+function replyToMessage(event, payload) {
+  try {
+    if (event.ports && event.ports[0]) event.ports[0].postMessage(payload);
+  } catch (_) {}
 }
 
 self.addEventListener("message", (event) => {
@@ -65,100 +118,82 @@ self.addEventListener("message", (event) => {
 
   if (data.type === "SET_UPDATE_MODE") {
     event.waitUntil(
-      setUpdateMode(data.mode).then((mode) => {
-        // Nur im ausdrücklich gewählten Automatik-Modus darf ein wartender
-        // Service Worker selbständig aktiv werden.
-        if (mode === "auto") return self.skipWaiting();
-        return undefined;
-      }),
+      setUpdateMode(data.mode)
+        .then((mode) => replyToMessage(event, { ok: true, mode }))
+        .catch((error) => replyToMessage(event, { ok: false, error: error?.message || String(error) })),
     );
     return;
   }
 
-  if (data.type === "SKIP_WAITING") {
-    // Dieser Befehl kommt ausschließlich vom bewusst gestarteten Update.
-    self.skipWaiting();
+  if (data.type === "APPLY_UPDATE") {
+    event.waitUntil(
+      refreshInstalledShell()
+        .then(() => replyToMessage(event, { ok: true }))
+        .catch((error) => replyToMessage(event, { ok: false, error: error?.message || String(error) })),
+    );
+    return;
+  }
+
+  if (data.type === "APPLY_UPDATE_AND_ACTIVATE" || data.type === "SKIP_WAITING") {
+    // SKIP_WAITING bleibt absichtlich kompatibel zu V81. Wichtig: Auch dieser
+    // alte Befehl aktualisiert zuerst den installierten Cache. So kann V81 nur
+    // nach einem bewussten „Aktualisieren“ auf V82 wechseln.
+    event.waitUntil(
+      refreshInstalledShell()
+        .then(async () => {
+          replyToMessage(event, { ok: true });
+          await self.skipWaiting();
+        })
+        .catch((error) => replyToMessage(event, { ok: false, error: error?.message || String(error) })),
+    );
   }
 });
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    (async () => {
-      const cache = await caches.open(APP_SHELL_CACHE);
-      await cache.addAll(PRECACHE_URLS);
-
-      // Standard ist MANUELL. Ein neuer Worker bleibt dann wartend und ersetzt
-      // die installierte Version nicht von selbst.
-      if ((await getUpdateMode()) === "auto") {
-        await self.skipWaiting();
-      }
-    })(),
-  );
+  // KEIN skipWaiting und KEIN Überschreiben mit der Serverversion.
+  // Dadurch kann ein Browser-Check allein keine neue App-Version aktivieren.
+  event.waitUntil(ensureInstalledShell());
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter(
-              (key) =>
-                (key.startsWith("barcode-audi-") || key.startsWith("mathe-guru-")) &&
-                key !== APP_SHELL_CACHE &&
-                key !== RUNTIME_CACHE &&
-                key !== SETTINGS_CACHE,
-            )
-            .map((key) => caches.delete(key)),
-        ),
-      )
-      .then(() => self.clients.claim()),
+    (async () => {
+      await ensureInstalledShell();
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter(
+            (key) =>
+              (/^barcode-audi-shell-v\d+$/i.test(key) || /^barcode-audi-runtime-v\d+$/i.test(key) || key.startsWith("mathe-guru-")) &&
+              key !== APP_SHELL_CACHE &&
+              key !== RUNTIME_CACHE &&
+              key !== SETTINGS_CACHE,
+          )
+          .map((key) => caches.delete(key)),
+      );
+      await self.clients.claim();
+    })(),
   );
 });
 
-async function networkFirst(request, cacheName, fallbackUrl) {
-  const cache = await caches.open(cacheName);
-
-  try {
-    const response = await fetch(request, { cache: "no-store" });
-    if (isCacheableResponse(response)) {
-      cache.put(request, response.clone()).catch(() => {});
-    }
-    return response;
-  } catch (error) {
-    const cached = await cache.match(request, { ignoreSearch: true });
-    if (cached) return cached;
-
-    if (fallbackUrl) {
-      const fallback = await cache.match(fallbackUrl, { ignoreSearch: true });
-      if (fallback) return fallback;
-    }
-
-    throw error;
-  }
+function isAppShellRequest(request, url) {
+  const scopePath = new URL(self.registration.scope).pathname;
+  const scopeRoot = scopePath.endsWith("/") && scopePath.length > 1 ? scopePath.slice(0, -1) : scopePath;
+  return (
+    request.mode === "navigate" ||
+    url.pathname === scopePath ||
+    url.pathname === scopeRoot ||
+    url.pathname.endsWith("/index.html") ||
+    url.pathname.endsWith("/manifest.webmanifest")
+  );
 }
 
-async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const cached = await cache.match(request, { ignoreSearch: true });
-  if (cached) return cached;
-
-  const response = await fetch(request);
-  if (isCacheableResponse(response)) {
-    cache.put(request, response.clone()).catch(() => {});
-  }
-  return response;
-}
-
-async function manualAppShell(request, url) {
+async function installedShellFirst(request, url) {
   const cache = await caches.open(APP_SHELL_CACHE);
   const scopePath = new URL(self.registration.scope).pathname;
   const isNavigation = request.mode === "navigate";
   const isRoot = url.pathname === scopePath || url.pathname === scopePath.replace(/\/$/, "");
 
-  // Im manuellen Modus wird bei Öffnen/Neu laden/Pull-to-refresh bewusst die
-  // installierte index.html aus dem Cache genommen. Es findet kein Netz-Update statt.
   if (isNavigation || isRoot || url.pathname.endsWith("/index.html")) {
     const installed =
       (await cache.match("./index.html", { ignoreSearch: true })) ||
@@ -170,41 +205,67 @@ async function manualAppShell(request, url) {
   if (cached) return cached;
 
   const response = await fetch(request);
-  if (isCacheableResponse(response)) {
-    cache.put(request, response.clone()).catch(() => {});
+  if (isCacheableResponse(response)) await cache.put(request, response.clone());
+  return response;
+}
+
+async function autoNetworkFirst(request, fallbackUrl) {
+  const cache = await caches.open(APP_SHELL_CACHE);
+  try {
+    const response = await fetch(request, { cache: "no-store" });
+    if (isCacheableResponse(response)) await cache.put(request, response.clone());
+    return response;
+  } catch (error) {
+    const cached = await cache.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+    if (fallbackUrl) {
+      const fallback = await cache.match(fallbackUrl, { ignoreSearch: true });
+      if (fallback) return fallback;
+    }
+    throw error;
   }
+}
+
+async function runtimeCacheFirst(request) {
+  const cache = await caches.open(RUNTIME_CACHE);
+  const cached = await cache.match(request, { ignoreSearch: true });
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (isCacheableResponse(response)) await cache.put(request, response.clone());
   return response;
 }
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
-
   const url = new URL(request.url);
 
   if (url.origin !== self.location.origin) {
-    event.respondWith(
-      networkFirst(request, RUNTIME_CACHE).catch(() => caches.match(request)),
-    );
+    event.respondWith(runtimeCacheFirst(request).catch(() => caches.match(request)));
+    return;
+  }
+
+  // Reine Versionsprüfung: immer direkt vom Server lesen, aber NICHT in den
+  // installierten App-Cache schreiben. Genau dadurch kann ein kurzer Druck auf
+  // „Update“ eine neue Version erkennen, ohne sie schon zu installieren.
+  if (url.searchParams.has("_barcodeUpdateCheck")) {
+    event.respondWith(fetch(request, { cache: "no-store" }));
     return;
   }
 
   if (isAppShellRequest(request, url)) {
     event.respondWith(
       (async () => {
+        await ensureInstalledShell();
         const mode = await getUpdateMode();
         if (mode === "auto") {
-          return networkFirst(request, APP_SHELL_CACHE, "./index.html").catch(() =>
-            caches.match("./index.html", { ignoreSearch: true }),
-          );
+          return autoNetworkFirst(request, "./index.html").catch(() => installedShellFirst(request, url));
         }
-        return manualAppShell(request, url);
+        return installedShellFirst(request, url);
       })(),
     );
     return;
   }
 
-  event.respondWith(
-    cacheFirst(request, RUNTIME_CACHE).catch(() => caches.match(request)),
-  );
+  event.respondWith(runtimeCacheFirst(request).catch(() => caches.match(request)));
 });

@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 81 -->
+<!-- Barcode Audi Scanner - Ver. 82 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="85">
+<html lang="de" data-app-version="86">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3839,6 +3839,66 @@
       #appUpdateSettingsSaveButton { background: #4caf50; }
       #appUpdateStartButton { background: #007bff; }
 
+      /* Update-Dialoge immer am sichtbaren Bildschirm fixieren – Ver. 82 */
+      #appUpdateSettingsOverlay,
+      #appUpdateAvailableOverlay,
+      #appUpdateSuccessOverlay {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        width: 100dvw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        z-index: 2147483000 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: max(12px, env(safe-area-inset-top, 0px))
+          max(12px, env(safe-area-inset-right, 0px))
+          max(12px, env(safe-area-inset-bottom, 0px))
+          max(12px, env(safe-area-inset-left, 0px)) !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        background: rgba(0, 0, 0, 0.58) !important;
+        overscroll-behavior: contain !important;
+      }
+      #appUpdateSettingsOverlay.hidden,
+      #appUpdateAvailableOverlay.hidden,
+      #appUpdateSuccessOverlay.hidden {
+        display: none !important;
+      }
+      #appUpdateSettingsContent,
+      #appUpdateAvailableContent,
+      #appUpdateSuccessContent {
+        position: relative !important;
+        margin: 0 !important;
+        max-height: calc(100dvh - 32px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+      }
+      #appUpdateSuccessContent {
+        width: min(92vw, 430px);
+        max-width: 430px;
+        background: #fff;
+        color: #000;
+        border-radius: 10px;
+        padding: 18px;
+        box-sizing: border-box;
+        box-shadow: 0 12px 35px rgba(0,0,0,.35);
+        text-align: left;
+        color-scheme: light;
+      }
+      #appUpdateSuccessContent h3 {
+        margin: 0 0 12px 0;
+        text-align: center;
+      }
+      #appUpdateSuccessOkButton { background: #4caf50; }
+      html.app-update-modal-open,
+      body.app-update-modal-open {
+        overflow: hidden !important;
+        overscroll-behavior: none !important;
+      }
+
       /* Hamburger-Menü */
       .main-settings-button {
         position: absolute;
@@ -6195,12 +6255,23 @@
 
     <!-- Ergebnis einer erfolgreichen Update-Prüfung -->
     <div id="appUpdateAvailableOverlay" class="popup-container hidden" aria-hidden="true">
-      <div id="appUpdateAvailableContent" role="dialog" aria-modal="true" aria-labelledby="appUpdateAvailableTitle">
+      <div id="appUpdateAvailableContent" role="dialog" aria-modal="true" aria-labelledby="appUpdateAvailableTitle" tabindex="-1">
         <h3 id="appUpdateAvailableTitle">Neue Version verfügbar</h3>
         <div id="appUpdateAvailableStatus" class="app-update-status"></div>
         <div class="app-update-buttons">
           <button type="button" id="appUpdateAvailableCancelButton">Abbrechen</button>
-          <button type="button" id="appUpdateStartButton">Update starten</button>
+          <button type="button" id="appUpdateStartButton">Aktualisieren</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rückmeldung nach bewusst abgeschlossenem Update -->
+    <div id="appUpdateSuccessOverlay" class="popup-container hidden" aria-hidden="true">
+      <div id="appUpdateSuccessContent" role="dialog" aria-modal="true" aria-labelledby="appUpdateSuccessTitle" tabindex="-1">
+        <h3 id="appUpdateSuccessTitle">Update abgeschlossen</h3>
+        <div id="appUpdateSuccessStatus" class="app-update-status"></div>
+        <div class="app-update-buttons">
+          <button type="button" id="appUpdateSuccessOkButton">OK</button>
         </div>
       </div>
     </div>
@@ -14495,7 +14566,7 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="81">
+    <footer id="appFooter" data-app-version="82">
       <span>Entwickler: Bachner Gerhard - Ver.<span id="footerVersion">79</span></span>
       <button
         type="button"
@@ -14520,6 +14591,8 @@ In den App-Namensraum importieren?`)
         const APP_UPDATE_LONG_PRESS_MS = 650;
         let appUpdateLongPressTimer = null;
         let appUpdateLongPressTriggered = false;
+        let appUpdateAvailableHistoryActive = false;
+        let appUpdateModalLockCount = 0;
 
         function openAppShareMenu() {
           const overlay = document.getElementById("appShareOverlay");
@@ -14846,20 +14919,119 @@ In den App-Namensraum importieren?`)
           overlay.setAttribute("aria-hidden", "true");
         }
 
-        function closeAppUpdateAvailable() {
-          const overlay = document.getElementById("appUpdateAvailableOverlay");
+        function lockAppUpdateViewport() {
+          appUpdateModalLockCount += 1;
+          document.documentElement.classList.add("app-update-modal-open");
+          document.body?.classList.add("app-update-modal-open");
+        }
+
+        function unlockAppUpdateViewport() {
+          appUpdateModalLockCount = Math.max(0, appUpdateModalLockCount - 1);
+          if (appUpdateModalLockCount === 0) {
+            document.documentElement.classList.remove("app-update-modal-open");
+            document.body?.classList.remove("app-update-modal-open");
+          }
+        }
+
+        function placeUpdateOverlayOnScreen(overlay) {
           if (!overlay) return;
+          // Als letztes Element direkt unter body einhängen. Dadurch kann kein
+          // langer Barcode-/Code-Bereich den Dialog aus dem sichtbaren Bereich schieben.
+          if (overlay.parentElement !== document.body || overlay !== document.body.lastElementChild) {
+            document.body.appendChild(overlay);
+          }
+          overlay.style.position = "fixed";
+          overlay.style.inset = "0";
+          overlay.style.zIndex = "2147483000";
+        }
+
+        function closeAppUpdateAvailable(options = {}) {
+          const overlay = document.getElementById("appUpdateAvailableOverlay");
+          if (!overlay || overlay.classList.contains("hidden")) return;
           overlay.classList.add("hidden");
           overlay.setAttribute("aria-hidden", "true");
+          unlockAppUpdateViewport();
+          const shouldGoBack = options.goBack !== false;
+          if (appUpdateAvailableHistoryActive) {
+            appUpdateAvailableHistoryActive = false;
+            if (shouldGoBack) {
+              try { history.back(); } catch (_) {}
+            }
+          }
         }
 
         function showAppUpdateAvailable(currentVersion, remoteVersion) {
           const overlay = document.getElementById("appUpdateAvailableOverlay");
           const status = document.getElementById("appUpdateAvailableStatus");
+          const startButton = document.getElementById("appUpdateStartButton");
           if (!overlay || !status) return;
-          status.textContent = `Installiert: Ver.${currentVersion} · Verfügbar: Ver.${remoteVersion}`;
+          status.textContent =
+            `Installiert: Ver.${currentVersion} · Verfügbar: Ver.${remoteVersion}\n` +
+            "Es wird noch nichts aktualisiert. Erst mit „Aktualisieren“ wird die neue Version übernommen.";
+          status.style.whiteSpace = "pre-line";
+          overlay.dataset.currentVersion = String(currentVersion || "");
+          overlay.dataset.remoteVersion = String(remoteVersion || "");
+          placeUpdateOverlayOnScreen(overlay);
           overlay.classList.remove("hidden");
           overlay.setAttribute("aria-hidden", "false");
+          lockAppUpdateViewport();
+          if (!appUpdateAvailableHistoryActive) {
+            try {
+              history.pushState({ appUpdateModal: "available" }, "", window.location.href);
+              appUpdateAvailableHistoryActive = true;
+            } catch (_) {}
+          }
+          window.setTimeout(() => {
+            try { (startButton || document.getElementById("appUpdateAvailableContent"))?.focus(); } catch (_) {}
+          }, 30);
+        }
+
+        function closeAppUpdateSuccess() {
+          const overlay = document.getElementById("appUpdateSuccessOverlay");
+          if (!overlay || overlay.classList.contains("hidden")) return;
+          overlay.classList.add("hidden");
+          overlay.setAttribute("aria-hidden", "true");
+          unlockAppUpdateViewport();
+        }
+
+        function showAppUpdateSuccess(version) {
+          const overlay = document.getElementById("appUpdateSuccessOverlay");
+          const status = document.getElementById("appUpdateSuccessStatus");
+          if (!overlay || !status) return;
+          const cleanVersion = String(version || getCurrentAppVersion() || "").trim();
+          status.textContent = cleanVersion
+            ? `Aktualisiert auf Ver.${cleanVersion}. Die neue Version ist jetzt aktiv.`
+            : "Aktualisierung abgeschlossen. Die neue Version ist jetzt aktiv.";
+          placeUpdateOverlayOnScreen(overlay);
+          overlay.classList.remove("hidden");
+          overlay.setAttribute("aria-hidden", "false");
+          lockAppUpdateViewport();
+          window.setTimeout(() => document.getElementById("appUpdateSuccessOkButton")?.focus(), 30);
+        }
+
+        function rememberSuccessfulUpdate(version) {
+          const value = String(version || "").trim();
+          try { sessionStorage.setItem("__barcodeUpdateSuccessVersion", value); } catch (_) {}
+        }
+
+        function showPendingUpdateSuccess() {
+          let version = "";
+          try {
+            version = String(sessionStorage.getItem("__barcodeUpdateSuccessVersion") || "").trim();
+            sessionStorage.removeItem("__barcodeUpdateSuccessVersion");
+          } catch (_) {}
+
+          try {
+            const url = new URL(window.location.href);
+            const fromUrl = String(url.searchParams.get("_barcodeUpdatedTo") || "").trim();
+            if (fromUrl) version = fromUrl;
+            if (url.searchParams.has("_barcodeUpdatedTo")) {
+              url.searchParams.delete("_barcodeUpdatedTo");
+              history.replaceState(history.state, "", url.pathname + (url.search || "") + (url.hash || ""));
+            }
+          } catch (_) {}
+
+          if (version) window.setTimeout(() => showAppUpdateSuccess(version), 350);
         }
 
         function extractPublishedVersion(htmlText) {
@@ -15000,10 +15172,10 @@ In den App-Namensraum importieren?`)
 
           let registration = await navigator.serviceWorker.getRegistration();
           if (!registration) {
-            // Erste Registrierung ist nötig, damit die Web-/PWA-Version künftig
-            // im manuellen Modus auf der installierten Version stehen bleiben kann.
             registration = await navigator.serviceWorker.register("./sw.js");
           } else if (allowUpdateCheck) {
+            // Diese Prüfung ist ausschließlich nach bewusstem „Aktualisieren“
+            // oder im ausdrücklich gewählten Automatik-Modus erlaubt.
             await registration.update();
           }
 
@@ -15041,35 +15213,78 @@ In den App-Namensraum importieren?`)
           return worker;
         }
 
-        async function activateWaitingServiceWorker(registration, mode) {
-          if (!registration) return false;
-          let worker = registration.waiting || registration.installing;
-          if (worker?.state === "installing") {
-            await waitForServiceWorkerInstalled(worker);
-          }
-          worker = registration.waiting || worker;
-          if (!worker || worker.state === "redundant") return false;
+        function sendServiceWorkerCommand(worker, data, timeoutMs = 10000) {
+          return new Promise((resolve, reject) => {
+            if (!worker || typeof worker.postMessage !== "function") {
+              reject(new Error("Kein Service Worker für das Update verfügbar."));
+              return;
+            }
+            const channel = new MessageChannel();
+            const timeout = window.setTimeout(() => {
+              try { channel.port1.close(); } catch (_) {}
+              reject(new Error("Zeitüberschreitung beim Aktualisieren."));
+            }, timeoutMs);
+            channel.port1.onmessage = (event) => {
+              clearTimeout(timeout);
+              try { channel.port1.close(); } catch (_) {}
+              const reply = event.data || {};
+              if (reply.ok === false) reject(new Error(reply.error || "Aktualisierung fehlgeschlagen."));
+              else resolve(reply);
+            };
+            try { worker.postMessage(data, [channel.port2]); }
+            catch (error) {
+              clearTimeout(timeout);
+              reject(error);
+            }
+          });
+        }
 
-          postUpdateModeToWorker(worker, mode);
-          const controllerChanged = new Promise((resolve) => {
-            const timeout = window.setTimeout(resolve, 5000);
-            navigator.serviceWorker.addEventListener(
-              "controllerchange",
-              () => {
+        async function applyServiceWorkerUpdate(mode) {
+          const registration = await getOrCreateServiceWorkerRegistration(mode, true);
+          if (!registration) return false;
+
+          let waiting = registration.waiting || registration.installing;
+          if (waiting?.state === "installing") {
+            await waitForServiceWorkerInstalled(waiting);
+            waiting = registration.waiting || waiting;
+          }
+
+          if (waiting && waiting.state !== "redundant") {
+            postUpdateModeToWorker(waiting, mode);
+            const controllerChanged = new Promise((resolve) => {
+              const timeout = window.setTimeout(resolve, 6000);
+              navigator.serviceWorker.addEventListener("controllerchange", () => {
                 clearTimeout(timeout);
                 resolve();
-              },
-              { once: true },
-            );
-          });
-          worker.postMessage({ type: "SKIP_WAITING" });
-          await controllerChanged;
-          return true;
+              }, { once: true });
+            });
+            await sendServiceWorkerCommand(waiting, { type: "APPLY_UPDATE_AND_ACTIVATE" }, 12000);
+            await controllerChanged;
+            return true;
+          }
+
+          const active = registration.active || navigator.serviceWorker.controller;
+          if (active) {
+            await sendServiceWorkerCommand(active, { type: "APPLY_UPDATE" }, 12000);
+            return true;
+          }
+          return false;
         }
 
         async function startAppUpdate(options = {}) {
           const automatic = !!options.automatic;
           const updateUrl = getAppUpdateUrl();
+          const overlay = document.getElementById("appUpdateAvailableOverlay");
+          const status = document.getElementById("appUpdateAvailableStatus");
+          const startButton = document.getElementById("appUpdateStartButton");
+          const cancelButton = document.getElementById("appUpdateAvailableCancelButton");
+          const targetVersion = String(
+            options.remoteVersion ||
+            overlay?.dataset.remoteVersion ||
+            document.getElementById("appUpdateButton")?.dataset.availableVersion ||
+            ""
+          ).trim();
+
           if (!updateUrl) {
             if (!automatic) {
               closeAppUpdateAvailable();
@@ -15077,7 +15292,7 @@ In den App-Namensraum importieren?`)
             }
             return;
           }
-          closeAppUpdateAvailable();
+
           const normalized = (() => {
             try { return normalizeUpdateUrl(updateUrl); }
             catch (error) {
@@ -15087,36 +15302,54 @@ In den App-Namensraum importieren?`)
           })();
           if (!normalized) return;
 
+          if (!automatic) {
+            // Das Fenster bleibt bewusst im Vordergrund, bis der Benutzer
+            // abbricht oder diese Aktualisierung abgeschlossen ist.
+            if (status) status.textContent = targetVersion
+              ? `Aktualisiere auf Ver.${targetVersion} …`
+              : "Aktualisiere …";
+            if (startButton) startButton.disabled = true;
+            if (cancelButton) cancelButton.disabled = true;
+          }
+
           const mode = getAppUpdateMode();
           try {
             if (isServiceWorkerContextAvailable()) {
-              // Nur hier (bewusster Klick bzw. Automatik-Modus) darf aktiv nach
-              // einem neuen Service Worker gesucht werden.
-              const registration = await getOrCreateServiceWorkerRegistration(mode, true);
-              const activated = await activateWaitingServiceWorker(registration, mode);
-
-              // Die neue Version wird nach dem expliziten Update aus dem neuen
-              // App-Shell-Cache geladen. Im manuellen Modus bleibt sie danach fest.
-              if (activated || navigator.serviceWorker.controller) {
+              const applied = await applyServiceWorkerUpdate(mode);
+              if (applied) {
+                rememberSuccessfulUpdate(targetVersion || getCurrentAppVersion());
+                appUpdateAvailableHistoryActive = false;
                 window.location.reload();
                 return;
               }
             }
-          } catch (error) {
-            console.warn("Service-Worker-Update konnte nicht vollständig ausgeführt werden", error);
-          }
 
-          // Fallback für die native/local-file Variante ohne Service Worker.
-          const installTarget = new URL(normalized);
-          installTarget.searchParams.set("_barcodeUpdateInstall", String(Date.now()));
-          window.location.href = installTarget.toString();
+            // Fallback für die native/local-file Variante ohne Service Worker.
+            const installTarget = new URL(normalized);
+            installTarget.searchParams.set("_barcodeUpdateInstall", String(Date.now()));
+            if (targetVersion) installTarget.searchParams.set("_barcodeUpdatedTo", targetVersion);
+            appUpdateAvailableHistoryActive = false;
+            window.location.href = installTarget.toString();
+          } catch (error) {
+            console.warn("Update konnte nicht abgeschlossen werden", error);
+            if (!automatic) {
+              if (status) {
+                status.textContent =
+                  "Aktualisierung fehlgeschlagen. Es wurde keine neue Version aktiviert.\n" +
+                  (error?.message || "Unbekannter Fehler");
+                status.style.whiteSpace = "pre-line";
+              }
+              if (startButton) startButton.disabled = false;
+              if (cancelButton) cancelButton.disabled = false;
+            }
+          }
         }
 
         async function runAutomaticUpdateOnStart() {
           if (getAppUpdateMode() !== "auto") return;
           const result = await checkForAppUpdate({ silent: true });
           if (result?.available && getAppUpdateMode() === "auto") {
-            await startAppUpdate({ automatic: true });
+            await startAppUpdate({ automatic: true, remoteVersion: result.remoteVersion });
           }
         }
 
@@ -15146,6 +15379,16 @@ In den App-Namensraum importieren?`)
 
           // Falls die App über einen Share-Link geöffnet wurde, Daten anbieten.
           setTimeout(importSharedDataFromUrl, 120);
+          showPendingUpdateSuccess();
+
+          // Android-/Browser-Zurück bei offenem Updatefenster bedeutet Abbrechen.
+          window.addEventListener("popstate", function () {
+            const available = document.getElementById("appUpdateAvailableOverlay");
+            if (available && !available.classList.contains("hidden")) {
+              appUpdateAvailableHistoryActive = false;
+              closeAppUpdateAvailable({ goBack: false });
+            }
+          });
 
           // Zuerst den Service Worker auf den gespeicherten Modus setzen.
           // MANUELL: kein Versionscheck, kein registration.update(), kein automatischer Wechsel.
@@ -15233,12 +15476,14 @@ In den App-Namensraum importieren?`)
             showAppUpdateMessage("Update-Link gelöscht.", "success");
           });
           document.getElementById("appUpdateSettingsCancelButton")?.addEventListener("click", closeAppUpdateSettings);
-          document.getElementById("appUpdateAvailableCancelButton")?.addEventListener("click", closeAppUpdateAvailable);
-          document.getElementById("appUpdateStartButton")?.addEventListener("click", startAppUpdate);
+          document.getElementById("appUpdateAvailableCancelButton")?.addEventListener("click", () => closeAppUpdateAvailable());
+          document.getElementById("appUpdateStartButton")?.addEventListener("click", () => startAppUpdate());
+          document.getElementById("appUpdateSuccessOkButton")?.addEventListener("click", closeAppUpdateSuccess);
 
           [
             document.getElementById("appUpdateSettingsContent"),
             document.getElementById("appUpdateAvailableContent"),
+            document.getElementById("appUpdateSuccessContent"),
           ].forEach((content) => {
             ["pointerdown", "mousedown", "touchstart", "click"].forEach((eventName) => {
               content?.addEventListener(eventName, (event) => event.stopPropagation(), {
