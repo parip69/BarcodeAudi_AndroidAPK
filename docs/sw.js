@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = "barcode-audi-shell-v77";
-const RUNTIME_CACHE = "barcode-audi-runtime-v77";
+const APP_SHELL_CACHE = "barcode-audi-shell-v78";
+const RUNTIME_CACHE = "barcode-audi-runtime-v78";
 const PRECACHE_URLS = [
   "./",
   "./index.html",

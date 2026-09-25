@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 77 -->
+<!-- Barcode Audi Scanner - Ver. 78 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="77">
+<html lang="de" data-app-version="78">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -6082,10 +6082,11 @@
             id="editBracketInput"
             style="
               width: 95%;
-              height: 120px;
+              min-height: 72px;
               padding: 8px 12px;
               margin-bottom: 10px;
               white-space: pre;
+              overflow-y: hidden;
             "
             placeholder="z. B. P:M:123:@,&#10;&Auto:Alpha1,&#10;*:+,&#10;Pw:13.05.2025"
           ></textarea>
@@ -6291,7 +6292,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "77";
+      const APP_VERSION_FALLBACK = "78";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
 
       function getAndroidBridge() {
@@ -10282,6 +10283,19 @@ In den App-Namensraum importieren?`)
         const host = document.getElementById('editor74Fields'); host.replaceChildren();
         const draftGroups = new Map(editor74Catalog(raw.value).map(g => [g.key, g]));
         const state = { initialText, initialCode:document.getElementById('editCodeInput').value, initialLabel:document.getElementById('editLabelInput').value, initialRaw:raw.value };
+        // Kodierungsfeld immer so hoch wie der komplette Inhalt + eine freie Abschlusszeile.
+        // Die zusätzliche Höhe ist nur optisch und verändert die gespeicherte Kodierung nicht.
+        const rawDetails = document.getElementById('editor74Raw');
+        function resizeRawEditor() {
+          if (!raw || !rawDetails?.open) return;
+          raw.style.height = 'auto';
+          const style = window.getComputedStyle(raw);
+          const fontSize = parseFloat(style.fontSize) || 16;
+          const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.2;
+          raw.style.height = Math.ceil(raw.scrollHeight + lineHeight) + 'px';
+          raw.style.overflowY = 'hidden';
+        }
+        if (rawDetails) rawDetails.ontoggle = () => { if (rawDetails.open) requestAnimationFrame(resizeRawEditor); };
         const notice = editor74El('p', 'Gruppen und Optionen auswählen. Die Kodierung wird automatisch übernommen.', host); notice.className='e74-help';
         const groupBox=editor74El('fieldset',null,host); editor74El('legend','Gruppen',groupBox);
         const actions=editor74El('div',null,groupBox); actions.className='e74-actions';
@@ -10379,6 +10393,7 @@ In den App-Namensraum importieren?`)
           const other=peers.filter(p=>p.meta.pair===meta.pair&&p.meta.role===meta.role&&p.meta.role);
           if(other.length)editor74El('p','Gleiche Kopplung außerdem: '+other.map(p=>p.name).join(' · '),linked);
           status.textContent=meta.unknown.length?'Weitere manuelle Angaben bleiben erhalten: '+meta.unknown.join(', '):'Auswahl und Kodierung sind synchron.';
+          resizeRawEditor();
         }
         raw.oninput=sync;sync();
         state.validate=()=>{
@@ -14540,8 +14555,8 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="77">
-      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">77</span></span>
+    <footer id="appFooter" data-app-version="78">
+      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">78</span></span>
       <button
         type="button"
         id="appShareButton"
