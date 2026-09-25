@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 102 -->
+<!-- Barcode Audi Scanner - Ver. 103 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="103">
+<html lang="de" data-app-version="104">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -4022,6 +4022,16 @@
         color: #fff;
         font-weight: 700;
         cursor: pointer;
+      }
+
+      /* Ver. 103: Bei gleicher/älterer Online-Version bewusst bestätigen.
+         Ja links, Nein rechts, damit die sichere Ablehnung rechts bleibt. */
+      #appUpdateAvailableContent .app-update-buttons.force-update-choice {
+        justify-content: space-between;
+        flex-wrap: nowrap;
+      }
+      #appUpdateAvailableContent .app-update-buttons.force-update-choice button {
+        min-width: 86px;
       }
 
       #appUpdateSettingsCancelButton,
@@ -14933,11 +14943,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="102">
+    <footer id="appFooter" data-app-version="103">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">102</span>
+        - Ver.<span id="footerVersion">103</span>
       </span>
       <button
         type="button"
@@ -15412,14 +15422,29 @@ In den App-Namensraum importieren?`)
         function showAppUpdateAvailable(currentVersion, remoteVersion) {
           const overlay = document.getElementById("appUpdateAvailableOverlay");
           const status = document.getElementById("appUpdateAvailableStatus");
+          const title = document.getElementById("appUpdateAvailableTitle");
           const startButton = document.getElementById("appUpdateStartButton");
+          const cancelButton = document.getElementById("appUpdateAvailableCancelButton");
+          const buttonRow = startButton?.parentElement;
           if (!overlay || !status) return;
+
+          if (title) title.textContent = "Neue Version verfügbar";
+          if (startButton) startButton.textContent = "Aktualisieren";
+          if (cancelButton) cancelButton.textContent = "Abbrechen";
+          if (buttonRow) {
+            buttonRow.classList.remove("force-update-choice");
+            // Standard-Reihenfolge: Abbrechen links, Aktualisieren rechts.
+            if (cancelButton) buttonRow.appendChild(cancelButton);
+            if (startButton) buttonRow.appendChild(startButton);
+          }
+
           status.textContent =
             `Installiert: Ver.${currentVersion} · Verfügbar: Ver.${remoteVersion}\n` +
             "Es wird noch nichts aktualisiert. Erst mit „Aktualisieren“ wird die neue Version übernommen.";
           status.style.whiteSpace = "pre-line";
           overlay.dataset.currentVersion = String(currentVersion || "");
           overlay.dataset.remoteVersion = String(remoteVersion || "");
+          overlay.dataset.updateChoice = "newer";
           placeUpdateOverlayOnScreen(overlay);
           overlay.classList.remove("hidden");
           overlay.setAttribute("aria-hidden", "false");
@@ -15432,6 +15457,53 @@ In den App-Namensraum importieren?`)
           }
           window.setTimeout(() => {
             try { (startButton || document.getElementById("appUpdateAvailableContent"))?.focus(); } catch (_) {}
+          }, 30);
+        }
+
+        function showAppUpdateReinstallPrompt(currentVersion, remoteVersion, comparison) {
+          const overlay = document.getElementById("appUpdateAvailableOverlay");
+          const status = document.getElementById("appUpdateAvailableStatus");
+          const title = document.getElementById("appUpdateAvailableTitle");
+          const startButton = document.getElementById("appUpdateStartButton");
+          const cancelButton = document.getElementById("appUpdateAvailableCancelButton");
+          const buttonRow = startButton?.parentElement;
+          if (!overlay || !status || !startButton || !cancelButton || !buttonRow) return;
+
+          const isSame = comparison === 0;
+          if (title) {
+            title.textContent = isSame
+              ? "Version bereits installiert"
+              : "Ältere Version gefunden";
+          }
+          status.textContent = isSame
+            ? `Installiert: Ver.${currentVersion} · Online: Ver.${remoteVersion}\nDiese Version ist bereits installiert. Wollen Sie Ver.${remoteVersion} trotzdem noch einmal installieren?`
+            : `Installiert: Ver.${currentVersion} · Online: Ver.${remoteVersion}\nDie Online-Version ist älter als die installierte Version. Wollen Sie Ver.${remoteVersion} trotzdem installieren?`;
+          status.style.whiteSpace = "pre-line";
+
+          // Gewünschte Anordnung: JA links, NEIN rechts.
+          startButton.textContent = "Ja";
+          cancelButton.textContent = "Nein";
+          buttonRow.classList.add("force-update-choice");
+          buttonRow.appendChild(startButton);
+          buttonRow.appendChild(cancelButton);
+
+          overlay.dataset.currentVersion = String(currentVersion || "");
+          overlay.dataset.remoteVersion = String(remoteVersion || "");
+          overlay.dataset.updateChoice = isSame ? "reinstall" : "downgrade";
+          placeUpdateOverlayOnScreen(overlay);
+          overlay.classList.remove("hidden");
+          overlay.setAttribute("aria-hidden", "false");
+          lockAppUpdateViewport();
+          if (!appUpdateAvailableHistoryActive) {
+            try {
+              history.pushState({ appUpdateModal: "available" }, "", window.location.href);
+              appUpdateAvailableHistoryActive = true;
+            } catch (_) {}
+          }
+
+          // Nein bleibt die sichere/schnelle Wahl rechts; Fokus ebenfalls auf Nein.
+          window.setTimeout(() => {
+            try { cancelButton.focus(); } catch (_) {}
           }, 30);
         }
 
@@ -15566,20 +15638,20 @@ In den App-Namensraum importieren?`)
             if (!remoteVersion) throw new Error("Auf der Update-Seite wurde keine Versionsnummer gefunden.");
 
             const currentVersion = String(getCurrentAppVersion() || "").trim();
-            if (compareAppVersions(remoteVersion, currentVersion) > 0) {
+            const comparison = compareAppVersions(remoteVersion, currentVersion);
+            if (comparison > 0) {
               setUpdateButtonVersion(remoteVersion);
               if (!silent) showAppUpdateAvailable(currentVersion, remoteVersion);
-              return { available: true, currentVersion, remoteVersion };
+              return { available: true, currentVersion, remoteVersion, comparison };
             }
 
             setUpdateButtonVersion("");
             if (!silent) {
-              showAppUpdateMessage(
-                `Keine neue Version. Installiert: Ver.${currentVersion} · Online: Ver.${remoteVersion}`,
-                "success",
-              );
+              // Bei gleicher oder älterer Online-Version nicht nur grün melden,
+              // sondern bewusst fragen, ob diese Version trotzdem installiert werden soll.
+              showAppUpdateReinstallPrompt(currentVersion, remoteVersion, comparison);
             }
-            return { available: false, currentVersion, remoteVersion };
+            return { available: false, currentVersion, remoteVersion, comparison };
           } catch (error) {
             console.warn("Update-Prüfung fehlgeschlagen", error);
             if (!silent) {
