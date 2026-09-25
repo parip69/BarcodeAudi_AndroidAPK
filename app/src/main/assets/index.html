@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Barcode Audi Scanner - Ver. 75 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="75">
+<html lang="de" data-app-version="76">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -5078,7 +5078,7 @@
       }
     </style>
 <style>
-      /* Ver. 74: gemeinsame, mobile Barcode-Metadatenfelder */
+      /* Ver. 75: gemeinsame, mobile Barcode-Metadatenfelder */
       #editPopupOverlay .popup-content, #editor74Manager .popup-content { width:min(780px, calc(100vw - 28px)); box-sizing:border-box; text-align:left; }
       #editor74Fields, #editor74Raw, .e74-manager { color:var(--input-text, #17212b); }
       #editor74Fields fieldset { border:1px solid #9cabb7; border-radius:10px; margin:14px 0; padding:12px; min-width:0; }
@@ -5091,8 +5091,10 @@
       #editor74Fields button, .e74-manager button { border:0; border-radius:7px; background:#087a56; color:#fff !important; -webkit-text-fill-color:#fff !important; padding:10px 13px; cursor:pointer; font-size:14px; }
       #editor74Fields button:active, .e74-manager button:active { transform:scale(.96); }
       .e74-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:10px 0; }
-      .e74-group-row { display:flex; align-items:center; min-height:42px; gap:8px; border:1px solid #aab6c2; border-radius:7px; padding:7px; }
+      .e74-group-row { display:flex; align-items:center; gap:8px; border:1px solid #aab6c2; border-radius:7px; padding:7px; }
       .e74-group-row > label:first-child { display:flex; align-items:center; gap:7px; flex:1; min-width:0; overflow-wrap:anywhere; cursor:pointer; }
+      .e74-group-row .e74-field { width:64px; margin:0; font-size:11px; }
+      .e74-group-row .e74-field input { padding:5px; min-height:32px; }
       .e74-help { font-size:13px; line-height:1.45; opacity:.85; }
       .e74-error { color:#c12626; font-weight:600; }
       .e74-linked { background:rgba(0,130,90,.09); border-radius:8px; padding:10px; margin-top:10px; overflow-wrap:anywhere; }
@@ -5452,10 +5454,10 @@
                 Gruppenkonfiguration ab.
               </li>
               <li>
-                <strong>&amp;Gruppe:ID</strong> (z.B.
-                <code>&amp;Auto:Alpha1</code> oder <code>&amp;Saal:S1</code>):
-                Weist den Barcode einer benannten 'Gruppe' (z.B. "Auto", "Saal")
-                mit einer spezifischen 'ID' (z.B. "Alpha1", "S1") zu. Dies
+                <strong>&amp;Gruppe:Index</strong> (z.B.
+                <code>&amp;Andyx:AX</code> oder <code>&amp;Saal:S</code>):
+                Weist den Barcode einer benannten 'Gruppe' (z.B. "Andyx", "Saal")
+                mit einem eindeutigen 'Index' (z.B. "AX", "S") zu. Dies
                 ermöglicht das Filtern und Sortieren von Barcodes sowie
                 gruppenspezifische Aktionen. Das <code>&amp;</code> ist wichtig.
               </li>
@@ -6108,7 +6110,7 @@
           • <em>*:+ / *:-</em> – Gruppen-Umschalter: Ändert Zustand/Sichtbarkeit
           für Barcodes derselben Gruppe (siehe Hauptansicht).<br />
           • <em>&Gruppe:ID</em> – Gruppenzuordnung: Weist Barcode einer 'Gruppe'
-          zu. Die interne Kennung wird beim Erstellen automatisch vergeben.<br />
+          mit interner 'ID' zu (z.B. für Filter).<br />
           • Mehrere Befehle (kommagetrennt) und Gruppen sind möglich. Das
           Zeichen # am Anfang oder Ende der Klammerinhalte versteckt den Barcode
           in der Liste.<br /><br /><strong
@@ -9107,14 +9109,6 @@ In den App-Namensraum importieren?`)
         }
       }
 
-      /******************************************
-       * BARCODE‑FUNKTIONEN
-       ******************************************/
-      let barcodeList = [];
-      let currentFullscreenIndex = -1;
-      let startY = 0;
-      let enteredFromMain = false;
-      // Funktion zum Parsen der Inhalte in den eckigen Klammern
       function parsePairInfo(labelText) {
         if (!labelText) {
           return {
@@ -9144,16 +9138,19 @@ In den App-Namensraum importieren?`)
               let groupContent = token.slice(1).trim();
               let parts = groupContent.split(":").map((x) => x.trim());
               if (parts.length === 2) {
+                const rawIndex = parts[1];
+                // Alt-Kompatibilität: A1, A2, ... bedeutete früher Index A + Position.
+                // Die Position wird ab Ver. 75 nicht mehr verwendet; der alte Index A bleibt erhalten.
+                const legacyPosition = rawIndex.match(/^([A-Za-z])\d+$/);
+                const groupIndex = (legacyPosition ? legacyPosition[1] : rawIndex).trim();
                 groups.push({
                   groupName: parts[0],
-                  groupLetter: parts[1].charAt(0),
-                  groupOrder: parseInt(parts[1].slice(1)) || 0,
+                  groupLetter: groupIndex,
                 });
               } else {
                 groups.push({
                   groupName: groupContent,
                   groupLetter: groupContent.charAt(0),
-                  groupOrder: 0,
                 });
               }
             } else if (token.toUpperCase().startsWith("P:")) {
@@ -9209,9 +9206,7 @@ In den App-Namensraum importieren?`)
             }
           });
         });
-        let sortedKeys = Array.from(groupMap.keys()).sort((a, b) =>
-          groupMap.get(a).localeCompare(groupMap.get(b), 'de', {numeric:true, sensitivity:'base'})
-        );
+        let sortedKeys = Array.from(groupMap.keys()).sort();
         const select = document.getElementById("groupFilter");
         select.innerHTML = '<option value="">Alle Gruppen anzeigen</option>';
         sortedKeys.forEach((letter) => {
@@ -9225,7 +9220,7 @@ In den App-Namensraum importieren?`)
       /**
        * Zeigt nur die Barcodes der ausgewählten Gruppe an (oder alle, wenn selectedGroup == "")
        * und hängt sie in der Reihenfolge, wie sie gerade im DOM stehen, wieder an.
-       * @param {string} selectedGroup – Buchstabe der Gruppe oder "" für alle
+       * @param {string} selectedGroup – Index der Gruppe oder "" für alle
        */
       /**
        * Zeigt nur die Barcodes der ausgewählten Gruppe an (oder alle, wenn selectedGroup == "")
@@ -9927,7 +9922,7 @@ In den App-Namensraum importieren?`)
             ? "💞 " + pairInfo.pairingInfo
             : "";
         let groupDisplay = pairInfo.groups
-          .map((g) => g.groupName)
+          .map((g) => `${g.groupName} (${g.groupLetter})`)
           .join(", ");
         if (marker === "plus") groupDisplay += " (Ein)";
         else if (marker === "minus") groupDisplay += " (Aus)";
@@ -10196,15 +10191,17 @@ In den App-Namensraum importieren?`)
           };
       }
 
-      // Ver. 74: Formular und bestehendes TXT-Format verwenden dieselben Metadaten.
+      // Ver. 75: Formular und bestehendes TXT-Format verwenden dieselben Metadaten.
       function editor74Parse(raw) {
         const result = { groups: [], role: '', pair: '', expiration: false, hide: raw.includes('#'), toggle: '', date: '', unknown: [] };
         String(raw).replace(/#/g, '').split(',').map(t => t.trim()).filter(Boolean).forEach(t => {
           let m;
           if ((m = t.match(/^&([^:,\[\]]+)(?::([^:,\[\]]+))?$/))) {
             const name = m[1].trim(), id = (m[2] || name.charAt(0)).trim();
-            const order = id.match(/^([a-z])(\d+)$/i);
-            result.groups.push({ name, id, base: order ? order[1] : id, order: order ? order[2] : '', key: id.charAt(0).toUpperCase(), token: t });
+            // Alte A1/A2-Kodierungen werden weiterhin erkannt, die Positionszahl aber ignoriert.
+            const legacyPosition = id.match(/^([a-z])\d+$/i);
+            const base = (legacyPosition ? legacyPosition[1] : id).trim();
+            result.groups.push({ name, id, base, key: base.toUpperCase(), token: t });
           } else if ((m = t.match(/^P:([MS]):([^:,\s\[\]#]+)(:@)?$/i))) {
             result.role = m[1].toUpperCase(); result.pair = m[2]; result.expiration = !!m[3];
           } else if ((m = t.match(/^\*:([+-])$/))) result.toggle = m[1];
@@ -10224,7 +10221,14 @@ In den App-Namensraum importieren?`)
         const groups = new Map();
         let saved = [];
         try { saved = JSON.parse(appStorage.getItem('editorGroupsV74') || '[]'); } catch (_) {}
-        saved.forEach(g => groups.set(g.key, g));
+        saved.forEach(g => {
+          const rawBase = String(g?.base || g?.key || g?.name?.charAt(0) || '').trim();
+          if (!rawBase) return;
+          const legacyPosition = rawBase.match(/^([A-Za-z])\d+$/);
+          const base = (legacyPosition ? legacyPosition[1] : rawBase).trim();
+          const key = base.toUpperCase();
+          groups.set(key, { name:String(g?.name || base), base, key });
+        });
         [...editor74Barcodes().map(editor74Bracket), extra].forEach(raw => {
           editor74Parse(raw).groups.forEach(g => groups.set(g.key, { name:g.name, base:g.base, key:g.key }));
         });
@@ -10249,21 +10253,12 @@ In den App-Namensraum importieren?`)
       function editor74Button(parent, label, fn) {
         const b = editor74El('button', label, parent); b.type = 'button'; b.onclick = fn; return b;
       }
-      // Ver. 75: Kennungen werden automatisch vergeben; vorhandene bleiben stabil.
-      function editor75NewGroupID(name, catalogue) {
-        const used=new Set(catalogue.map(g=>g.key));
-        const preferred=name.trim().charAt(0).toUpperCase();
-        for(const letter of [preferred,...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']) {
-          if(/^[A-Z]$/.test(letter) && !used.has(letter))return letter;
-        }
-        return '';
-      }
       function editor74GroupCheck(name, id, catalogue, exclude) {
-        if (!name || /[:,\[\]#\r\n/]/.test(name)) return 'Bitte einen Gruppennamen ohne Komma, Doppelpunkt, Schrägstrich, # oder Klammern eingeben.';
-        const normalized=name.normalize('NFC').toLocaleLowerCase('de');
-        if(catalogue.some(g=>g.key!==exclude && g.name.normalize('NFC').toLocaleLowerCase('de')===normalized)) return 'Dieser Gruppenname ist bereits vorhanden. Bitte die vorhandene Gruppe auswählen oder einen anderen Namen verwenden.';
-        if(!id)return 'Alle 26 internen Gruppenkennungen sind belegt. Bitte eine vorhandene Gruppe auswählen.';
-        if(catalogue.some(g=>g.key!==exclude && g.key===id.charAt(0).toUpperCase())) return 'Diese Gruppe ist bereits vorhanden.';
+        if (!name || /[:,\[\]#\r\n]/.test(name)) return 'Bitte einen Gruppennamen ohne Komma, Doppelpunkt, # oder Klammern eingeben.';
+        if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(id)) return 'Index: mit einem Buchstaben beginnen und keine Leerzeichen verwenden.';
+        if (/^[A-Za-z]\d+$/.test(id)) return 'Diese Indexform ist für alte Listen reserviert. Bitte z. B. A, AX oder A-X verwenden.';
+        const key = id.toUpperCase();
+        if (catalogue.some(g => String(g.key).toUpperCase() !== String(exclude || '').toUpperCase() && String(g.key).toUpperCase() === key)) return 'Dieser Index ist bereits vergeben. Bitte einen anderen Index verwenden.';
         return '';
       }
       function editor74PatchRaw(raw, kind, values) {
@@ -10295,25 +10290,40 @@ In den App-Namensraum importieren?`)
         function patch(kind, tokens) { raw.value=editor74PatchRaw(raw.value,kind,tokens); sync(); }
         function writeGroups() {
           const current=editor74Parse(raw.value).groups;
-          const selected=groupRows.filter(r=>r.check.checked);
-          const keys=new Set(selected.map(r=>r.g.key));
-          const tokens=current.filter(g=>keys.has(g.key)).map(g=>g.token);
-          selected.forEach(r=>{if(!current.some(g=>g.key===r.g.key))tokens.push('&'+r.g.name+':'+r.g.base);});
-          patch('groups',tokens);
+          patch('groups',groupRows.filter(r=>r.check.checked).map(r=> {
+            const previous=current.find(g=>g.key===r.g.key);
+            // Unveränderte Alt-Tokens (z. B. A1) bleiben beim bloßen Bearbeiten kompatibel erhalten.
+            if(previous) return previous.token;
+            return '&'+r.g.name+':'+r.g.base;
+          }));
         }
         editor74Button(actions,'Alle auswählen',()=>{groupRows.forEach(r=>r.check.checked=true);writeGroups();});
         editor74Button(actions,'Keine',()=>{groupRows.forEach(r=>r.check.checked=false);writeGroups();});
         const create=editor74El('details',null,groupBox); editor74El('summary','＋ Neue Gruppe erstellen',create);
-        const createGrid=editor74El('div',null,create);
+        const createGrid=editor74El('div',null,create); createGrid.className='e74-grid';
         const newName=editor74Field(createGrid,'Gruppenname');
-        const groupError=editor74El('p','',create); groupError.className='e74-error'; groupError.setAttribute('role','alert');
+        const newID=editor74Field(createGrid,'Kennung / Index'); newID.placeholder='z. B. W';
+        const groupError=editor74El('p','',create); groupError.className='e74-help'; groupError.setAttribute('role','status');
+        const updateNewGroupIndexStatus=()=>{
+          const base=newID.value.trim();
+          if(!base){groupError.textContent='';groupError.className='e74-help';return;}
+          const duplicate=[...draftGroups.values()].some(g=>String(g.key).toUpperCase()===base.toUpperCase());
+          if(duplicate){groupError.textContent='Index „'+base+'“ ist bereits vergeben.';groupError.className='e74-error';}
+          else if(!/^[A-Za-z][A-Za-z0-9_-]*$/.test(base) || /^[A-Za-z]\d+$/.test(base)){groupError.textContent='Index prüfen: z. B. A, AX oder A-X.';groupError.className='e74-error';}
+          else{groupError.textContent='Index „'+base+'“ ist frei.';groupError.className='e74-help';}
+        };
+        newName.oninput=()=>{
+          if(!newID.dataset.manual){newID.value=newName.value.trim().charAt(0).toUpperCase();}
+          updateNewGroupIndexStatus();
+        };
+        newID.oninput=()=>{newID.dataset.manual='1';updateNewGroupIndexStatus();};
         editor74Button(create,'Gruppe hinzufügen',()=> {
-          const name=newName.value.trim(), base=editor75NewGroupID(name,[...draftGroups.values()]);
+          const name=newName.value.trim(), base=newID.value.trim();
           const error=editor74GroupCheck(name,base,[...draftGroups.values()]);
           groupError.textContent=error; if(error)return;
-          const g={name,base,key:base.charAt(0).toUpperCase()}; draftGroups.set(g.key,g);
+          const g={name,base,key:base.toUpperCase()}; draftGroups.set(g.key,g);
           const selected=editor74Parse(raw.value).groups.map(x=>x.token); selected.push('&'+name+':'+base);
-          patch('groups',selected); newName.value='';create.open=false;
+          patch('groups',selected); newName.value='';newID.value='';delete newID.dataset.manual;groupError.textContent='';groupError.className='e74-help';create.open=false;
         });
         const optionBox=editor74El('fieldset',null,host); editor74El('legend','Barcode-Optionen',optionBox);
         const optionGrid=editor74El('div',null,optionBox); optionGrid.className='e74-grid';
@@ -10397,25 +10407,36 @@ In den App-Namensraum importieren?`)
         const panel=editor74El('div',null,overlay);panel.className='popup-content e74-manager';
         editor74El('h3','Gruppen verwalten',panel);
         const choice=editor74Field(panel,'Gruppe auswählen','select');
-        const name=editor74Field(panel,'Gruppenname');
-        editor74El('p','Der neue Name gilt für alle Barcodes dieser Gruppe. Deine gespeicherte Reihenfolge bleibt erhalten.',panel).className='e74-help';
+        const name=editor74Field(panel,'Gruppenname');const id=editor74Field(panel,'Kennung / Index');
+        editor74El('p','Name und Index sind unabhängig. Änderungen gelten für alle Barcodes der ausgewählten Gruppe. Der vollständige Index muss eindeutig sein.',panel).className='e74-help';
         const error=editor74El('p','',panel);error.className='e74-error';error.setAttribute('role','alert');
         let catalog=editor74Catalog();
         const refresh=()=>{choice.replaceChildren();editor74Option(choice,'','＋ Neue Gruppe');catalog.forEach(g=>editor74Option(choice,g.key,g.name));};
         refresh();if(catalog.length)choice.value=catalog[0].key;
-        const select=()=>{const g=catalog.find(g=>g.key===choice.value);name.value=g?g.name:'';error.textContent='';};choice.onchange=select;select();
+        const select=()=>{const g=catalog.find(g=>g.key===choice.value);name.value=g?g.name:'';id.value=g?g.base:'';delete id.dataset.manual;error.textContent='';error.className='e74-error';};choice.onchange=select;select();
+        const updateManagerIndexStatus=()=>{
+          const base=id.value.trim();
+          if(!base){error.textContent='';return;}
+          const exclude=String(choice.value || '').toUpperCase();
+          const duplicate=catalog.some(g=>String(g.key).toUpperCase()!==exclude && String(g.key).toUpperCase()===base.toUpperCase());
+          if(duplicate){error.textContent='Index „'+base+'“ ist bereits vergeben.';error.className='e74-error';}
+          else if(!/^[A-Za-z][A-Za-z0-9_-]*$/.test(base) || /^[A-Za-z]\d+$/.test(base)){error.textContent='Index prüfen: z. B. A, AX oder A-X.';error.className='e74-error';}
+          else{error.textContent='Index „'+base+'“ ist frei.';error.className='e74-help';}
+        };
+        name.oninput=()=>{if(!choice.value&&!id.dataset.manual){id.value=name.value.trim().charAt(0).toUpperCase();}updateManagerIndexStatus();};
+        id.oninput=()=>{id.dataset.manual='1';updateManagerIndexStatus();};
         const actions=editor74El('div',null,panel);actions.className='e74-actions';
         const close=()=>closeViewportLockedOverlay(overlay,{removeFromDom:true});
         editor74Button(actions,'Speichern',()=>{
-          const old=catalog.find(g=>g.key===choice.value), newName=name.value.trim(), base=old?old.base:editor75NewGroupID(newName,catalog);
+          const old=catalog.find(g=>g.key===choice.value), newName=name.value.trim(), base=id.value.trim();
           error.textContent=editor74GroupCheck(newName,base,catalog,old?.key);if(error.textContent)return;
-          const key=base.charAt(0).toUpperCase();
+          const key=base.toUpperCase();
           const rename=text=>{
             const slash=text.indexOf('/');if(slash<0||!old)return text;
             return text.slice(0,slash+1)+text.slice(slash+1).replace(/\[([^\]]*)\]/g,(whole,content)=>'['+content.split(',').map(part=>{
               const token=part.replace(/#/g,'').trim();const g=editor74Parse(token).groups[0];
               if(!g||g.key!==old.key)return part;
-              const replacement='&'+newName+':'+g.id;
+              const replacement='&'+newName+':'+base;
               return part.replace(token,()=>replacement);
             }).join(',')+']');
           };
@@ -10423,6 +10444,11 @@ In den App-Namensraum importieren?`)
           if(old&&!saveBarcodesStrict(after,'editor')){error.textContent='Speichern fehlgeschlagen.';return;}
           // Jede gespeicherte Gruppenreihenfolge referenziert vollständige Barcode-Zeilen.
           getAllGroupOrderingKeys().forEach(k=>{try{const list=JSON.parse(appStorage.getItem(k)||'[]');appStorage.setItem(k,JSON.stringify(list.map(rename)));}catch(_) {}});
+          if(old&&old.key!==key){
+            ['groupOrdering_','languageMode_'].forEach(prefix=>{const value=appStorage.getItem(prefix+old.key);if(value!==null){appStorage.setItem(prefix+key,value);appStorage.removeItem(prefix+old.key);}});
+            if(appStorage.getItem('selectedGroup')===old.key)appStorage.setItem('selectedGroup',key);
+            if(groupMarkerState[old.key]){groupMarkerState[key]=groupMarkerState[old.key];delete groupMarkerState[old.key];}
+          }
           catalog=catalog.filter(g=>g.key!==old?.key);catalog.push({name:newName,base,key});
           appStorage.setItem('editorGroupsV74',JSON.stringify(catalog));
           const filter=document.getElementById('groupFilter');const selected=old&&filter.value===old.key?key:filter.value;
@@ -13972,7 +13998,7 @@ In den App-Namensraum importieren?`)
           filterAndSortBarcodesByGroup(selectedGroup);
           updateFlag(); // Hier wird jetzt der gruppenspezifische Modus geladen
           reloadBarcodes();
-          showToast("Filter angewendet: " + (this.selectedOptions[0]?.textContent || "Alle Gruppen"));
+          showToast("Filter angewendet: " + (selectedGroup || "Alle Gruppen"));
           updateToggleButtonText();
         });
 
