@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 68 -->
+<!-- Barcode Audi Scanner - Ver. 72 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="71">
+<html lang="de" data-app-version="72">
   <head>
     <meta charset="UTF-8" />
     <title>
@@ -3716,6 +3716,7 @@
         flex-wrap: wrap;
       }
 
+      #appShareButton,
       #appUpdateButton {
         margin-left: 2px;
         padding: 2px 7px;
@@ -3734,8 +3735,70 @@
         -webkit-tap-highlight-color: transparent;
       }
 
+      #appShareButton {
+        min-width: 27px;
+        padding-left: 6px;
+        padding-right: 6px;
+        font-size: 14px;
+      }
+      #appShareButton:active,
       #appUpdateButton:active { transform: translateY(1px); }
+      #appShareButton[disabled],
       #appUpdateButton[disabled] { opacity: 0.65; cursor: default; }
+
+      #appShareOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.48);
+      }
+      #appShareOverlay.hidden { display: none !important; }
+      #appShareContent {
+        width: min(92vw, 410px);
+        background: #fff;
+        color: #111;
+        border-radius: 12px;
+        padding: 18px;
+        box-sizing: border-box;
+        box-shadow: 0 12px 35px rgba(0,0,0,.28);
+      }
+      #appShareContent h3 { margin: 0 0 12px; font-size: 18px; }
+      .appShareChoice {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 10px 8px;
+        margin: 6px 0;
+        border: 1px solid #d7d7d7;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .appShareChoice input { margin-top: 3px; }
+      .appShareChoice small { display: block; margin-top: 3px; opacity: .72; }
+      .appShareActions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 15px;
+      }
+      .appShareActions button {
+        min-height: 34px;
+        padding: 6px 12px;
+        border-radius: 7px;
+        border: 1px solid #999;
+        cursor: pointer;
+      }
+      #appShareStartButton {
+        background: #eef7ff;
+        color: #165b87;
+        border-color: #7aa7c7;
+        font-weight: 700;
+      }
 
       #appUpdateSettingsContent,
       #appUpdateAvailableContent {
@@ -14553,8 +14616,32 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter" data-app-version="71">
-      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">71</span></span>
+    <div id="appShareOverlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="appShareTitle">
+      <div id="appShareContent">
+        <h3 id="appShareTitle">Teilen</h3>
+        <label class="appShareChoice">
+          <input type="radio" name="appShareMode" value="app" checked>
+          <span><strong>Nur App senden</strong><small>Teilt nur den normalen Link zur aktuellen Web-App.</small></span>
+        </label>
+        <label class="appShareChoice">
+          <input type="radio" name="appShareMode" value="data">
+          <span><strong>App + Daten/Einstellungen senden</strong><small>Barcodes und gespeicherte Einstellungen werden komprimiert in denselben Link eingebettet.</small></span>
+        </label>
+        <div class="appShareActions">
+          <button type="button" id="appShareCancelButton">Abbrechen</button>
+          <button type="button" id="appShareStartButton">Teilen</button>
+        </div>
+      </div>
+    </div>
+
+    <footer id="appFooter" data-app-version="72">
+      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">72</span></span>
+      <button
+        type="button"
+        id="appShareButton"
+        title="App oder App mit Daten/Einstellungen teilen"
+        aria-label="App teilen"
+      >↗</button>
       <button
         type="button"
         id="appUpdateButton"
@@ -14564,13 +14651,209 @@ In den App-Namensraum importieren?`)
     </footer>
 
     <script>
-      // Footer-Version und Update-Prüfung (Ver. 71)
+      // Footer-Version, Update-Prüfung und Teilen (Ver. 72)
       (function () {
         const APP_UPDATE_URL_STORAGE_KEY = "updateSourceUrl";
         const DEFAULT_APP_UPDATE_URL = "https://parip69.github.io/BarcodeAudi_AndroidAPK/";
         const APP_UPDATE_LONG_PRESS_MS = 650;
         let appUpdateLongPressTimer = null;
         let appUpdateLongPressTriggered = false;
+
+        function openAppShareMenu() {
+          const overlay = document.getElementById("appShareOverlay");
+          if (overlay) overlay.classList.remove("hidden");
+        }
+
+        function closeAppShareMenu() {
+          const overlay = document.getElementById("appShareOverlay");
+          if (overlay) overlay.classList.add("hidden");
+        }
+
+        function bytesToBase64Url(bytes) {
+          let binary = "";
+          const chunk = 0x8000;
+          for (let i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+          }
+          return btoa(binary)
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/g, "");
+        }
+
+        function base64UrlToBytes(value) {
+          let base64 = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+          while (base64.length % 4) base64 += "=";
+          const binary = atob(base64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          return bytes;
+        }
+
+        async function gzipTextToBase64Url(value) {
+          const source = new TextEncoder().encode(String(value || ""));
+          if (typeof CompressionStream !== "function") {
+            return "b." + bytesToBase64Url(source);
+          }
+          const stream = new Blob([source]).stream().pipeThrough(new CompressionStream("gzip"));
+          const packed = new Uint8Array(await new Response(stream).arrayBuffer());
+          return "g." + bytesToBase64Url(packed);
+        }
+
+        async function decodeSharedPayload(value) {
+          const raw = String(value || "");
+          const dot = raw.indexOf(".");
+          const mode = dot > 0 ? raw.slice(0, dot) : "b";
+          const encoded = dot > 0 ? raw.slice(dot + 1) : raw;
+          let bytes = base64UrlToBytes(encoded);
+
+          if (mode === "g") {
+            if (typeof DecompressionStream !== "function") {
+              throw new Error("Dieser Browser kann die komprimierten Share-Daten nicht öffnen.");
+            }
+            const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+            bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+          }
+          return JSON.parse(new TextDecoder().decode(bytes));
+        }
+
+        function getShareBaseUrl() {
+          try {
+            const configured = normalizeUpdateUrl(getAppUpdateUrl());
+            const url = new URL(configured, window.location.href);
+            url.search = "";
+            url.hash = "";
+            return url.toString();
+          } catch (_) {
+            return DEFAULT_APP_UPDATE_URL;
+          }
+        }
+
+        async function buildAppShareUrl(includeData) {
+          const url = new URL(getShareBaseUrl());
+          if (!includeData) return url.toString();
+
+          const keys = appStorage
+            .keys()
+            .filter((key) => !String(key).startsWith("__"));
+          const payload = buildLocalExportPayload(keys);
+          const encoded = await gzipTextToBase64Url(JSON.stringify(payload));
+          url.searchParams.set("share", encoded);
+          return url.toString();
+        }
+
+        async function shareAppNow() {
+          const button = document.getElementById("appShareStartButton");
+          const mode = document.querySelector('input[name="appShareMode"]:checked')?.value || "app";
+          const includeData = mode === "data";
+
+          try {
+            if (button) {
+              button.disabled = true;
+              button.textContent = "Wird erstellt…";
+            }
+
+            const shareUrl = await buildAppShareUrl(includeData);
+            closeAppShareMenu();
+
+            if (includeData && shareUrl.length > 60000) {
+              const proceed = confirm(
+                "Der Share-Link ist sehr groß (" +
+                  Math.round(shareUrl.length / 1024) +
+                  " KB). Manche Messenger kürzen sehr lange Links.\n\nTrotzdem teilen?"
+              );
+              if (!proceed) return;
+            }
+
+            const shareData = {
+              title: "Audi Barcode-Scanner",
+              text: includeData
+                ? "Audi Barcode-Scanner mit Daten/Einstellungen"
+                : "Audi Barcode-Scanner",
+              url: shareUrl,
+            };
+
+            if (navigator.share) {
+              await navigator.share(shareData);
+            } else if (navigator.clipboard && window.isSecureContext) {
+              await navigator.clipboard.writeText(shareUrl);
+              showAppUpdateMessage("Share-Link wurde in die Zwischenablage kopiert.", "success");
+            } else {
+              window.prompt("Diesen Link kopieren und senden:", shareUrl);
+            }
+          } catch (error) {
+            if (error && error.name === "AbortError") return;
+            console.warn("Teilen fehlgeschlagen", error);
+            showAppUpdateMessage(
+              "Teilen nicht möglich: " + (error?.message || "Unbekannter Fehler"),
+              "error"
+            );
+          } finally {
+            if (button) {
+              button.disabled = false;
+              button.textContent = "Teilen";
+            }
+          }
+        }
+
+        async function importSharedDataFromUrl() {
+          let url;
+          try {
+            url = new URL(window.location.href);
+          } catch (_) {
+            return;
+          }
+
+          const shared = url.searchParams.get("share");
+          if (!shared) return;
+
+          // Daten sofort aus der sichtbaren URL entfernen. So werden sie nicht versehentlich erneut geteilt.
+          url.searchParams.delete("share");
+          try {
+            history.replaceState(null, "", url.pathname + (url.search || "") + (url.hash || ""));
+          } catch (_) {}
+
+          try {
+            const payload = await decodeSharedPayload(shared);
+            const entries = parseLocalStorageImportPayload(JSON.stringify(payload));
+            const confirmed = confirm(
+              "Dieser Link enthält " +
+                entries.length +
+                " Barcode-/Einstellungs-Einträge.\n\n" +
+                "Übernehmen?\n\n" +
+                "Achtung: Die bisherigen lokalen Daten dieser App werden dabei ersetzt."
+            );
+
+            if (!confirmed) {
+              showAppUpdateMessage("Geteilte Daten wurden nicht übernommen.", "success");
+              return;
+            }
+
+            appStorage.clear();
+            entries.forEach(([key, value]) => appStorage.setItem(key, value));
+
+            try {
+              refreshUiAfterFullLocalImport();
+            } catch (error) {
+              console.warn("UI-Aktualisierung nach Share-Import unvollständig", error);
+            }
+            try {
+              applyStoredConsentState();
+            } catch (_) {}
+
+            showToast(
+              `Geteilte Daten übernommen (${entries.length} Einträge)!`,
+              "success"
+            );
+          } catch (error) {
+            console.warn("Share-Import fehlgeschlagen", error);
+            showAppUpdateMessage(
+              "Geteilte Daten konnten nicht gelesen werden: " +
+                (error?.message || "Ungültiger Share-Link"),
+              "error"
+            );
+          }
+        }
 
         function updateFooterVersion() {
           const version = document.documentElement.getAttribute("data-app-version") || "?";
@@ -14826,7 +15109,18 @@ In den App-Namensraum importieren?`)
           getAppUpdateUrl();
 
           const updateButton = document.getElementById("appUpdateButton");
+          const shareButton = document.getElementById("appShareButton");
           const settingsInput = document.getElementById("appUpdateUrlInput");
+
+          shareButton?.addEventListener("click", openAppShareMenu);
+          document.getElementById("appShareCancelButton")?.addEventListener("click", closeAppShareMenu);
+          document.getElementById("appShareStartButton")?.addEventListener("click", shareAppNow);
+          document.getElementById("appShareOverlay")?.addEventListener("click", function (event) {
+            if (event.target === this) closeAppShareMenu();
+          });
+
+          // Falls die App über einen Share-Link geöffnet wurde, Daten anbieten.
+          setTimeout(importSharedDataFromUrl, 120);
 
           settingsInput?.addEventListener("focus", scheduleAppUpdateKeyboardViewportSync);
           settingsInput?.addEventListener("click", scheduleAppUpdateKeyboardViewportSync);
