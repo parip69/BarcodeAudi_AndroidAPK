@@ -1,13 +1,24 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 63 -->
+<!-- Barcode Audi Scanner - Ver. 74 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="62">
+<html lang="de" data-app-version="74">
   <head>
     <meta charset="UTF-8" />
-    <title>
-      Dynamische Barcodes (+85 Tage, Label oben, vertikales Wischen,
-      Popup‑Einstellungen)
-    </title>
+    <title>Audi Barcode Scanner</title>
+
+    <!-- Link-Vorschau für WhatsApp, Telegram und andere Messenger -->
+    <meta name="description" content="Audi Barcode Scanner – App öffnen und optional Barcodes sowie Einstellungen übernehmen." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Audi Barcode Scanner" />
+    <meta property="og:title" content="Audi Barcode Scanner" />
+    <meta property="og:description" content="App mit Barcodes &amp; Einstellungen öffnen" />
+    <meta property="og:url" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/" />
+    <meta property="og:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/icon-192.png" />
+    <meta property="og:image:alt" content="Audi Barcode Scanner" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Audi Barcode Scanner" />
+    <meta name="twitter:description" content="App mit Barcodes &amp; Einstellungen öffnen" />
+    <meta name="twitter:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/icon-192.png" />
     <script>
       !(function (t) {
         function e(r) {
@@ -3707,6 +3718,198 @@
         color: #fff;
       }
 
+      /* Update-Button im Footer (Ver. 70) */
+      #appFooter {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
+
+      #appShareButton,
+      #appUpdateButton {
+        margin-left: 2px;
+        padding: 2px 7px;
+        min-height: 22px;
+        border: 1px solid #7aa7c7;
+        border-radius: 6px;
+        background: #eef7ff;
+        color: #165b87;
+        font-size: 11px;
+        line-height: 1.15;
+        font-weight: 700;
+        cursor: pointer;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #appShareButton {
+        min-width: 27px;
+        padding-left: 6px;
+        padding-right: 6px;
+        font-size: 14px;
+      }
+      #appShareButton:active,
+      #appUpdateButton:active { transform: translateY(1px); }
+      #appShareButton[disabled],
+      #appUpdateButton[disabled] { opacity: 0.65; cursor: default; }
+
+      #appShareOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.48);
+      }
+      #appShareOverlay.hidden { display: none !important; }
+      #appShareContent {
+        width: min(92vw, 410px);
+        background: #fff;
+        color: #111;
+        border-radius: 12px;
+        padding: 18px;
+        box-sizing: border-box;
+        box-shadow: 0 12px 35px rgba(0,0,0,.28);
+      }
+      #appShareContent h3 { margin: 0 0 12px; font-size: 18px; }
+      .appShareChoice {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 10px 8px;
+        margin: 6px 0;
+        border: 1px solid #d7d7d7;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .appShareChoice input { margin-top: 3px; }
+      .appShareChoice small { display: block; margin-top: 3px; opacity: .72; }
+      .appShareActions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 15px;
+      }
+      .appShareActions button {
+        min-height: 34px;
+        padding: 6px 12px;
+        border-radius: 7px;
+        border: 1px solid #999;
+        cursor: pointer;
+      }
+      #appShareStartButton {
+        background: #eef7ff;
+        color: #165b87;
+        border-color: #7aa7c7;
+        font-weight: 700;
+      }
+
+      #appUpdateSettingsContent,
+      #appUpdateAvailableContent {
+        width: min(92vw, 430px);
+        max-width: 430px;
+        max-height: min(88vh, 620px);
+        overflow: auto;
+        background: #fff;
+        color: #000;
+        border-radius: 10px;
+        padding: 18px;
+        box-sizing: border-box;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.28);
+        text-align: left;
+        color-scheme: light;
+      }
+
+      /* Update-Link: bei eingeblendeter Bildschirmtastatur den Dialog
+         komplett in den sichtbaren Bereich oberhalb der Tastatur schieben. */
+      #appUpdateSettingsOverlay.app-update-keyboard-active {
+        align-items: flex-start !important;
+        justify-content: center !important;
+        box-sizing: border-box;
+        padding: 4px 8px !important;
+      }
+
+      #appUpdateSettingsOverlay.app-update-keyboard-active
+        #appUpdateSettingsContent {
+        margin-top: 0 !important;
+        max-height: calc(var(--app-update-visible-height, 100dvh) - 8px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #appUpdateSettingsContent .app-update-buttons {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        background: #fff;
+        padding-top: 8px;
+      }
+
+      #appUpdateSettingsContent h3,
+      #appUpdateAvailableContent h3 {
+        margin: 0 0 12px 0;
+        text-align: center;
+        color: #000;
+      }
+
+      #appUpdateUrlInput {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border: 1px solid #aaa;
+        border-radius: 6px;
+        background: #fff;
+        color: #000;
+        font-size: 14px;
+      }
+
+      .app-update-hint {
+        margin: 8px 0 12px 0;
+        color: #555;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .app-update-status {
+        margin: 10px 0 14px 0;
+        padding: 10px;
+        border-radius: 7px;
+        background: #f3f7fb;
+        color: #111;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .app-update-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+
+      .app-update-buttons button {
+        border: none;
+        border-radius: 6px;
+        padding: 8px 12px;
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      #appUpdateSettingsCancelButton,
+      #appUpdateAvailableCancelButton,
+      #appUpdateClearUrlButton { background: #ff5c5c; }
+      #appUpdateSettingsSaveButton { background: #4caf50; }
+      #appUpdateStartButton { background: #007bff; }
+
       /* Hamburger-Menü */
       .main-settings-button {
         position: absolute;
@@ -3970,6 +4173,23 @@
       /* Zeichenersetzung: zusätzliche Sonderwünsche DE <-> EN */
       #characterReplacementOverlay {
         background: rgba(0, 0, 0, 0.5) !important;
+        box-sizing: border-box;
+        padding: 8px;
+      }
+
+      /* Wenn in der Zeichenersetzung die Bildschirmtastatur aktiv ist,
+         nutzt das Popup nur den sichtbaren Bereich oberhalb der Tastatur. */
+      #characterReplacementOverlay.character-keyboard-active {
+        align-items: flex-start !important;
+        justify-content: center !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+      }
+
+      #characterReplacementOverlay.character-keyboard-active
+        #characterReplacementContent {
+        margin-top: 0 !important;
+        max-height: calc(var(--character-visible-height, 100dvh) - 8px) !important;
       }
 
       #characterReplacementContent {
@@ -4028,6 +4248,9 @@
         -webkit-text-fill-color: #000 !important;
         font-family: Consolas, "Courier New", monospace;
         font-size: 1em;
+        touch-action: manipulation;
+        position: relative;
+        z-index: 2;
       }
 
       .character-replacement-arrow {
@@ -4077,6 +4300,11 @@
         justify-content: flex-end;
         gap: 8px;
         margin-top: 10px;
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        background: #fff;
+        padding: 8px 0 2px 0;
       }
 
       .character-replacement-buttons button {
@@ -4108,6 +4336,72 @@
           grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 28px;
           gap: 4px;
         }
+      }
+
+      /* Einheitliche Sonderzeichen-Leiste fuer Barcode-Eingaben und Zeichenersetzung */
+      .special-char-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding: 2px 1px;
+        margin: 1px 0 5px 0;
+        scrollbar-width: thin;
+      }
+
+      .special-char-toolbar .special-char-label {
+        flex: 0 0 auto;
+        font-size: 0.66em;
+        color: #555 !important;
+        -webkit-text-fill-color: #555 !important;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .special-char-toolbar button {
+        flex: 0 0 auto;
+        min-width: 32px;
+        margin: 0 !important;
+        padding: 3px 5px !important;
+        border: 1px solid #8aa0b5 !important;
+        border-radius: 5px !important;
+        background: #eef7ff !important;
+        color: #123f66 !important;
+        -webkit-text-fill-color: #123f66 !important;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.72em !important;
+        line-height: 1.15;
+        font-weight: 700;
+        cursor: pointer;
+        touch-action: manipulation;
+        white-space: nowrap;
+      }
+
+      /* Hauptansicht: Sonderzeichen erst bei aktiver Barcode-Eingabe zeigen. */
+      #mainSpecialCharToolbar {
+        display: none;
+      }
+
+      #mainSpecialCharToolbar.is-visible {
+        display: flex;
+      }
+
+      .special-char-toolbar button:active {
+        transform: scale(0.97);
+      }
+
+      #characterReplacementContent .special-char-toolbar {
+        margin-top: 5px;
+        margin-bottom: 3px;
+      }
+
+      #characterReplacementContent .special-char-toolbar button {
+        color-scheme: light !important;
       }
 
       .pair-dot {
@@ -4783,6 +5077,33 @@
         font-weight: 600;
       }
     </style>
+<style>
+      /* Ver. 74: gemeinsame, mobile Barcode-Metadatenfelder */
+      #editPopupOverlay .popup-content, #editor74Manager .popup-content { width:min(780px, calc(100vw - 28px)); box-sizing:border-box; text-align:left; }
+      #editor74Fields, #editor74Raw, .e74-manager { color:var(--input-text, #17212b); }
+      #editor74Fields fieldset { border:1px solid #9cabb7; border-radius:10px; margin:14px 0; padding:12px; min-width:0; }
+      #editor74Fields legend { font-weight:700; padding:0 6px; }
+      .e74-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+      .e74-field { display:flex; flex-direction:column; gap:5px; margin:8px 0; min-width:0; font-size:14px; }
+      .e74-field input, .e74-field select { width:100%; box-sizing:border-box; padding:9px; border:1px solid #9cabb7; border-radius:6px; background:var(--input-bg,#fff); color:var(--input-text,#17212b); font:inherit; min-height:40px; }
+      #editor74Fields input[type=checkbox] { width:21px; height:21px; min-height:21px; accent-color:#078657; flex-shrink:0; }
+      .e74-actions { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+      #editor74Fields button, .e74-manager button { border:0; border-radius:7px; background:#087a56; color:#fff !important; -webkit-text-fill-color:#fff !important; padding:10px 13px; cursor:pointer; font-size:14px; }
+      #editor74Fields button:active, .e74-manager button:active { transform:scale(.96); }
+      .e74-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:10px 0; }
+      .e74-group-row { display:flex; align-items:center; gap:8px; border:1px solid #aab6c2; border-radius:7px; padding:7px; }
+      .e74-group-row > label:first-child { display:flex; align-items:center; gap:7px; flex:1; min-width:0; overflow-wrap:anywhere; cursor:pointer; }
+      .e74-group-row .e74-field { width:64px; margin:0; font-size:11px; }
+      .e74-group-row .e74-field input { padding:5px; min-height:32px; }
+      .e74-help { font-size:13px; line-height:1.45; opacity:.85; }
+      .e74-error { color:#c12626; font-weight:600; }
+      .e74-linked { background:rgba(0,130,90,.09); border-radius:8px; padding:10px; margin-top:10px; overflow-wrap:anywhere; }
+      #editor74Raw { margin:14px 0; border-top:1px solid #aab6c2; padding-top:12px; }
+      #editor74Fields summary, #editor74Raw summary { cursor:pointer; font-weight:600; padding:10px 0; }
+      #editor74Fields [hidden] { display:none !important; }
+      #editPopupOverlay #editCodeInput, #editPopupOverlay #editLabelInput, #editPopupOverlay #editBracketInput { width:100% !important; box-sizing:border-box; }
+      @media(max-width:540px) { .e74-grid,.e74-groups { grid-template-columns:1fr; } #editPopupOverlay .popup-content { padding:16px; } }
+</style>
   </head>
 
   <body>
@@ -4884,6 +5205,18 @@
           >
             🇩🇪
           </button>
+        </div>
+        <div
+          class="special-char-toolbar"
+          id="mainSpecialCharToolbar"
+          aria-label="Sonderzeichen in Barcode einfuegen"
+        >
+          <span class="special-char-label">Sonderzeichen:</span>
+          <button type="button" data-special-marker="␠" title="Leerzeichen (Space)">␠ Leer</button>
+          <button type="button" data-special-marker="␉" title="Tabulator (HT / TAB)">␉ TAB</button>
+          <button type="button" data-special-marker="␍" title="Enter (CR)">␍ CR</button>
+          <button type="button" data-special-marker="␊" title="Zeilenumbruch (LF)">␊ LF</button>
+          <button type="button" data-special-marker="␍␊" title="Windows-Enter (CRLF)">␍␊ CRLF</button>
         </div>
         <div style="height: 10px"></div>
         <div id="generatedBarcodes">
@@ -5501,7 +5834,7 @@
           👁️ Ausgeblendete Barcodes: verborgen
         </button>
         <button class="menu-button menu-theme-rename" id="renameGroupButton">
-          ✏️ Gruppe umbenennen
+          ✏️ Gruppen verwalten
         </button>
         <button
           class="menu-button menu-theme-storage"
@@ -5539,6 +5872,7 @@
     >
       <div id="characterReplacementContent">
         <h3>Zeichenersetzung</h3>
+        <div style="font-size:0.82em;color:#555;margin:-4px 0 12px 0;text-align:center;">Sonderwünsche überschreiben die Standard-Zuordnung. Schließen nur mit Abbrechen oder Speichern.</div>
         <div class="character-replacement-header" aria-hidden="true">
           <span>🇩🇪 Deutsch</span>
           <span></span>
@@ -5546,6 +5880,19 @@
           <span></span>
         </div>
         <div id="characterReplacementRows"></div>
+        <div
+          class="special-char-toolbar"
+          id="characterReplacementSpecialCharToolbar"
+          aria-label="Sonderzeichen in die aktive Zeichenersetzung einfuegen"
+        >
+          <span class="special-char-label">Sonderzeichen:</span>
+          <button type="button" data-special-marker="␠" title="Leerzeichen (Space)">␠ Leer</button>
+          <button type="button" data-special-marker="␉" title="Tabulator (HT / TAB)">␉ TAB</button>
+          <button type="button" data-special-marker="␍" title="Enter (CR)">␍ CR</button>
+          <button type="button" data-special-marker="␊" title="Zeilenumbruch (LF)">␊ LF</button>
+          <button type="button" data-special-marker="␍␊" title="Windows-Enter (CRLF)">␍␊ CRLF</button>
+        </div>
+        <div style="font-size:0.75em;color:#666;margin:0 0 4px 0;text-align:left;">␠ = Space · ␉ = TAB · ␍ = CR · ␊ = LF · ␍␊ = CRLF. Zuerst links oder rechts antippen, dann Zeichen wählen.</div>
         <button type="button" id="addCharacterReplacementRow">
           + Zuordnung hinzufügen
         </button>
@@ -5705,6 +6052,18 @@
             style="width: 95%; padding: 8px 12px; margin-bottom: 10px"
           />
         </div>
+        <div
+          class="special-char-toolbar"
+          id="editCodeSpecialCharToolbar"
+          aria-label="Sonderzeichen in Barcode-Code einfuegen"
+        >
+          <span class="special-char-label">Sonderzeichen:</span>
+          <button type="button" data-special-marker="␠" title="Leerzeichen (Space)">␠ Leer</button>
+          <button type="button" data-special-marker="␉" title="Tabulator (HT / TAB)">␉ TAB</button>
+          <button type="button" data-special-marker="␍" title="Enter (CR)">␍ CR</button>
+          <button type="button" data-special-marker="␊" title="Zeilenumbruch (LF)">␊ LF</button>
+          <button type="button" data-special-marker="␍␊" title="Windows-Enter (CRLF)">␍␊ CRLF</button>
+        </div>
         <div>
           <label for="editLabelInput">Bezeichnung nach /:</label>
           <input
@@ -5713,10 +6072,11 @@
             style="width: 95%; padding: 8px 12px; margin-bottom: 10px"
           />
         </div>
+        <div id="editor74Fields"></div>
+        <details id="editor74Raw"><summary>Kodierung anzeigen / bearbeiten</summary>
         <div>
           <label for="editBracketInput"
-            >Inhalt der eckigen Klammern (z. B. "P:M:123:@, &Auto:Audi1,
-            &Essen:A1 , *:-",#")</label
+            >Inhalt der eckigen Klammern (ohne [ und ])</label
           >
           <textarea
             id="editBracketInput"
@@ -5759,6 +6119,7 @@
           (HT / TAB)<br />␍&nbsp;&nbsp;=&nbsp;Enter (CR / Carriage Return)<br />␊&nbsp;&nbsp;=&nbsp;Zeilenumbruch
           (LF / Line Feed)<br />␍␊&nbsp;=&nbsp;Windows-Enter (CRLF)<br />
         </p>
+        </details>
         <div class="popup-buttons" style="text-align: center">
           <button
             id="editSaveButton"
@@ -5874,6 +6235,35 @@
         </div>
       </div>
     </div>
+    <!-- Update-Link: langer Druck auf den Footer-Button -->
+    <div id="appUpdateSettingsOverlay" class="popup-container hidden" aria-hidden="true">
+      <div id="appUpdateSettingsContent" role="dialog" aria-modal="true" aria-labelledby="appUpdateSettingsTitle">
+        <h3 id="appUpdateSettingsTitle">Update-Link</h3>
+        <label for="appUpdateUrlInput" style="display:block;font-weight:700;margin-bottom:5px;">Adresse der Update-Seite:</label>
+        <input id="appUpdateUrlInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" />
+        <div class="app-update-hint">
+          Kurz auf „Update“ drücken = Version prüfen. Lange drücken = diesen Link ändern.
+        </div>
+        <div class="app-update-buttons">
+          <button type="button" id="appUpdateClearUrlButton">Link löschen</button>
+          <button type="button" id="appUpdateSettingsCancelButton">Abbrechen</button>
+          <button type="button" id="appUpdateSettingsSaveButton">Speichern</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ergebnis einer erfolgreichen Update-Prüfung -->
+    <div id="appUpdateAvailableOverlay" class="popup-container hidden" aria-hidden="true">
+      <div id="appUpdateAvailableContent" role="dialog" aria-modal="true" aria-labelledby="appUpdateAvailableTitle">
+        <h3 id="appUpdateAvailableTitle">Neue Version verfügbar</h3>
+        <div id="appUpdateAvailableStatus" class="app-update-status"></div>
+        <div class="app-update-buttons">
+          <button type="button" id="appUpdateAvailableCancelButton">Abbrechen</button>
+          <button type="button" id="appUpdateStartButton">Update starten</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Consent-Popup (zunaechst verborgen) -->
     <div id="consentPopupOverlay" class="popup-container hidden">
       <div class="popup-content">
@@ -5901,7 +6291,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "62";
+      const APP_VERSION_FALLBACK = "74";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
 
       function getAndroidBridge() {
@@ -6020,6 +6410,7 @@
         "themeMode",
         "mainBarcodeHidden",
         "characterReplacementRules",
+        "updateSourceUrl",
       ];
       const APP_STORAGE_PREFIX_KEYS = ["groupOrdering_", "languageMode_"];
       const LOCAL_STORAGE_IMPORT_METADATA_KEYS = new Set([
@@ -6339,20 +6730,94 @@
         refreshThemeDependentStyles();
       }
 
-      // Funktionen zum Escapen und Wiederherstellen nicht druckbarer Zeichen
+      // Funktionen zum sichtbaren Darstellen und Wiederherstellen nicht druckbarer Zeichen.
+      // Kanonische Anzeige: ␠ Space, ␉ TAB, ␍ CR, ␊ LF, ␍␊ CRLF.
+      // Das alte LF-Zeichen ␤ bleibt beim Einlesen aus Kompatibilitaetsgruenden gueltig.
       function escapeNonPrintableChars(text) {
-        return text
-          .replace(/\n/g, "␤")
+        return String(text ?? "")
+          .replace(/\r\n/g, "␍␊")
           .replace(/\r/g, "␍")
+          .replace(/\n/g, "␊")
           .replace(/\t/g, "␉")
           .replace(/ /g, "␠");
       }
       function restoreSpecialChars(text) {
-        return text
+        return String(text ?? "")
+          .replace(/␍␊/g, "\r\n")
           .replace(/␤/g, "\n")
+          .replace(/␊/g, "\n")
           .replace(/␍/g, "\r")
           .replace(/␉/g, "\t")
           .replace(/␠/g, " ");
+      }
+
+      function restoreSpecialCharsOnlyInBarcodeCode(fullText) {
+        const text = String(fullText ?? "");
+        const slashIndex = text.indexOf("/");
+        if (slashIndex < 0) return restoreSpecialChars(text);
+        return (
+          restoreSpecialChars(text.substring(0, slashIndex)) +
+          text.substring(slashIndex)
+        );
+      }
+
+      function rememberSpecialCharCaret(input) {
+        if (!input || typeof input.selectionStart !== "number") return;
+        input.dataset.specialCaretStart = String(input.selectionStart);
+        input.dataset.specialCaretEnd = String(input.selectionEnd ?? input.selectionStart);
+      }
+
+      function insertVisibleSpecialMarker(input, marker) {
+        if (!input) return false;
+        const value = String(input.value ?? "");
+        const fallbackStart = Number.parseInt(input.dataset.specialCaretStart || "", 10);
+        const fallbackEnd = Number.parseInt(input.dataset.specialCaretEnd || "", 10);
+        const start =
+          typeof input.selectionStart === "number"
+            ? input.selectionStart
+            : Number.isFinite(fallbackStart)
+              ? fallbackStart
+              : value.length;
+        const end =
+          typeof input.selectionEnd === "number"
+            ? input.selectionEnd
+            : Number.isFinite(fallbackEnd)
+              ? fallbackEnd
+              : start;
+        const token = String(marker ?? "");
+        input.value = value.substring(0, start) + token + value.substring(end);
+        const nextCaret = start + token.length;
+        input.dataset.specialCaretStart = String(nextCaret);
+        input.dataset.specialCaretEnd = String(nextCaret);
+        input.focus({ preventScroll: true });
+        try {
+          input.setSelectionRange(nextCaret, nextCaret);
+        } catch (_) {}
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      }
+
+      function bindSpecialCharToolbar(toolbarId, targetResolver) {
+        const toolbar = document.getElementById(toolbarId);
+        if (!toolbar || typeof targetResolver !== "function") return;
+        toolbar.querySelectorAll("button[data-special-marker]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const target = targetResolver();
+            if (!target) {
+              showToast("Zuerst ein Eingabefeld antippen.", "warning");
+              return;
+            }
+            insertVisibleSpecialMarker(target, button.dataset.specialMarker || "");
+          });
+        });
+      }
+
+      function bindCaretMemory(input) {
+        if (!input || input.dataset.specialCaretBound === "true") return;
+        ["focus", "click", "keyup", "select", "input"].forEach((eventName) => {
+          input.addEventListener(eventName, () => rememberSpecialCharCaret(input));
+        });
+        input.dataset.specialCaretBound = "true";
       }
 
       function getAllGroupOrderingKeys() {
@@ -6899,7 +7364,7 @@
       setupViewportLockedOverlay(
         "characterReplacementOverlay",
         "characterReplacementContent",
-        { closeOnBackdrop: true },
+        { closeOnBackdrop: false },
       );
       setupViewportLockedOverlay("menuOverlayDynamic", "menuOverlayDynamicContent");
       setupViewportLockedOverlay("fullscreenOverlay", "fullscreenContent", {
@@ -7055,7 +7520,9 @@
       const DEFAULT_CHARACTER_REPLACEMENT_RULES = [{ de: "**", en: "}." }];
 
       function escapeCharacterReplacementPart(value) {
-        return String(value ?? "")
+        // Nicht druckbare Zeichen bleiben im gespeicherten Einzeiler lesbar
+        // (z. B. ␉ statt echtem TAB). Komma, > und Backslash werden escaped.
+        return escapeNonPrintableChars(String(value ?? ""))
           .replace(/\\/g, "\\\\")
           .replace(/>/g, "\\>")
           .replace(/,/g, "\\,");
@@ -7073,7 +7540,11 @@
 
         function finishRule() {
           if (left !== "" || right !== "" || readingRight) {
-            rules.push({ de: left, en: right, hasSeparator: readingRight });
+            rules.push({
+              de: restoreSpecialChars(left),
+              en: restoreSpecialChars(right),
+              hasSeparator: readingRight,
+            });
           }
           left = "";
           right = "";
@@ -7166,13 +7637,16 @@
         return output;
       }
 
-      function getDirectedCharacterReplacementRules(languageMode) {
+      function getDirectedCharacterReplacementRules(languageMode, explicitRules = null) {
         const mode = languageMode === "en" ? "en" : "de";
-        return getCharacterReplacementRules()
+        const sourceRules = Array.isArray(explicitRules)
+          ? explicitRules
+          : getCharacterReplacementRules();
+        return sourceRules
           .map((rule) =>
             mode === "en"
-              ? { from: rule.de, to: rule.en }
-              : { from: rule.en, to: rule.de },
+              ? { from: rule.de, to: rule.en, source: "custom" }
+              : { from: rule.en, to: rule.de, source: "custom" },
           )
           .filter((rule) => rule.from !== "")
           .sort((a, b) => b.from.length - a.from.length);
@@ -7185,38 +7659,159 @@
         );
       }
 
-      function applyLanguageCharacterMapping(value, languageMode = getLanguageMode()) {
+      function getStandardDirectedCharacterReplacementRules(languageMode) {
         const mode = languageMode === "en" ? "en" : "de";
+        if (mode !== "en") return [];
+        return [
+          { from: "Y", to: "Z", source: "standard" },
+          { from: "y", to: "z", source: "standard" },
+          { from: "Z", to: "Y", source: "standard" },
+          { from: "z", to: "y", source: "standard" },
+        ];
+      }
+
+      function applyCharacterReplacementPriorityEngine(
+        value,
+        customRules,
+        standardRules,
+      ) {
         const source = String(value ?? "");
-        const customRules = getDirectedCharacterReplacementRules(mode);
         if (!source) return source;
 
-        // Priorität 1: benutzerdefinierte Sonderwünsche werden direkt auf dem
-        // Originaltext geprüft. Nur wenn an der aktuellen Position KEINE
-        // Sonderregel passt, greift die feste Standard-Tastaturumsetzung.
+        // Sonderwünsche sind echte Overrides: Sobald dieselbe Quell-Zeichenfolge
+        // benutzerdefiniert vorhanden ist, wird die entsprechende Standardregel
+        // vollständig aus dem Fallback entfernt.
+        const sortedCustomRules = (customRules || [])
+          .filter((rule) => rule && rule.from !== "")
+          .slice()
+          .sort((a, b) => b.from.length - a.from.length);
+        const customSources = new Set(sortedCustomRules.map((rule) => rule.from));
+        const fallbackStandardRules = (standardRules || [])
+          .filter(
+            (rule) =>
+              rule && rule.from !== "" && !customSources.has(rule.from),
+          )
+          .slice()
+          .sort((a, b) => b.from.length - a.from.length);
+
         let output = "";
         let index = 0;
         while (index < source.length) {
           let matchedRule = null;
-          for (const rule of customRules) {
+
+          // PRIORITÄT 1: Benutzerdefinierte Zuordnungen aus dem Popup.
+          for (const rule of sortedCustomRules) {
             if (source.startsWith(rule.from, index)) {
               matchedRule = rule;
               break;
             }
           }
 
-          if (matchedRule) {
-            output += matchedRule.to;
-            index += matchedRule.from.length;
-            continue;
+          // PRIORITÄT 2: Standard nur dann, wenn hier KEIN Sonderwunsch passt.
+          if (!matchedRule) {
+            for (const rule of fallbackStandardRules) {
+              if (source.startsWith(rule.from, index)) {
+                matchedRule = rule;
+                break;
+              }
+            }
           }
 
-          const currentChar = source[index];
-          output += mode === "en" ? swapYZ(currentChar) : currentChar;
-          index += 1;
+          if (matchedRule) {
+            // Ersatz wird direkt ausgegeben und NICHT erneut verarbeitet.
+            output += matchedRule.to;
+            index += matchedRule.from.length;
+          } else {
+            output += source[index];
+            index += 1;
+          }
         }
         return output;
       }
+
+      function applyLanguageCharacterMapping(
+        value,
+        languageMode = getLanguageMode(),
+      ) {
+        const mode = languageMode === "en" ? "en" : "de";
+        return applyCharacterReplacementPriorityEngine(
+          value,
+          getDirectedCharacterReplacementRules(mode),
+          getStandardDirectedCharacterReplacementRules(mode),
+        );
+      }
+
+      function verifyCharacterReplacementPriorityEngine() {
+        // Testet denselben Parser, dieselbe Richtungslogik und dieselbe Engine,
+        // die auch im echten Betrieb verwendet werden.
+        const testRules = parseCharacterReplacementRules(
+          serializeCharacterReplacementRules([
+            { de: "*", en: "}." },
+            { de: "Z", en: "+" },
+            { de: "Y", en: "=" },
+          ]),
+        ).filter(
+          (rule) => rule.hasSeparator && rule.de !== "" && rule.en !== "",
+        );
+
+        const customEn = getDirectedCharacterReplacementRules("en", testRules);
+        const outputEn = applyCharacterReplacementPriorityEngine(
+          "*ZYyz",
+          customEn,
+          getStandardDirectedCharacterReplacementRules("en"),
+        );
+        // * -> }. , Z -> + , Y -> = ; y/z bleiben Standard-Fallback.
+        if (outputEn !== "}.+=zy") {
+          console.error(
+            "Zeichenersetzung-Prioritätstest EN fehlgeschlagen:",
+            outputEn,
+          );
+          return false;
+        }
+
+        const customDe = getDirectedCharacterReplacementRules("de", testRules);
+        const outputDe = applyCharacterReplacementPriorityEngine(
+          "}.+=",
+          customDe,
+          getStandardDirectedCharacterReplacementRules("de"),
+        );
+        if (outputDe !== "*ZY") {
+          console.error(
+            "Zeichenersetzung-Prioritätstest DE fehlgeschlagen:",
+            outputDe,
+          );
+          return false;
+        }
+        return true;
+      }
+
+      verifyCharacterReplacementPriorityEngine();
+
+      (function verifySpecialCharacterReplacementRoundTrip() {
+        const testRules = [
+          { de: "\t", en: "TAB" },
+          { de: "\r\n", en: "ENTER" },
+          { de: "\n", en: "LF" },
+        ];
+        const serialized = serializeCharacterReplacementRules(testRules);
+        const parsed = parseCharacterReplacementRules(serialized).filter(
+          (rule) => rule.hasSeparator,
+        );
+        const output = applyCharacterReplacementPriorityEngine(
+          "A\tB\r\nC\nD",
+          getDirectedCharacterReplacementRules("en", parsed),
+          [],
+        );
+        const expected = "ATABBENTERCLFD";
+        if (output !== expected) {
+          console.error(
+            "Sonderzeichen-Zeichenersetzungstest fehlgeschlagen:",
+            { serialized, output, expected },
+          );
+        }
+      })();
+
+      let lastCharacterReplacementInput = null;
 
       function addCharacterReplacementRow(deValue = "", enValue = "") {
         const rows = document.getElementById("characterReplacementRows");
@@ -7228,7 +7823,7 @@
         const deInput = document.createElement("input");
         deInput.type = "text";
         deInput.className = "character-replacement-de";
-        deInput.value = String(deValue ?? "");
+        deInput.value = escapeNonPrintableChars(String(deValue ?? ""));
         deInput.setAttribute("aria-label", "Deutsch");
         deInput.autocomplete = "off";
         deInput.spellcheck = false;
@@ -7241,10 +7836,20 @@
         const enInput = document.createElement("input");
         enInput.type = "text";
         enInput.className = "character-replacement-en";
-        enInput.value = String(enValue ?? "");
+        enInput.value = escapeNonPrintableChars(String(enValue ?? ""));
         enInput.setAttribute("aria-label", "Englisch");
         enInput.autocomplete = "off";
         enInput.spellcheck = false;
+
+        [deInput, enInput].forEach((input) => {
+          bindCaretMemory(input);
+          input.addEventListener("focus", () => {
+            lastCharacterReplacementInput = input;
+          });
+          input.addEventListener("click", () => {
+            lastCharacterReplacementInput = input;
+          });
+        });
 
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
@@ -7271,12 +7876,64 @@
         if (errorElement) errorElement.textContent = message;
       }
 
+      function syncCharacterReplacementKeyboardViewport() {
+        const overlay = document.getElementById("characterReplacementOverlay");
+        if (!overlay || overlay.classList.contains("hidden")) return;
+
+        const activeElement = document.activeElement;
+        const editingReplacement = Boolean(
+          activeElement &&
+          overlay.contains(activeElement) &&
+          activeElement.matches(".character-replacement-row input"),
+        );
+
+        if (!editingReplacement) return;
+
+        const viewport = window.visualViewport;
+        const visibleHeight = Math.max(
+          220,
+          Math.floor(viewport?.height || window.innerHeight || 0),
+        );
+        const visibleTop = Math.max(0, Math.floor(viewport?.offsetTop || 0));
+
+        overlay.classList.add("character-keyboard-active");
+        overlay.style.top = `${visibleTop}px`;
+        overlay.style.height = `${visibleHeight}px`;
+        overlay.style.bottom = "auto";
+        overlay.style.setProperty("--character-visible-height", `${visibleHeight}px`);
+
+        requestAnimationFrame(() => {
+          try {
+            activeElement.scrollIntoView({ block: "nearest", inline: "nearest" });
+          } catch (_) {
+            activeElement.scrollIntoView(false);
+          }
+        });
+      }
+
+      function resetCharacterReplacementKeyboardViewport() {
+        const overlay = document.getElementById("characterReplacementOverlay");
+        if (!overlay) return;
+        overlay.classList.remove("character-keyboard-active");
+        overlay.style.top = "";
+        overlay.style.height = "";
+        overlay.style.bottom = "";
+        overlay.style.removeProperty("--character-visible-height");
+      }
+
+      function scheduleCharacterReplacementKeyboardViewportSync() {
+        syncCharacterReplacementKeyboardViewport();
+        window.setTimeout(syncCharacterReplacementKeyboardViewport, 60);
+        window.setTimeout(syncCharacterReplacementKeyboardViewport, 220);
+      }
+
       function openCharacterReplacementPopup() {
         closeMenuOverlayMain();
         const rows = document.getElementById("characterReplacementRows");
         if (!rows) return;
 
         rows.innerHTML = "";
+        lastCharacterReplacementInput = null;
         setCharacterReplacementError("");
         const rules = getCharacterReplacementRules();
         if (rules.length === 0) {
@@ -7289,10 +7946,9 @@
           "characterReplacementOverlay",
           "characterReplacementContent",
           {
-            closeOnBackdrop: true,
+            closeOnBackdrop: false,
             afterOpen: () => {
-              const firstInput = rows.querySelector("input");
-              if (firstInput) firstInput.focus();
+              resetCharacterReplacementKeyboardViewport();
             },
           },
         );
@@ -7300,6 +7956,7 @@
 
       function closeCharacterReplacementPopup() {
         setCharacterReplacementError("");
+        resetCharacterReplacementKeyboardViewport();
         closeViewportLockedOverlay("characterReplacementOverlay");
       }
 
@@ -7313,8 +7970,10 @@
 
         for (let index = 0; index < rowElements.length; index++) {
           const row = rowElements[index];
-          const de = row.querySelector(".character-replacement-de")?.value ?? "";
-          const en = row.querySelector(".character-replacement-en")?.value ?? "";
+          const deDisplay = row.querySelector(".character-replacement-de")?.value ?? "";
+          const enDisplay = row.querySelector(".character-replacement-en")?.value ?? "";
+          const de = restoreSpecialChars(deDisplay);
+          const en = restoreSpecialChars(enDisplay);
           const rowNumber = index + 1;
 
           if (de === "" && en === "") continue;
@@ -7326,12 +7985,12 @@
 
           if (seenDe.has(de)) {
             throw new Error(
-              `Deutsch „${de}“ ist doppelt eingetragen (Zeilen ${seenDe.get(de)} und ${rowNumber}).`,
+              `Deutsch „${escapeNonPrintableChars(de)}“ ist doppelt eingetragen (Zeilen ${seenDe.get(de)} und ${rowNumber}).`,
             );
           }
           if (seenEn.has(en)) {
             throw new Error(
-              `Englisch „${en}“ ist doppelt eingetragen (Zeilen ${seenEn.get(en)} und ${rowNumber}).`,
+              `Englisch „${escapeNonPrintableChars(en)}“ ist doppelt eingetragen (Zeilen ${seenEn.get(en)} und ${rowNumber}).`,
             );
           }
 
@@ -7391,12 +8050,140 @@
         }
       }
 
+      const characterReplacementOverlayElement = document.getElementById(
+        "characterReplacementOverlay",
+      );
+      const characterReplacementContentElement = document.getElementById(
+        "characterReplacementContent",
+      );
+
+      // Dieses Popup darf ausschließlich über „Abbrechen“ oder „Speichern“
+      // geschlossen werden. Besonders auf Android/WebView kann sich die Position
+      // beim Öffnen der Tastatur zwischen touchstart und click verändern.
+      // Deshalb stoppen wir Interaktionen innerhalb des Dialogs explizit.
+      ["pointerdown", "mousedown", "touchstart", "click"].forEach((eventName) => {
+        characterReplacementContentElement?.addEventListener(
+          eventName,
+          (event) => event.stopPropagation(),
+          { passive: eventName !== "touchstart" },
+        );
+      });
+
+      characterReplacementOverlayElement?.addEventListener("focusin", (event) => {
+        if (!(event.target instanceof HTMLInputElement)) return;
+        if (!event.target.matches(".character-replacement-row input")) return;
+        scheduleCharacterReplacementKeyboardViewportSync();
+      });
+
+      characterReplacementOverlayElement?.addEventListener("focusout", () => {
+        window.setTimeout(() => {
+          const overlay = document.getElementById("characterReplacementOverlay");
+          const activeElement = document.activeElement;
+          const stillEditing = Boolean(
+            overlay &&
+            activeElement &&
+            overlay.contains(activeElement) &&
+            activeElement.matches?.(".character-replacement-row input"),
+          );
+          if (!stillEditing) resetCharacterReplacementKeyboardViewport();
+        }, 180);
+      });
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener(
+          "resize",
+          syncCharacterReplacementKeyboardViewport,
+        );
+        window.visualViewport.addEventListener(
+          "scroll",
+          syncCharacterReplacementKeyboardViewport,
+        );
+      }
+      window.addEventListener("resize", syncCharacterReplacementKeyboardViewport);
+
       document
         .getElementById("addCharacterReplacementRow")
         ?.addEventListener("click", () => {
           const row = addCharacterReplacementRow();
-          row?.querySelector("input")?.focus();
+          const input = row?.querySelector("input");
+          if (input) {
+            lastCharacterReplacementInput = input;
+            input.focus();
+            scheduleCharacterReplacementKeyboardViewportSync();
+          }
         });
+
+      // Sonderzeichen-Paletten: sichtbare Marker an der Cursorposition einfuegen.
+      // Erst beim Speichern/Erzeugen werden sie zu echten Steuerzeichen.
+      // In der Hauptansicht bleibt die Leiste platzsparend verborgen und wird
+      // erst sichtbar, wenn das Barcode-Eingabefeld aktiv benutzt wird.
+      const mainBarcodeInputForSpecialChars = document.getElementById("inputField");
+      const mainSpecialCharToolbar = document.getElementById("mainSpecialCharToolbar");
+
+      function setMainSpecialCharToolbarVisible(visible) {
+        if (!mainSpecialCharToolbar) return;
+        mainSpecialCharToolbar.classList.toggle("is-visible", Boolean(visible));
+      }
+
+      if (mainBarcodeInputForSpecialChars && mainSpecialCharToolbar) {
+        const showMainSpecialCharToolbar = () =>
+          setMainSpecialCharToolbarVisible(true);
+
+        mainBarcodeInputForSpecialChars.addEventListener(
+          "focus",
+          showMainSpecialCharToolbar,
+        );
+        mainBarcodeInputForSpecialChars.addEventListener(
+          "pointerdown",
+          showMainSpecialCharToolbar,
+        );
+
+        document.addEventListener(
+          "pointerdown",
+          (event) => {
+            const target = event.target;
+            if (
+              target === mainBarcodeInputForSpecialChars ||
+              mainSpecialCharToolbar.contains(target)
+            ) {
+              return;
+            }
+            setMainSpecialCharToolbarVisible(false);
+          },
+          true,
+        );
+
+        document.addEventListener("focusin", (event) => {
+          const target = event.target;
+          if (
+            target === mainBarcodeInputForSpecialChars ||
+            mainSpecialCharToolbar.contains(target)
+          ) {
+            return;
+          }
+          setMainSpecialCharToolbarVisible(false);
+        });
+      }
+
+      bindCaretMemory(document.getElementById("inputField"));
+      bindCaretMemory(document.getElementById("editCodeInput"));
+      bindSpecialCharToolbar("mainSpecialCharToolbar", () =>
+        document.getElementById("inputField"),
+      );
+      bindSpecialCharToolbar("editCodeSpecialCharToolbar", () =>
+        document.getElementById("editCodeInput"),
+      );
+      bindSpecialCharToolbar(
+        "characterReplacementSpecialCharToolbar",
+        () =>
+          lastCharacterReplacementInput &&
+          document.getElementById("characterReplacementOverlay")?.contains(
+            lastCharacterReplacementInput,
+          )
+            ? lastCharacterReplacementInput
+            : null,
+      );
+
       document
         .getElementById("cancelCharacterReplacementButton")
         ?.addEventListener("click", closeCharacterReplacementPopup);
@@ -7464,105 +8251,7 @@
           openMenuOverlayMain();
         });
 
-      document
-        .getElementById("renameGroupButton")
-        .addEventListener("click", () => {
-          closeMenuOverlayMain();
-          const groupFilter = document.getElementById("groupFilter");
-          if (!groupFilter || groupFilter.options.length <= 1) {
-            showToast("Keine Gruppen zum Umbenennen vorhanden.", "warning");
-            return;
-          }
-
-          let currentGroupsInfo = "";
-          const groupOptions = Array.from(groupFilter.options);
-          const existingGroupLetters = [];
-          const groupLetterToNameMap = new Map();
-
-          groupOptions.forEach((opt) => {
-            if (opt.value) {
-              // Skip "Alle Gruppen anzeigen"
-              currentGroupsInfo += `${opt.value}: ${opt.textContent.split("(")[0].trim()}\n`;
-              existingGroupLetters.push(opt.value.toUpperCase());
-              groupLetterToNameMap.set(
-                opt.value.toUpperCase(),
-                opt.textContent.split("(")[0].trim(),
-              );
-            }
-          });
-
-          const oldGroupLetterInput = prompt(
-            `Welche Gruppe (Buchstabe) umbenennen?\nVerfügbar:\n${currentGroupsInfo}Geben Sie nur den Buchstaben ein:`,
-          );
-          if (!oldGroupLetterInput) {
-            showToast("Umbennen abgebrochen.", "info");
-            return;
-          }
-          const oldGroupLetter = oldGroupLetterInput.trim().toUpperCase();
-          if (!existingGroupLetters.includes(oldGroupLetter)) {
-            showToast(
-              `Gruppe mit Buchstabe "${oldGroupLetter}" nicht gefunden.`,
-              "error",
-            );
-            return;
-          }
-
-          const oldGroupName = groupLetterToNameMap.get(oldGroupLetter);
-
-          const newGroupNameInput = prompt(
-            `Neuer Name für Gruppe ${oldGroupLetter} ("${oldGroupName}"):`,
-          );
-          if (!newGroupNameInput) {
-            showToast("Umbennen abgebrochen.", "info");
-            return;
-          }
-          const newGroupName = newGroupNameInput.trim();
-          if (!newGroupName) {
-            showToast("Neuer Gruppenname darf nicht leer sein.", "error");
-            return;
-          }
-
-          const newGroupLetter = newGroupName.charAt(0).toUpperCase();
-          if (!/^[A-Z]$/.test(newGroupLetter)) {
-            showToast(
-              "Neuer Gruppenname muss mit einem Buchstaben beginnen.",
-              "error",
-            );
-            return;
-          }
-
-          // Check for conflict: new letter exists and it's not the same old letter (meaning we are renaming "A" to "Apple", which is fine)
-          if (
-            existingGroupLetters.includes(newGroupLetter) &&
-            newGroupLetter !== oldGroupLetter
-          ) {
-            showToast(
-              `Der Buchstabe "${newGroupLetter}" (abgeleitet von "${newGroupName}") wird bereits von einer anderen Gruppe verwendet. Bitte wählen Sie einen anderen Namen.`,
-              "error",
-            );
-            return;
-          }
-
-          // It's okay if newGroupLetter is the same as oldGroupLetter (e.g. renaming "Auto (A)" to "Automobile (A)")
-          // Or if newGroupLetter is different but not conflicting.
-
-          if (
-            confirm(
-              `Gruppe "${oldGroupName}" (Buchstabe ${oldGroupLetter}) wirklich zu "${newGroupName}" (Buchstabe ${newGroupLetter}) umbenennen?`,
-            )
-          ) {
-            // Call the main renaming function (to be implemented in next step)
-            performGroupRename(
-              oldGroupLetter,
-              oldGroupName,
-              newGroupLetter,
-              newGroupName,
-            );
-          } else {
-            showToast("Umbennen abgebrochen.", "info");
-          }
-        });
-
+      document.getElementById("renameGroupButton").addEventListener("click", editor74ManageGroups);
       /**
        * Öffnet das Popup zum Auswählen von localStorage-Einträgen
        * und bietet Löschen, selektiven Export und Komplettimport an.
@@ -9542,6 +10231,249 @@ In den App-Namensraum importieren?`)
           };
       }
 
+      // Ver. 74: Formular und bestehendes TXT-Format verwenden dieselben Metadaten.
+      function editor74Parse(raw) {
+        const result = { groups: [], role: '', pair: '', expiration: false, hide: raw.includes('#'), toggle: '', date: '', unknown: [] };
+        String(raw).replace(/#/g, '').split(',').map(t => t.trim()).filter(Boolean).forEach(t => {
+          let m;
+          if ((m = t.match(/^&([^:,\[\]]+)(?::([^:,\[\]]+))?$/))) {
+            const name = m[1].trim(), id = (m[2] || name.charAt(0)).trim();
+            const order = id.match(/^([a-z])(\d+)$/i);
+            result.groups.push({ name, id, base: order ? order[1] : id, order: order ? order[2] : '', key: id.charAt(0).toUpperCase(), token: t });
+          } else if ((m = t.match(/^P:([MS]):([^:,\s\[\]#]+)(:@)?$/i))) {
+            result.role = m[1].toUpperCase(); result.pair = m[2]; result.expiration = !!m[3];
+          } else if ((m = t.match(/^\*:([+-])$/))) result.toggle = m[1];
+          else if ((m = t.match(/^pw:(.*)$/i))) result.date = m[1].trim();
+          else result.unknown.push(t);
+        });
+        return result;
+      }
+      function editor74Bracket(text) {
+        const slash = text.indexOf('/');
+        return slash < 0 ? '' : (text.slice(slash + 1).match(/\[([^\]]*)\]/) || [,''])[1];
+      }
+      function editor74Barcodes() {
+        try { return JSON.parse(appStorage.getItem('barcodes') || '[]'); } catch (_) { return barcodeList.slice(); }
+      }
+      function editor74Catalog(extra = '') {
+        const groups = new Map();
+        let saved = [];
+        try { saved = JSON.parse(appStorage.getItem('editorGroupsV74') || '[]'); } catch (_) {}
+        saved.forEach(g => groups.set(g.key, g));
+        [...editor74Barcodes().map(editor74Bracket), extra].forEach(raw => {
+          editor74Parse(raw).groups.forEach(g => groups.set(g.key, { name:g.name, base:g.base, key:g.key }));
+        });
+        return [...groups.values()].sort((a,b) => a.name.localeCompare(b.name, 'de'));
+      }
+      function editor74El(tag, text, parent) {
+        const el = document.createElement(tag);
+        if (text != null) el.textContent = text;
+        if (parent) parent.appendChild(el);
+        return el;
+      }
+      function editor74Field(parent, label, type = 'text') {
+        const wrap = editor74El('label', null, parent); wrap.className = 'e74-field';
+        editor74El('span', label, wrap);
+        const input = editor74El(type === 'select' ? 'select' : 'input', null, wrap);
+        if (type !== 'select') input.type = type;
+        return input;
+      }
+      function editor74Option(select, value, label) {
+        const option = editor74El('option', label, select); option.value = value;
+      }
+      function editor74Button(parent, label, fn) {
+        const b = editor74El('button', label, parent); b.type = 'button'; b.onclick = fn; return b;
+      }
+      function editor74GroupCheck(name, id, catalogue, exclude) {
+        if (!name || /[:,\[\]#\r\n]/.test(name)) return 'Bitte einen Gruppennamen ohne Komma, Doppelpunkt, # oder Klammern eingeben.';
+        if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(id) || /^[A-Za-z]\d+$/.test(id)) return 'Kennung: ein Buchstabe oder ein Wort ohne Leerzeichen. Eine Zahl direkt hinter einem einzelnen Buchstaben ist für die Position reserviert.';
+        if (catalogue.some(g => g.key !== exclude && g.key === id.charAt(0).toUpperCase())) return 'Der Anfangsbuchstabe dieser Kennung ist bereits belegt. Bitte eine andere Kennung verwenden.';
+        return '';
+      }
+      function editor74PatchRaw(raw, kind, values) {
+        // Nur die bearbeitete Optionsart ersetzen; unbekannte Zusätze bleiben erhalten.
+        if (kind === 'hide') return raw.replace(/#/g, '').split(',').map(t=>t.trim()).filter(Boolean).concat(values).join(', ');
+        const patterns = { groups:/^&/, pair:/^P:[MS]:/i, toggle:/^\*:[+-]$/, date:/^pw:/i };
+        let inserted = false;
+        const tokens = [];
+        raw.split(',').forEach(token => {
+          const clean = token.replace(/#/g, '').trim();
+          if (patterns[kind].test(clean)) {
+            if (!inserted) { tokens.push(...values); inserted = true; }
+            if (token.includes('#')) tokens.push('#');
+          } else if (token.trim()) tokens.push(token.trim());
+        });
+        if (!inserted) tokens.push(...values);
+        return tokens.join(', ');
+      }
+      function editor74Setup(initialText) {
+        const raw = document.getElementById('editBracketInput');
+        const host = document.getElementById('editor74Fields'); host.replaceChildren();
+        const draftGroups = new Map(editor74Catalog(raw.value).map(g => [g.key, g]));
+        const state = { initialText, initialCode:document.getElementById('editCodeInput').value, initialLabel:document.getElementById('editLabelInput').value, initialRaw:raw.value };
+        const notice = editor74El('p', 'Gruppen und Optionen auswählen. Die Kodierung wird automatisch übernommen.', host); notice.className='e74-help';
+        const groupBox=editor74El('fieldset',null,host); editor74El('legend','Gruppen',groupBox);
+        const actions=editor74El('div',null,groupBox); actions.className='e74-actions';
+        const groupList=editor74El('div',null,groupBox); groupList.className='e74-groups';
+        const groupRows=[];
+        function patch(kind, tokens) { raw.value=editor74PatchRaw(raw.value,kind,tokens); sync(); }
+        function writeGroups() {
+          const current=editor74Parse(raw.value).groups;
+          patch('groups',groupRows.filter(r=>r.check.checked).map(r=> {
+            const previous=current.find(g=>g.key===r.g.key);
+            if(previous && previous.order===r.order.value) return previous.token;
+            return '&'+r.g.name+':'+r.g.base+(r.order.value || '');
+          }));
+        }
+        editor74Button(actions,'Alle auswählen',()=>{groupRows.forEach(r=>r.check.checked=true);writeGroups();});
+        editor74Button(actions,'Keine',()=>{groupRows.forEach(r=>r.check.checked=false);writeGroups();});
+        const create=editor74El('details',null,groupBox); editor74El('summary','＋ Neue Gruppe erstellen',create);
+        const createGrid=editor74El('div',null,create); createGrid.className='e74-grid';
+        const newName=editor74Field(createGrid,'Gruppenname');
+        const newID=editor74Field(createGrid,'Kennung / Index'); newID.placeholder='z. B. W';
+        newName.oninput=()=>{
+          if(newID.dataset.manual) return;
+          const first=newName.value.trim().charAt(0).toUpperCase();
+          const candidates=[first,...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
+          newID.value=candidates.find(c=>/^[A-Z]$/.test(c)&&!draftGroups.has(c)) || '';
+        };
+        newID.oninput=()=>newID.dataset.manual='1';
+        const groupError=editor74El('p','',create); groupError.className='e74-error'; groupError.setAttribute('role','alert');
+        editor74Button(create,'Gruppe hinzufügen',()=> {
+          const name=newName.value.trim(), base=newID.value.trim();
+          const error=editor74GroupCheck(name,base,[...draftGroups.values()]);
+          groupError.textContent=error; if(error)return;
+          const g={name,base,key:base.charAt(0).toUpperCase()}; draftGroups.set(g.key,g);
+          const selected=editor74Parse(raw.value).groups.map(x=>x.token); selected.push('&'+name+':'+base);
+          patch('groups',selected); newName.value='';newID.value='';delete newID.dataset.manual;create.open=false;
+        });
+        const optionBox=editor74El('fieldset',null,host); editor74El('legend','Barcode-Optionen',optionBox);
+        const optionGrid=editor74El('div',null,optionBox); optionGrid.className='e74-grid';
+        const hide=editor74Field(optionGrid,'Barcode verstecken','checkbox'); hide.id='e74Hide';
+        const role=editor74Field(optionGrid,'Funktion','select'); role.id='e74Role';
+        [['','Normal'],['M','Master'],['S','Slave']].forEach(([v,t])=>editor74Option(role,v,t));
+        const toggle=editor74Field(optionGrid,'Gruppen-Umschalter','select'); toggle.id='e74Toggle';
+        [['','Ohne'],['+','Plus (+)'],['-','Minus (−)']].forEach(([v,t])=>editor74Option(toggle,v,t));
+        const date=editor74Field(optionGrid,'Startdatum der 90-Tage-Frist','date'); date.id='e74Date';
+        const pairBox=editor74El('fieldset',null,host); editor74El('legend','Kopplung',pairBox);
+        const pairChoice=editor74Field(pairBox,'Vorhandene Kopplung auswählen','select'); pairChoice.id='e74PairChoice';
+        const pair=editor74Field(pairBox,'Kopplungskennung (auch neue Kennung möglich)'); pair.id='e74Pair';
+        const exp=editor74Field(pairBox,'Haupt-Verfallsdatum anzeigen (@)','checkbox'); exp.id='e74Expiration';
+        const linked=editor74El('div',null,pairBox); linked.id='e74Linked';linked.className='e74-linked';
+        const status=editor74El('p','',host); status.id='e74Status';status.className='e74-help';status.setAttribute('role','status');
+        hide.onchange=()=>patch('hide',hide.checked?['#']:[]);
+        const writePair=()=>patch('pair',role.value?['P:'+role.value+':'+pair.value.trim()+(role.value==='M'&&exp.checked?':@':'')]:[]);
+        role.onchange=()=>{
+          if(role.value&&!pair.value) pair.value='K'+Date.now().toString(36).toUpperCase();
+          writePair();
+        };
+        pair.onchange=writePair; exp.onchange=writePair;
+        pairChoice.onchange=()=>{if(pairChoice.value){pair.value=pairChoice.value;writePair();}else{pair.focus();pair.select();}};
+        toggle.onchange=()=>patch('toggle',toggle.value?['*:'+toggle.value]:[]);
+        date.onchange=()=>patch('date',date.value?['pw:'+date.value.split('-').reverse().join('.')]:[]);
+        function sync() {
+          const meta=editor74Parse(raw.value);
+          meta.groups.forEach(g=>draftGroups.set(g.key,{name:g.name,base:g.base,key:g.key}));
+          groupList.replaceChildren();groupRows.length=0;
+          [...draftGroups.values()].sort((a,b)=>a.name.localeCompare(b.name,'de')).forEach(g=>{
+            const row=editor74El('div',null,groupList);row.className='e74-group-row';
+            const label=editor74El('label',null,row);
+            const check=editor74El('input',null,label);check.type='checkbox';check.dataset.group=g.key;
+            editor74El('span',g.name+' ('+g.base+')',label);
+            const selected=meta.groups.find(x=>x.key===g.key);check.checked=!!selected;check.onchange=writeGroups;
+            const order=editor74Field(row,'Position','number');order.min='0';order.step='1';order.placeholder='Auto';order.value=selected?selected.order:'';
+            order.disabled=!check.checked||!/^[a-z]$/i.test(g.base); order.onchange=()=>{if(order.value && !/^\d+$/.test(order.value)){order.value='';}writeGroups();};
+            groupRows.push({g,check,order});
+          });
+          if(!draftGroups.size)editor74El('p','Noch keine Gruppen. Lege hier deine erste Gruppe an.',groupList);
+          hide.checked=meta.hide;role.value=meta.role;toggle.value=meta.toggle;
+          const dm=meta.date.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+          date.value=dm?dm[3]+'-'+dm[2].padStart(2,'0')+'-'+dm[1].padStart(2,'0'):'';
+          pairBox.hidden=!meta.role;pair.value=meta.pair;exp.checked=meta.expiration;exp.parentElement.hidden=meta.role!=='M';
+          const peers=editor74Barcodes().filter(t=>t!==initialText).map(t=>({ text:t, meta:editor74Parse(editor74Bracket(t)), name:t.slice(t.indexOf('/')+1).replace(/\[[^\]]*\]/,'').trim() }));
+          const pairs=new Map();
+          peers.filter(p=>p.meta.pair).forEach(p=>{if(!pairs.has(p.meta.pair))pairs.set(p.meta.pair,[]);pairs.get(p.meta.pair).push((p.meta.role==='M'?'Master: ':'Slave: ')+p.name);});
+          pairChoice.replaceChildren();editor74Option(pairChoice,'','Neue / eigene Kopplungskennung');
+          pairs.forEach((names,id)=>editor74Option(pairChoice,id,id+' — '+names.join(' · ')));
+          pairChoice.value=pairs.has(meta.pair)?meta.pair:'';
+          linked.replaceChildren(); editor74El('strong','Gekoppelte Barcodes',linked);
+          const matching=peers.filter(p=>p.meta.pair===meta.pair&&p.meta.role!==meta.role&&p.meta.role);
+          if(matching.length){const list=editor74El('ul',null,linked);matching.forEach(p=>editor74El('li',(p.meta.role==='M'?'Master: ':'Slave: ')+p.name,list));}
+          else editor74El('p','Noch kein Gegenstück mit dieser Kennung vorhanden.',linked);
+          const other=peers.filter(p=>p.meta.pair===meta.pair&&p.meta.role===meta.role&&p.meta.role);
+          if(other.length)editor74El('p','Gleiche Kopplung außerdem: '+other.map(p=>p.name).join(' · '),linked);
+          status.textContent=meta.unknown.length?'Weitere manuelle Angaben bleiben erhalten: '+meta.unknown.join(', '):'Auswahl und Kodierung sind synchron.';
+        }
+        raw.oninput=sync;sync();
+        state.validate=()=>{
+          // Unveränderte Alt-Daten dürfen immer unverändert gespeichert werden.
+          if(raw.value===state.initialRaw)return true;
+          if(/[\[\]]/.test(raw.value)){status.textContent='Hier nur den Inhalt ohne äußere eckige Klammern eingeben.';return false;}
+          const tokens=raw.value.replace(/#/g,'').split(',').map(t=>t.trim()).filter(Boolean);
+          const pairs=tokens.filter(t=>/^P:/i.test(t));
+          if(pairs.length>1||pairs.some(t=>!/^P:[MS]:[^:,\s\[\]#]+(?::@)?$/i.test(t))){status.textContent='Bitte genau eine gültige Master-/Slave-Kopplung mit Kennung angeben.';return false;}
+          const dateToken=tokens.find(t=>/^pw:/i.test(t));
+          if(dateToken){const m=dateToken.match(/^pw:(\d{1,2})\.(\d{1,2})\.(\d{4})$/i);const d=m?new Date(+m[3],+m[2]-1,+m[1]):null;if(!m||d.getFullYear()!==+m[3]||d.getMonth()!==+m[2]-1||d.getDate()!==+m[1]){status.textContent='Bitte ein gültiges Startdatum auswählen (TT.MM.JJJJ).';return false;}}
+          return true;
+        };
+        state.persist=()=>{
+          // Nur zugewiesene neue Gruppen dauerhaft übernehmen; Abbrechen bleibt folgenlos.
+          const catalog=new Map(editor74Catalog().map(g=>[g.key,g]));
+          editor74Parse(raw.value).groups.forEach(g=>catalog.set(g.key,{name:g.name,base:g.base,key:g.key}));
+          appStorage.setItem('editorGroupsV74',JSON.stringify([...catalog.values()]));
+        };
+        return state;
+      }
+
+      function editor74ManageGroups() {
+        closeMenuOverlayMain();
+        const overlay=editor74El('div',null,document.body);overlay.className='popup-container';overlay.id='editor74Manager';
+        const panel=editor74El('div',null,overlay);panel.className='popup-content e74-manager';
+        editor74El('h3','Gruppen verwalten',panel);
+        const choice=editor74Field(panel,'Gruppe auswählen','select');
+        const name=editor74Field(panel,'Gruppenname');const id=editor74Field(panel,'Kennung / Index');
+        editor74El('p','Name und Kennung sind unabhängig. Änderungen gelten für alle Barcodes der ausgewählten Gruppe. Der erste Buchstabe der Kennung muss frei sein.',panel).className='e74-help';
+        const error=editor74El('p','',panel);error.className='e74-error';error.setAttribute('role','alert');
+        let catalog=editor74Catalog();
+        const refresh=()=>{choice.replaceChildren();editor74Option(choice,'','＋ Neue Gruppe');catalog.forEach(g=>editor74Option(choice,g.key,g.name+' ('+g.base+')'));};
+        refresh();if(catalog.length)choice.value=catalog[0].key;
+        const select=()=>{const g=catalog.find(g=>g.key===choice.value);name.value=g?g.name:'';id.value=g?g.base:'';error.textContent='';};choice.onchange=select;select();
+        const actions=editor74El('div',null,panel);actions.className='e74-actions';
+        const close=()=>closeViewportLockedOverlay(overlay,{removeFromDom:true});
+        editor74Button(actions,'Speichern',()=>{
+          const old=catalog.find(g=>g.key===choice.value), newName=name.value.trim(), base=id.value.trim();
+          error.textContent=editor74GroupCheck(newName,base,catalog,old?.key);if(error.textContent)return;
+          const key=base.charAt(0).toUpperCase();
+          const rename=text=>{
+            const slash=text.indexOf('/');if(slash<0||!old)return text;
+            return text.slice(0,slash+1)+text.slice(slash+1).replace(/\[([^\]]*)\]/g,(whole,content)=>'['+content.split(',').map(part=>{
+              const token=part.replace(/#/g,'').trim();const g=editor74Parse(token).groups[0];
+              if(!g||g.key!==old.key)return part;
+              const replacement='&'+newName+':'+base+g.order;
+              return part.replace(token,()=>replacement);
+            }).join(',')+']');
+          };
+          const before=editor74Barcodes(),after=before.map(rename);
+          if(old&&!saveBarcodesStrict(after,'editor')){error.textContent='Speichern fehlgeschlagen.';return;}
+          // Jede gespeicherte Gruppenreihenfolge referenziert vollständige Barcode-Zeilen.
+          getAllGroupOrderingKeys().forEach(k=>{try{const list=JSON.parse(appStorage.getItem(k)||'[]');appStorage.setItem(k,JSON.stringify(list.map(rename)));}catch(_) {}});
+          if(old&&old.key!==key){
+            ['groupOrdering_','languageMode_'].forEach(prefix=>{const value=appStorage.getItem(prefix+old.key);if(value!==null){appStorage.setItem(prefix+key,value);appStorage.removeItem(prefix+old.key);}});
+            if(appStorage.getItem('selectedGroup')===old.key)appStorage.setItem('selectedGroup',key);
+            if(groupMarkerState[old.key]){groupMarkerState[key]=groupMarkerState[old.key];delete groupMarkerState[old.key];}
+          }
+          catalog=catalog.filter(g=>g.key!==old?.key);catalog.push({name:newName,base,key});
+          appStorage.setItem('editorGroupsV74',JSON.stringify(catalog));
+          const filter=document.getElementById('groupFilter');const selected=old&&filter.value===old.key?key:filter.value;
+          loadBarcodes();if([...filter.options].some(o=>o.value===selected))filter.value=selected;
+          filterAndSortBarcodesByGroup(filter.value);
+          showToast(old?'Gruppe in allen Barcodes aktualisiert.':'Gruppe erstellt. Sie steht im Barcode-Editor zur Auswahl.','success');close();
+        });
+        editor74Button(actions,'Abbrechen',close);
+        overlay.onclick=e=>{if(e.target===overlay)close();};
+        openViewportLockedOverlay(overlay,'#editor74Manager .popup-content');
+      }
+
       function openEditPopup(initialText, callback) {
         const overlay = document.getElementById("editPopupOverlay");
         const codeInput = document.getElementById("editCodeInput");
@@ -9582,6 +10514,8 @@ In den App-Namensraum importieren?`)
           bracketInput.value = "";
         }
 
+        const editorState = editor74Setup(initialText);
+        document.getElementById('editor74Raw').open = false;
         // Füge (einmalig) einen "input"-Listener hinzu, der während des Tippens den Code‑Teil (bis zum "/")
         // automatisch transformiert – ohne den Rest zu verändern.
         if (!codeInput.dataset.listenerAdded) {
@@ -9616,50 +10550,26 @@ In den App-Namensraum importieren?`)
         };
 
         document.getElementById("editSaveButton").onclick = function () {
-          const restoredCode = restoreSpecialChars(codeInput.value);
-          const normalizedLabel = String(labelInput.value || "").trim();
-
-          // Verarbeite die Zeilenumbrüche im Textarea und konvertiere sie zurück in eine kommagetrennte Liste
-          let newBracket = bracketInput.value
-            .split("\n") // Trenne an Zeilenumbrüchen
-            .map((line) => line.trim()) // Entferne Leerzeichen am Anfang und Ende jeder Zeile
-            .filter((line) => line) // Filtere leere Zeilen heraus
-            .join(", ") // Verbinde wieder mit Komma und Leerzeichen
-            .replace(/,\s*,/g, ",") // Entferne doppelte Kommas
-            .trim(); // Entferne Leerzeichen am Anfang und Ende
-
-          // Füge ein fehlendes Komma hinzu, wenn eine Zeile nicht mit Komma endet
-          newBracket = newBracket.replace(/([^,])(\s*)$/g, "$1");
-
-          // Überprüfe, ob ein pw:-Token ohne Datum vorhanden ist
-          if (newBracket) {
-            // Ersetze alle "pw:" Tokens ohne Datum durch "pw:" + heutiges Datum
-            newBracket = newBracket.replace(
-              /\bpw:\s*(?!\d{1,2}\.\d{1,2}\.\d{4})\b/gi,
-              function () {
-                // Heutiges Datum im Format TT.MM.JJJJ
-                const today = getDeviceNow();
-                return (
-                  "pw:" +
-                  pad2(today.getDate()) +
-                  "." +
-                  pad2(today.getMonth() + 1) +
-                  "." +
-                  today.getFullYear()
-                );
-              },
-            );
+          if (!editorState.validate()) {
+            document.getElementById('e74Status').scrollIntoView({block:'nearest'});
+            return;
           }
-
-          const finalText = composeBarcodeText(
-            restoredCode,
-            normalizedLabel,
-            newBracket,
-          );
+          const unchanged = codeInput.value === editorState.initialCode && labelInput.value === editorState.initialLabel && bracketInput.value === editorState.initialRaw;
+          let finalText = initialText;
+          if (!unchanged) {
+            const restoredCode = restoreSpecialChars(codeInput.value);
+            const originalSlash = initialText.indexOf('/');
+            let originalRest = originalSlash >= 0 ? initialText.slice(originalSlash + 1) : '';
+            const newBracket = bracketInput.value.split(/[,\n]+/).map(t => t.trim()).filter(Boolean).join(', ');
+            if (labelInput.value === editorState.initialLabel) {
+              if (/\[[^\]]*\]/.test(originalRest)) originalRest = originalRest.replace(/\[[^\]]*\]/, () => newBracket ? '['+newBracket+']' : '');
+              else if(newBracket) originalRest += '['+newBracket+']';
+              finalText = restoredCode + '/' + originalRest;
+            } else finalText = composeBarcodeText(restoredCode, labelInput.value, newBracket);
+          }
+          editorState.persist();
           closeViewportLockedOverlay(overlay);
           callback(finalText);
-
-          // Die Passwortdatum-Prüfung wurde entfernt
         };
 
         document.getElementById("editCancelButton").onclick = function () {
@@ -11312,7 +12222,7 @@ In den App-Namensraum importieren?`)
           if (event.key === "Enter") {
             event.preventDefault();
             const input = event.target;
-            let text = input.value;
+            let text = restoreSpecialCharsOnlyInBarcodeCode(input.value);
 
             if (text) {
               // STRENGE KONTROLLE: Neuen Barcode zur globalen Liste hinzufügen
@@ -12633,250 +13543,6 @@ In den App-Namensraum importieren?`)
 
       // Die showPasswordExpiredOverlay-Funktion wurde entfernt
 
-      function performGroupRename(
-        oldGroupLetter,
-        oldOriginalName,
-        newGroupLetter,
-        newGroupName,
-      ) {
-        let allBarcodes = JSON.parse(appStorage.getItem("barcodes")) || [];
-        let modifiedBarcodes = [];
-        let changesMade = false;
-
-        allBarcodes.forEach((barcodeText) => {
-          let [codePart, labelPart = ""] = barcodeText.split("/");
-          let originalLabelPart = labelPart; // Keep a copy for comparison if no changes are made to tokens
-
-          const bracketRegex = /\[([^\]]*)\]/;
-          const bracketMatch = labelPart.match(bracketRegex);
-          let newTokens = [];
-          let groupTokensModified = false;
-
-          if (bracketMatch && bracketMatch[1]) {
-            let contentInsideBrackets = bracketMatch[1];
-            let tokens = contentInsideBrackets
-              .split(",")
-              .map((t) => t.trim())
-              .filter((t) => t);
-
-            tokens.forEach((token) => {
-              if (token.startsWith("&")) {
-                const groupSpecificInfo = parsePairInfo("[" + token + "]"); // Parse token in context
-                if (groupSpecificInfo.groups.length > 0) {
-                  const currentGroup = groupSpecificInfo.groups[0];
-                  if (
-                    currentGroup.groupLetter.toUpperCase() ===
-                    oldGroupLetter.toUpperCase()
-                  ) {
-                    let [_groupNamePart, idPart = ""] =
-                      currentGroup.groupName.split(":");
-                    //The actual token includes &GroupName:ID. We need to check currentGroup.groupName for oldOriginalName
-                    if (
-                      currentGroup.groupName === oldOriginalName ||
-                      (currentGroup.groupName.split(":")[0] ===
-                        oldOriginalName &&
-                        idPart === "")
-                    ) {
-                      // Check if ID part needs to be updated (e.g. A1 -> B1)
-                      if (
-                        idPart.startsWith(oldGroupLetter) &&
-                        /^\d+$/.test(idPart.substring(1))
-                      ) {
-                        idPart = newGroupLetter + idPart.substring(1);
-                      } else if (
-                        idPart.startsWith(oldGroupLetter.toLowerCase()) &&
-                        /^\d+$/.test(idPart.substring(1))
-                      ) {
-                        idPart =
-                          newGroupLetter.toLowerCase() + idPart.substring(1);
-                      }
-                      // else, ID part is a name or complex ID, keep as is.
-
-                      newTokens.push(
-                        `&${newGroupName}${idPart ? ":" + idPart : ""}`,
-                      );
-                      groupTokensModified = true;
-                      changesMade = true;
-                    } else {
-                      newTokens.push(token); // Not the target group name, keep token
-                    }
-                  } else {
-                    newTokens.push(token); // Not the target group letter, keep token
-                  }
-                } else {
-                  newTokens.push(token); // Not a valid group token by parsePairInfo, keep as is
-                }
-              } else {
-                newTokens.push(token); // Not a group token, keep as is
-              }
-            });
-
-            if (groupTokensModified) {
-              labelPart = labelPart.replace(
-                bracketRegex,
-                `[${newTokens.join(", ")}]`,
-              );
-            }
-          }
-          // Only push to modifiedBarcodes if labelPart actually changed or if it's a new barcodeText composition
-          if (groupTokensModified) {
-            modifiedBarcodes.push(`${codePart}/${labelPart}`);
-          } else {
-            modifiedBarcodes.push(barcodeText); // No changes to this barcode's groups, push original
-          }
-        });
-
-        if (changesMade) {
-          if (saveBarcodesStrict(modifiedBarcodes, "editor")) {
-            const oldOrderingKey = `groupOrdering_${oldGroupLetter}`;
-            const newOrderingKey = `groupOrdering_${newGroupLetter}`;
-            const oldLangKey = `languageMode_${oldGroupLetter}`;
-            const newLangKey = `languageMode_${newGroupLetter}`;
-
-            if (appStorage.getItem(oldOrderingKey)) {
-              const groupOrderDataString = appStorage.getItem(oldOrderingKey);
-              let groupOrderList = JSON.parse(groupOrderDataString || "[]");
-
-              const updatedGroupOrderList = groupOrderList.map(
-                (barcodeInGroupOrder) => {
-                  // This transformation logic must be IDENTICAL to the one applied to allBarcodes
-                  let [codePart, labelPart = ""] =
-                    barcodeInGroupOrder.split("/");
-                  const originalLabelForThisItem = labelPart;
-                  let changedInThisItem = false;
-
-                  const bracketRegexInternal = /\[([^\]]*)\]/;
-                  const bracketMatchInternal =
-                    labelPart.match(bracketRegexInternal);
-
-                  if (bracketMatchInternal && bracketMatchInternal[1]) {
-                    let contentInsideBrackets = bracketMatchInternal[1];
-                    let currentItemTokens = contentInsideBrackets
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter((t) => t);
-                    let newTokensForThisItem = [];
-
-                    currentItemTokens.forEach((token) => {
-                      if (token.startsWith("&")) {
-                        const groupSpecificInfo = parsePairInfo(
-                          "[" + token + "]",
-                        );
-                        if (groupSpecificInfo.groups.length > 0) {
-                          const currentGroup = groupSpecificInfo.groups[0];
-                          if (
-                            currentGroup.groupLetter.toUpperCase() ===
-                              oldGroupLetter.toUpperCase() &&
-                            (currentGroup.groupName === oldOriginalName ||
-                              (currentGroup.groupName.split(":")[0] ===
-                                oldOriginalName &&
-                                (currentGroup.groupName.split(":")[1] || "") ===
-                                  ""))
-                          ) {
-                            let [_gn, idPart = ""] =
-                              currentGroup.groupName.split(":");
-
-                            if (
-                              idPart.toUpperCase().startsWith(oldGroupLetter) &&
-                              /^\d+$/.test(idPart.substring(1))
-                            ) {
-                              idPart = newGroupLetter + idPart.substring(1);
-                            } else if (
-                              idPart
-                                .toLowerCase()
-                                .startsWith(oldGroupLetter.toLowerCase()) &&
-                              /^\d+$/.test(idPart.substring(1))
-                            ) {
-                              idPart =
-                                newGroupLetter.toLowerCase() +
-                                idPart.substring(1);
-                            }
-                            // Else: ID is not letter-based or is complex, keep as is.
-
-                            newTokensForThisItem.push(
-                              `&${newGroupName}${idPart ? ":" + idPart : ""}`,
-                            );
-                            changedInThisItem = true;
-                          } else {
-                            newTokensForThisItem.push(token);
-                          }
-                        } else {
-                          newTokensForThisItem.push(token);
-                        }
-                      } else {
-                        newTokensForThisItem.push(token);
-                      }
-                    });
-
-                    if (changedInThisItem) {
-                      labelPart = labelPart.replace(
-                        bracketRegexInternal,
-                        `[${newTokensForThisItem.join(", ")}]`,
-                      );
-                      return `${codePart}/${labelPart}`;
-                    }
-                  }
-                  return barcodeInGroupOrder; // Return original if no relevant group token was changed
-                },
-              );
-
-              appStorage.setItem(
-                newOrderingKey,
-                JSON.stringify(updatedGroupOrderList),
-              );
-              appStorage.removeItem(oldOrderingKey);
-            }
-            if (appStorage.getItem(oldLangKey)) {
-              appStorage.setItem(newLangKey, appStorage.getItem(oldLangKey));
-              appStorage.removeItem(oldLangKey);
-            }
-
-            const groupFilter = document.getElementById("groupFilter");
-            if (
-              groupFilter.value.toUpperCase() === oldGroupLetter.toUpperCase()
-            ) {
-              appStorage.setItem("selectedGroup", newGroupLetter);
-            }
-
-            loadBarcodes(); // This also calls updateGroupFilterDropdown
-
-            // Attempt to reselect the (new) group in the dropdown
-            if (
-              groupFilter.value.toUpperCase() ===
-                oldGroupLetter.toUpperCase() ||
-              newGroupLetter
-            ) {
-              // Check if newGroupLetter is actually in the dropdown
-              let newLetterOptionExists = Array.from(groupFilter.options).some(
-                (opt) => opt.value === newGroupLetter,
-              );
-              if (newLetterOptionExists) {
-                groupFilter.value = newGroupLetter;
-              } else {
-                // Fallback if newGroupLetter somehow didn't make it (should not happen with loadBarcodes)
-                groupFilter.value = ""; // Select "All Groups"
-              }
-            }
-            filterAndSortBarcodesByGroup(groupFilter.value);
-
-            showToast(
-              `Gruppe "${oldOriginalName}" (${oldGroupLetter}) erfolgreich zu "${newGroupName}" (${newGroupLetter}) umbenannt!`,
-              "success",
-            );
-          } else {
-            showToast(
-              "Fehler beim Speichern der umbenannten Gruppen.",
-              "error",
-            );
-          }
-        } else {
-          showToast(
-            "Keine Barcodes gefunden, die zur Gruppe gehören oder keine Änderungen vorgenommen.",
-            "info",
-          );
-        }
-      }
-
       /******************************************
        * THEME (HELL/DUNKEL) – Ver. 23
        ******************************************/
@@ -13869,20 +14535,585 @@ In den App-Namensraum importieren?`)
       })();
     </script>
 
-    <footer id="appFooter" data-app-version="63">
-      Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">63</span>
+    <div id="appShareOverlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="appShareTitle">
+      <div id="appShareContent">
+        <h3 id="appShareTitle">Teilen</h3>
+        <label class="appShareChoice">
+          <input type="radio" name="appShareMode" value="app" checked>
+          <span><strong>Nur App senden</strong><small>Teilt nur den normalen Link zur aktuellen Web-App.</small></span>
+        </label>
+        <label class="appShareChoice">
+          <input type="radio" name="appShareMode" value="data">
+          <span><strong>App + Daten/Einstellungen senden</strong><small>Barcodes und gespeicherte Einstellungen werden komprimiert in denselben Link eingebettet.</small></span>
+        </label>
+        <div class="appShareActions">
+          <button type="button" id="appShareCancelButton">Abbrechen</button>
+          <button type="button" id="appShareStartButton">Teilen</button>
+        </div>
+      </div>
+    </div>
+
+    <footer id="appFooter" data-app-version="74">
+      <span>Entwickelt von: Bachner Gerhard (Parip69) - Ver.<span id="footerVersion">72</span></span>
+      <button
+        type="button"
+        id="appShareButton"
+        title="App oder App mit Daten/Einstellungen teilen"
+        aria-label="App teilen"
+      >↗</button>
+      <button
+        type="button"
+        id="appUpdateButton"
+        title="Kurz drücken: Update prüfen · Lang drücken: Update-Link ändern"
+        aria-label="Update prüfen. Lange drücken, um den Update-Link zu ändern."
+      >↻ Update</button>
+    </footer>
 
     <script>
-      // Setze die Versionsnummer im Footer und überall zentral
-      document.addEventListener("DOMContentLoaded", function () {
-        var version = document.documentElement.getAttribute("data-app-version") || "?";
-        var footerVersion = document.getElementById("footerVersion");
-        if (footerVersion) footerVersion.textContent = version;
-        // Optional: weitere Stellen automatisch ersetzen
-        // z.B. document.querySelectorAll('.version-text').forEach(el => el.textContent = version);
-      });
+      // Footer-Version, Update-Prüfung und Teilen (Ver. 73)
+      (function () {
+        const APP_UPDATE_URL_STORAGE_KEY = "updateSourceUrl";
+        const DEFAULT_APP_UPDATE_URL = "https://parip69.github.io/BarcodeAudi_AndroidAPK/";
+        const APP_UPDATE_LONG_PRESS_MS = 650;
+        let appUpdateLongPressTimer = null;
+        let appUpdateLongPressTriggered = false;
+
+        function openAppShareMenu() {
+          const overlay = document.getElementById("appShareOverlay");
+          if (overlay) overlay.classList.remove("hidden");
+        }
+
+        function closeAppShareMenu() {
+          const overlay = document.getElementById("appShareOverlay");
+          if (overlay) overlay.classList.add("hidden");
+        }
+
+        function bytesToBase64Url(bytes) {
+          let binary = "";
+          const chunk = 0x8000;
+          for (let i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+          }
+          return btoa(binary)
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=+$/g, "");
+        }
+
+        function base64UrlToBytes(value) {
+          let base64 = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+          while (base64.length % 4) base64 += "=";
+          const binary = atob(base64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          return bytes;
+        }
+
+        async function gzipTextToBase64Url(value) {
+          const source = new TextEncoder().encode(String(value || ""));
+          if (typeof CompressionStream !== "function") {
+            return "b." + bytesToBase64Url(source);
+          }
+          const stream = new Blob([source]).stream().pipeThrough(new CompressionStream("gzip"));
+          const packed = new Uint8Array(await new Response(stream).arrayBuffer());
+          return "g." + bytesToBase64Url(packed);
+        }
+
+        async function decodeSharedPayload(value) {
+          const raw = String(value || "");
+          const dot = raw.indexOf(".");
+          const mode = dot > 0 ? raw.slice(0, dot) : "b";
+          const encoded = dot > 0 ? raw.slice(dot + 1) : raw;
+          let bytes = base64UrlToBytes(encoded);
+
+          if (mode === "g") {
+            if (typeof DecompressionStream !== "function") {
+              throw new Error("Dieser Browser kann die komprimierten Share-Daten nicht öffnen.");
+            }
+            const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+            bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+          }
+          return JSON.parse(new TextDecoder().decode(bytes));
+        }
+
+        function getShareBaseUrl() {
+          try {
+            const configured = normalizeUpdateUrl(getAppUpdateUrl());
+            const url = new URL(configured, window.location.href);
+            url.search = "";
+            url.hash = "";
+            return url.toString();
+          } catch (_) {
+            return DEFAULT_APP_UPDATE_URL;
+          }
+        }
+
+        async function buildAppShareUrl(includeData) {
+          const url = new URL(getShareBaseUrl());
+          if (!includeData) return url.toString();
+
+          const keys = appStorage
+            .keys()
+            .filter((key) => !String(key).startsWith("__"));
+          const payload = buildLocalExportPayload(keys);
+          const encoded = await gzipTextToBase64Url(JSON.stringify(payload));
+          url.searchParams.set("share", encoded);
+          return url.toString();
+        }
+
+        async function shareAppNow() {
+          const button = document.getElementById("appShareStartButton");
+          const mode = document.querySelector('input[name="appShareMode"]:checked')?.value || "app";
+          const includeData = mode === "data";
+
+          try {
+            if (button) {
+              button.disabled = true;
+              button.textContent = "Wird erstellt…";
+            }
+
+            const shareUrl = await buildAppShareUrl(includeData);
+            closeAppShareMenu();
+
+            if (includeData && shareUrl.length > 60000) {
+              const proceed = confirm(
+                "Der Share-Link ist sehr groß (" +
+                  Math.round(shareUrl.length / 1024) +
+                  " KB). Manche Messenger kürzen sehr lange Links.\n\nTrotzdem teilen?"
+              );
+              if (!proceed) return;
+            }
+
+            const shareData = {
+              title: "Audi Barcode-Scanner",
+              text: includeData
+                ? "Audi Barcode Scanner – App mit Barcodes & Einstellungen öffnen"
+                : "Audi Barcode Scanner – App öffnen",
+              url: shareUrl,
+            };
+
+            if (navigator.share) {
+              await navigator.share(shareData);
+            } else if (navigator.clipboard && window.isSecureContext) {
+              await navigator.clipboard.writeText(shareUrl);
+              showAppUpdateMessage("Share-Link wurde in die Zwischenablage kopiert.", "success");
+            } else {
+              window.prompt("Diesen Link kopieren und senden:", shareUrl);
+            }
+          } catch (error) {
+            if (error && error.name === "AbortError") return;
+            console.warn("Teilen fehlgeschlagen", error);
+            showAppUpdateMessage(
+              "Teilen nicht möglich: " + (error?.message || "Unbekannter Fehler"),
+              "error"
+            );
+          } finally {
+            if (button) {
+              button.disabled = false;
+              button.textContent = "Teilen";
+            }
+          }
+        }
+
+        async function importSharedDataFromUrl() {
+          let url;
+          try {
+            url = new URL(window.location.href);
+          } catch (_) {
+            return;
+          }
+
+          const shared = url.searchParams.get("share");
+          if (!shared) return;
+
+          // Daten sofort aus der sichtbaren URL entfernen. So werden sie nicht versehentlich erneut geteilt.
+          url.searchParams.delete("share");
+          try {
+            history.replaceState(null, "", url.pathname + (url.search || "") + (url.hash || ""));
+          } catch (_) {}
+
+          try {
+            const payload = await decodeSharedPayload(shared);
+            const entries = parseLocalStorageImportPayload(JSON.stringify(payload));
+            const confirmed = confirm(
+              "Dieser Link enthält " +
+                entries.length +
+                " Barcode-/Einstellungs-Einträge.\n\n" +
+                "Übernehmen?\n\n" +
+                "Achtung: Die bisherigen lokalen Daten dieser App werden dabei ersetzt."
+            );
+
+            if (!confirmed) {
+              showAppUpdateMessage("Geteilte Daten wurden nicht übernommen.", "success");
+              return;
+            }
+
+            appStorage.clear();
+            entries.forEach(([key, value]) => appStorage.setItem(key, value));
+
+            try {
+              refreshUiAfterFullLocalImport();
+            } catch (error) {
+              console.warn("UI-Aktualisierung nach Share-Import unvollständig", error);
+            }
+            try {
+              applyStoredConsentState();
+            } catch (_) {}
+
+            showToast(
+              `Geteilte Daten übernommen (${entries.length} Einträge)!`,
+              "success"
+            );
+          } catch (error) {
+            console.warn("Share-Import fehlgeschlagen", error);
+            showAppUpdateMessage(
+              "Geteilte Daten konnten nicht gelesen werden: " +
+                (error?.message || "Ungültiger Share-Link"),
+              "error"
+            );
+          }
+        }
+
+        function updateFooterVersion() {
+          const version = document.documentElement.getAttribute("data-app-version") || "?";
+          const footer = document.getElementById("appFooter");
+          const footerVersion = document.getElementById("footerVersion");
+          if (footer) footer.setAttribute("data-app-version", version);
+          if (footerVersion) footerVersion.textContent = version;
+        }
+
+        function getAppUpdateUrl() {
+          try {
+            const stored = String(
+              appStorage.getItem(APP_UPDATE_URL_STORAGE_KEY) || "",
+            ).trim();
+            if (!stored) {
+              appStorage.setItem(APP_UPDATE_URL_STORAGE_KEY, DEFAULT_APP_UPDATE_URL);
+              return DEFAULT_APP_UPDATE_URL;
+            }
+            return stored;
+          } catch (_) {
+            return DEFAULT_APP_UPDATE_URL;
+          }
+        }
+
+        function setAppUpdateUrl(value) {
+          const normalized = String(value || "").trim();
+          appStorage.setItem(APP_UPDATE_URL_STORAGE_KEY, normalized);
+          return normalized;
+        }
+
+        function normalizeUpdateUrl(rawUrl) {
+          const value = String(rawUrl || "").trim();
+          if (!value) return "";
+          try {
+            const parsed = new URL(value, window.location.href);
+            if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+              throw new Error("Nur http/https erlaubt");
+            }
+            return parsed.toString();
+          } catch (_) {
+            throw new Error("Bitte einen gültigen http- oder https-Link eingeben.");
+          }
+        }
+
+        function syncAppUpdateKeyboardViewport() {
+          const overlay = document.getElementById("appUpdateSettingsOverlay");
+          const input = document.getElementById("appUpdateUrlInput");
+          if (!overlay || !input || overlay.classList.contains("hidden")) return;
+          if (document.activeElement !== input) return;
+
+          const viewport = window.visualViewport;
+          const visibleHeight = Math.max(220, Math.floor(viewport?.height || window.innerHeight || 0));
+          const visibleTop = Math.max(0, Math.floor(viewport?.offsetTop || 0));
+
+          overlay.classList.add("app-update-keyboard-active");
+          overlay.style.top = `${visibleTop}px`;
+          overlay.style.height = `${visibleHeight}px`;
+          overlay.style.bottom = "auto";
+          overlay.style.setProperty("--app-update-visible-height", `${visibleHeight}px`);
+
+          requestAnimationFrame(() => {
+            try {
+              input.scrollIntoView({ block: "nearest", inline: "nearest" });
+            } catch (_) {
+              input.scrollIntoView(false);
+            }
+          });
+        }
+
+        function resetAppUpdateKeyboardViewport() {
+          const overlay = document.getElementById("appUpdateSettingsOverlay");
+          if (!overlay) return;
+          overlay.classList.remove("app-update-keyboard-active");
+          overlay.style.top = "";
+          overlay.style.height = "";
+          overlay.style.bottom = "";
+          overlay.style.removeProperty("--app-update-visible-height");
+        }
+
+        function scheduleAppUpdateKeyboardViewportSync() {
+          syncAppUpdateKeyboardViewport();
+          window.setTimeout(syncAppUpdateKeyboardViewport, 60);
+          window.setTimeout(syncAppUpdateKeyboardViewport, 220);
+          window.setTimeout(syncAppUpdateKeyboardViewport, 420);
+        }
+
+        function openAppUpdateSettings() {
+          const overlay = document.getElementById("appUpdateSettingsOverlay");
+          const input = document.getElementById("appUpdateUrlInput");
+          if (!overlay || !input) return;
+          input.value = getAppUpdateUrl();
+          resetAppUpdateKeyboardViewport();
+          overlay.classList.remove("hidden");
+          overlay.setAttribute("aria-hidden", "false");
+          setTimeout(() => {
+            try {
+              input.focus({ preventScroll: true });
+              input.setSelectionRange(input.value.length, input.value.length);
+            } catch (_) {}
+            scheduleAppUpdateKeyboardViewportSync();
+          }, 80);
+        }
+
+        function closeAppUpdateSettings() {
+          const overlay = document.getElementById("appUpdateSettingsOverlay");
+          if (!overlay) return;
+          resetAppUpdateKeyboardViewport();
+          overlay.classList.add("hidden");
+          overlay.setAttribute("aria-hidden", "true");
+        }
+
+        function closeAppUpdateAvailable() {
+          const overlay = document.getElementById("appUpdateAvailableOverlay");
+          if (!overlay) return;
+          overlay.classList.add("hidden");
+          overlay.setAttribute("aria-hidden", "true");
+        }
+
+        function showAppUpdateAvailable(currentVersion, remoteVersion) {
+          const overlay = document.getElementById("appUpdateAvailableOverlay");
+          const status = document.getElementById("appUpdateAvailableStatus");
+          if (!overlay || !status) return;
+          status.textContent = `Installiert: Ver.${currentVersion} · Verfügbar: Ver.${remoteVersion}`;
+          overlay.classList.remove("hidden");
+          overlay.setAttribute("aria-hidden", "false");
+        }
+
+        function extractPublishedVersion(htmlText) {
+          const text = String(htmlText || "");
+          if (!text) return "";
+          try {
+            const parsed = new DOMParser().parseFromString(text, "text/html");
+            const htmlVersion = String(parsed.documentElement?.getAttribute("data-app-version") || "").trim();
+            if (htmlVersion) return htmlVersion;
+            const footerVersion = String(parsed.getElementById("appFooter")?.getAttribute("data-app-version") || "").trim();
+            if (footerVersion) return footerVersion;
+            const footerText = String(parsed.getElementById("appFooter")?.textContent || "");
+            const match = footerText.match(/\bVer\.\s*([0-9A-Za-z._-]+)\b/i);
+            if (match) return match[1];
+          } catch (_) {}
+          const attrMatch = text.match(/data-app-version=["']([^"']+)["']/i);
+          return attrMatch ? attrMatch[1].trim() : "";
+        }
+
+        function splitVersionParts(version) {
+          const matches = String(version || "").match(/\d+/g);
+          return matches ? matches.map((value) => Number(value)) : [];
+        }
+
+        function compareAppVersions(left, right) {
+          const a = splitVersionParts(left);
+          const b = splitVersionParts(right);
+          if (!a.length || !b.length) {
+            return String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: "base" });
+          }
+          const length = Math.max(a.length, b.length);
+          for (let i = 0; i < length; i++) {
+            const av = a[i] || 0;
+            const bv = b[i] || 0;
+            if (av > bv) return 1;
+            if (av < bv) return -1;
+          }
+          return 0;
+        }
+
+        function showAppUpdateMessage(message, type = "success") {
+          if (typeof showToast === "function") showToast(message, type);
+          else window.alert(message);
+        }
+
+        async function checkForAppUpdate() {
+          const button = document.getElementById("appUpdateButton");
+          const storedUrl = getAppUpdateUrl();
+          if (!storedUrl) {
+            openAppUpdateSettings();
+            return;
+          }
+
+          let updateUrl;
+          try {
+            updateUrl = normalizeUpdateUrl(storedUrl);
+          } catch (error) {
+            showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+            openAppUpdateSettings();
+            return;
+          }
+
+          if (button) {
+            button.disabled = true;
+            button.textContent = "Prüfe…";
+          }
+
+          try {
+            const checkUrl = new URL(updateUrl);
+            checkUrl.searchParams.set("_barcodeUpdateCheck", String(Date.now()));
+            const response = await fetch(checkUrl.toString(), {
+              method: "GET",
+              cache: "no-store",
+              redirect: "follow",
+              credentials: "omit",
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const remoteVersion = extractPublishedVersion(await response.text());
+            if (!remoteVersion) throw new Error("Auf der Update-Seite wurde keine Versionsnummer gefunden.");
+
+            const currentVersion = String(getCurrentAppVersion() || "").trim();
+            if (compareAppVersions(remoteVersion, currentVersion) > 0) {
+              showAppUpdateAvailable(currentVersion, remoteVersion);
+            } else {
+              showAppUpdateMessage(
+                `Keine neue Version. Installiert: Ver.${currentVersion} · Online: Ver.${remoteVersion}`,
+                "success",
+              );
+            }
+          } catch (error) {
+            console.warn("Update-Prüfung fehlgeschlagen", error);
+            showAppUpdateMessage(
+              `Update-Prüfung nicht möglich: ${error?.message || "Verbindungsfehler"}`,
+              "error",
+            );
+          } finally {
+            if (button) {
+              button.disabled = false;
+              button.textContent = "↻ Update";
+            }
+          }
+        }
+
+        function startAppUpdate() {
+          const updateUrl = getAppUpdateUrl();
+          if (!updateUrl) {
+            closeAppUpdateAvailable();
+            openAppUpdateSettings();
+            return;
+          }
+          closeAppUpdateAvailable();
+          try {
+            window.location.href = normalizeUpdateUrl(updateUrl);
+          } catch (error) {
+            showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+          }
+        }
+
+        function cancelAppUpdateLongPress() {
+          if (appUpdateLongPressTimer !== null) {
+            clearTimeout(appUpdateLongPressTimer);
+            appUpdateLongPressTimer = null;
+          }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+          updateFooterVersion();
+          getAppUpdateUrl();
+
+          const updateButton = document.getElementById("appUpdateButton");
+          const shareButton = document.getElementById("appShareButton");
+          const settingsInput = document.getElementById("appUpdateUrlInput");
+
+          shareButton?.addEventListener("click", openAppShareMenu);
+          document.getElementById("appShareCancelButton")?.addEventListener("click", closeAppShareMenu);
+          document.getElementById("appShareStartButton")?.addEventListener("click", shareAppNow);
+          document.getElementById("appShareOverlay")?.addEventListener("click", function (event) {
+            if (event.target === this) closeAppShareMenu();
+          });
+
+          // Falls die App über einen Share-Link geöffnet wurde, Daten anbieten.
+          setTimeout(importSharedDataFromUrl, 120);
+
+          settingsInput?.addEventListener("focus", scheduleAppUpdateKeyboardViewportSync);
+          settingsInput?.addEventListener("click", scheduleAppUpdateKeyboardViewportSync);
+          settingsInput?.addEventListener("focusout", function () {
+            window.setTimeout(() => {
+              if (document.activeElement !== settingsInput) {
+                resetAppUpdateKeyboardViewport();
+              }
+            }, 180);
+          });
+
+          if (window.visualViewport) {
+            window.visualViewport.addEventListener("resize", syncAppUpdateKeyboardViewport);
+            window.visualViewport.addEventListener("scroll", syncAppUpdateKeyboardViewport);
+          }
+          window.addEventListener("resize", syncAppUpdateKeyboardViewport);
+
+          updateButton?.addEventListener("pointerdown", function () {
+            cancelAppUpdateLongPress();
+            appUpdateLongPressTriggered = false;
+            appUpdateLongPressTimer = window.setTimeout(function () {
+              appUpdateLongPressTimer = null;
+              appUpdateLongPressTriggered = true;
+              try { navigator.vibrate?.(30); } catch (_) {}
+              openAppUpdateSettings();
+            }, APP_UPDATE_LONG_PRESS_MS);
+          });
+          ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+            updateButton?.addEventListener(eventName, cancelAppUpdateLongPress);
+          });
+          updateButton?.addEventListener("contextmenu", (event) => event.preventDefault());
+          updateButton?.addEventListener("click", function (event) {
+            if (appUpdateLongPressTriggered) {
+              appUpdateLongPressTriggered = false;
+              event.preventDefault();
+              return;
+            }
+            checkForAppUpdate();
+          });
+
+          document.getElementById("appUpdateSettingsSaveButton")?.addEventListener("click", function () {
+            try {
+              const normalized = normalizeUpdateUrl(settingsInput?.value || "");
+              setAppUpdateUrl(normalized);
+              closeAppUpdateSettings();
+              showAppUpdateMessage("Update-Link gespeichert.", "success");
+            } catch (error) {
+              showAppUpdateMessage(error.message || "Update-Link ist ungültig.", "error");
+              settingsInput?.focus();
+            }
+          });
+          document.getElementById("appUpdateClearUrlButton")?.addEventListener("click", function () {
+            setAppUpdateUrl("");
+            if (settingsInput) settingsInput.value = "";
+            closeAppUpdateSettings();
+            showAppUpdateMessage("Update-Link gelöscht.", "success");
+          });
+          document.getElementById("appUpdateSettingsCancelButton")?.addEventListener("click", closeAppUpdateSettings);
+          document.getElementById("appUpdateAvailableCancelButton")?.addEventListener("click", closeAppUpdateAvailable);
+          document.getElementById("appUpdateStartButton")?.addEventListener("click", startAppUpdate);
+
+          [
+            document.getElementById("appUpdateSettingsContent"),
+            document.getElementById("appUpdateAvailableContent"),
+          ].forEach((content) => {
+            ["pointerdown", "mousedown", "touchstart", "click"].forEach((eventName) => {
+              content?.addEventListener(eventName, (event) => event.stopPropagation(), {
+                passive: eventName !== "touchstart",
+              });
+            });
+          });
+        });
+      })();
     </script>
-    </footer>
 
     <script>
       (function() {
