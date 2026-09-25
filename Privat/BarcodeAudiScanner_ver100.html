@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 100 -->
+<!-- Barcode Audi Scanner - Ver. 102 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
 <html lang="de" data-app-version="100">
   <head>
@@ -3640,13 +3640,24 @@
         color: #fff;
       }
 
-      /* Update-Button im Footer (Ver. 70) */
+      /* Footer bündig mit dem übergeordneten Hauptcontainer (Ver. 102) */
       #appFooter {
         display: flex;
         align-items: center;
         justify-content: flex-start;
         gap: 5px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        width: min(100%, 1126px);
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 0;
+        padding-right: 0;
+        box-sizing: border-box;
+      }
+
+      #appFooter > span {
+        min-width: 0;
+        white-space: nowrap;
       }
 
       #appShareButton,
@@ -12079,9 +12090,17 @@ In den App-Namensraum importieren?`)
         }
 
         // 2. Web Share API (Browser, moderne WebViews)
-        // Bevorzugt immer JSON. TXT bleibt nur als Kompatibilitäts-Fallback
-        // für Messenger/WebViews, die JSON-Dateien beim Teilen ablehnen.
         const fileVariants = [
+          new File(
+            [new Blob([safeJsonText], { type: "text/plain;charset=utf-8" })],
+            shareTxtFileName,
+            { type: "text/plain" },
+          ),
+          new File(
+            [new Blob([safeJsonText], { type: "text/plain;charset=utf-8" })],
+            finalJsonFileName,
+            { type: "text/plain" },
+          ),
           new File(
             [
               new Blob([safeJsonText], {
@@ -12091,20 +12110,10 @@ In den App-Namensraum importieren?`)
             finalJsonFileName,
             { type: "application/json" },
           ),
-          new File(
-            [new Blob([safeJsonText], { type: "text/plain;charset=utf-8" })],
-            finalJsonFileName,
-            { type: "text/plain" },
-          ),
+          new File([safeJsonText], shareTxtFileName, { type: "text/plain" }),
           new File([safeJsonText], finalJsonFileName, {
             type: "application/octet-stream",
           }),
-          new File(
-            [new Blob([safeJsonText], { type: "text/plain;charset=utf-8" })],
-            shareTxtFileName,
-            { type: "text/plain" },
-          ),
-          new File([safeJsonText], shareTxtFileName, { type: "text/plain" }),
         ];
 
         if (navigator.share) {
@@ -14924,11 +14933,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="100">
+    <footer id="appFooter" data-app-version="102">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">100</span>
+        - Ver.<span id="footerVersion">102</span>
       </span>
       <button
         type="button"
