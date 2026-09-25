@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 91 -->
+<!-- Barcode Audi Scanner - Ver. 93 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="93">
+<html lang="de" data-app-version="94">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3741,6 +3741,170 @@
         font-weight: 700;
       }
 
+      .manual-developer-intro {
+        margin: 0 0 14px;
+        padding: 10px 12px;
+        border: 1px solid rgba(122, 167, 199, 0.55);
+        border-radius: 9px;
+        background: rgba(238, 247, 255, 0.72);
+      }
+      .manual-developer-intro p {
+        margin: 6px 0 0;
+        line-height: 1.45;
+      }
+
+      #developerInfoLink {
+        color: inherit;
+        font-weight: 700;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+      }
+      #developerInfoLink:hover,
+      #developerInfoLink:focus-visible {
+        color: #165b87;
+      }
+
+      #developerInfoOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10070;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        box-sizing: border-box;
+        background: rgba(0, 0, 0, 0.52);
+      }
+      #developerInfoOverlay.hidden {
+        display: none !important;
+      }
+      #developerInfoContent {
+        position: relative;
+        width: min(94vw, 720px);
+        max-height: min(90vh, 760px);
+        overflow: auto;
+        background: #fff;
+        color: #111;
+        border-radius: 14px;
+        padding: 20px;
+        box-sizing: border-box;
+        box-shadow: 0 16px 42px rgba(0, 0, 0, 0.32);
+      }
+      #developerInfoContent h3 {
+        margin: 0 42px 4px 0;
+        font-size: 23px;
+      }
+      #developerInfoContent .developer-subtitle {
+        margin: 0 42px 12px 0;
+        color: #4b6474;
+        font-weight: 700;
+      }
+      #developerInfoContent .developer-intro {
+        margin: 0 0 16px;
+        line-height: 1.5;
+      }
+      #developerInfoCloseButton {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        width: 34px;
+        height: 34px;
+        border: 1px solid #aaa;
+        border-radius: 50%;
+        background: #f4f4f4;
+        color: #222;
+        font-size: 20px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .developer-project-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .developer-project-card {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid #c9d6df;
+        border-radius: 12px;
+        background: #f8fbfd;
+        color: #111;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transition: transform .12s ease, box-shadow .12s ease;
+      }
+      .developer-project-card:hover,
+      .developer-project-card:focus-visible {
+        transform: translateY(-1px);
+        box-shadow: 0 7px 16px rgba(0,0,0,0.13);
+      }
+      .developer-project-card img {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #fff;
+      }
+      .developer-project-card .project-card-body {
+        padding: 10px 12px 12px;
+      }
+      .developer-project-card .project-card-title {
+        display: block;
+        margin-bottom: 3px;
+        font-weight: 800;
+        font-size: 15px;
+      }
+      .developer-project-card .project-card-text {
+        display: block;
+        color: #51606a;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .developer-project-card.math-card {
+        min-height: 168px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(145deg, #eef7ff, #ffffff);
+      }
+      .math-card-inner {
+        display: grid;
+        grid-template-columns: 76px 1fr;
+        gap: 14px;
+        align-items: center;
+        width: 100%;
+        padding: 22px;
+        box-sizing: border-box;
+      }
+      .math-card-icon {
+        display: grid;
+        place-items: center;
+        width: 76px;
+        height: 76px;
+        border-radius: 18px;
+        background: #165b87;
+        color: #fff;
+        font-size: 38px;
+        font-weight: 800;
+      }
+      .developer-contact-note {
+        margin: 16px 0 0;
+        padding-top: 12px;
+        border-top: 1px solid #ddd;
+        color: #4a4a4a;
+        font-size: 13px;
+      }
+      @media (max-width: 520px) {
+        #developerInfoContent {
+          padding: 17px 14px;
+        }
+        .developer-project-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
       #appUpdateSettingsContent,
       #appUpdateAvailableContent {
         width: min(92vw, 430px);
@@ -5262,8 +5426,21 @@
           >
         </p>
       </div>
-      <!-- Legend (mit neuen Funktionen) -->
+      <!-- Legend / Handbuch -->
       <div id="legendContent">
+        <div class="manual-developer-intro">
+          <strong>Über den Entwickler:</strong>
+          <p>
+            Der Audi Barcode Scanner ist ein privates Praxisprojekt von
+            <strong>Bachner Gerhard</strong> und wurde über viele Versionen
+            Schritt für Schritt erweitert. Daneben entwickle ich weitere,
+            teilweise deutlich umfangreichere Projekte – unter anderem einen
+            ESP32-Fingerscanner, die Mathe-App <em>RechenGuru LGI</em> und
+            weitere Anwendungen. Wer Interesse an den Projekten oder an einem
+            Austausch hat, kann mich gerne anfragen. Über meinen Namen in der
+            Fußzeile öffnet sich eine Übersicht mit weiteren Projekten.
+          </p>
+        </div>
         <strong>Legende:</strong>
         <ul>
           <li>
@@ -5303,8 +5480,8 @@
                 fixieren / Hauptbarcode ein‑/ausblenden • <code>👁️</code>/<code
                   >👁️‍🗨️</code
                 >
-                Ausgeblendete zeigen/verbergen • <code>🔄</code> Gruppe
-                umbenennen • <code>🗑️</code> lokale Daten verwalten
+                Ausgeblendete zeigen/verbergen • <code>✏️</code> Gruppen
+                verwalten • <code>🗑️</code> lokale Daten verwalten
               </li>
               <li>
                 <strong>Lokale Daten (🗑️):</strong>
@@ -5398,15 +5575,74 @@
             </ul>
           </li>
           <li>
-            <strong>Gruppensortierung & Filter:</strong>
+            <strong>Gruppenverwaltung, Index &amp; Filter:</strong>
             <ul>
               <li>
-                Gruppeneinträge werden automatisch aus den eckigen Klammern
-                ermittelt.
+                Eine Gruppe besteht aus <strong>Gruppenname</strong> und
+                <strong>Kennung / Index</strong>, z.B.
+                <code>&amp;Andyx:AX</code>. Der Gruppenname ist die gut lesbare
+                Anzeige; der Index ist die eindeutige interne Kennung.
               </li>
               <li>
-                Das Dropdown im Hamburger-Menü wird mit allen vorhandenen
-                Gruppen befüllt.
+                Beim Erstellen einer neuen Gruppe wird als Index automatisch
+                der erste Buchstabe des Gruppennamens vorgeschlagen. Der
+                Vorschlag kann überschrieben werden, z.B. mit
+                <code>A</code>, <code>AX</code> oder <code>A-X</code>.
+              </li>
+              <li>
+                Der vollständige Index muss eindeutig sein. Schon während der
+                Eingabe wird angezeigt, ob der Index frei oder bereits vergeben
+                ist. Neue Indizes der Form <code>A1</code>, <code>A2</code>
+                usw. sind für ältere Listen reserviert.
+              </li>
+              <li>
+                Über <strong>☰ → ✏️ Gruppen verwalten</strong> kann eine
+                bestehende Gruppe ausgewählt und sowohl der Name als auch der
+                Index geändert werden. Die Änderung wird auf die zugehörigen
+                Barcodes und die gespeicherten gruppenbezogenen Einstellungen
+                übernommen.
+              </li>
+              <li>
+                <strong>Kompatibilität mit alten Listen:</strong> ältere
+                Gruppenkennungen wie <code>A1</code> oder <code>A2</code>
+                werden weiterhin erkannt. Die alte Positionszahl wird für die
+                Gruppenzuordnung ignoriert; unveränderte Alt-Einträge bleiben
+                beim Bearbeiten erhalten. Dadurch können alte Importlisten
+                weiterhin verwendet werden.
+              </li>
+              <li>
+                Das Gruppen-Dropdown wird aus den vorhandenen Gruppen aufgebaut.
+                Ist eine Gruppe ausgewählt, kann innerhalb dieser Gruppe mit
+                <code>↑</code>/<code>↓</code> eine eigene Reihenfolge gespeichert
+                werden. Ohne Auswahl werden alle Gruppen angezeigt.
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Teilen &amp; Update:</strong>
+            <ul>
+              <li>
+                <code>↗</code> in der Fußzeile öffnet die Teilen-Auswahl.
+                <strong>Nur App senden</strong> teilt den normalen App-Link.
+                <strong>App + Daten/Einstellungen senden</strong> packt die
+                lokalen Barcodes und Einstellungen komprimiert in denselben
+                Link.
+              </li>
+              <li>
+                Wird ein Link mit eingebetteten Daten geöffnet, fragt die App
+                vor dem Übernehmen nach. Erst nach Bestätigung werden die
+                bisherigen lokalen Daten ersetzt.
+              </li>
+              <li>
+                <code>↻ Update</code> kurz drücken: nach einer neuen Version
+                suchen. Lange drücken: Update-Link und Update-Modus einstellen.
+                Der Standard-Link zeigt auf
+                <code>https://parip69.github.io/BarcodeAudi_AndroidAPK/</code>.
+              </li>
+              <li>
+                Ein gefundenes Update wird in einem zentrierten Hinweisfenster
+                angezeigt. So bleibt die Meldung auch sichtbar, wenn die
+                Barcode-Liste sehr lang ist.
               </li>
             </ul>
           </li>
@@ -5468,7 +5704,7 @@
                 Bezeichnungsteil des Barcodes nach einem Schrägstrich (/) und
                 innerhalb von eckigen Klammern <code>[...]</code> eingegeben.
                 Mehrere Befehle können mit Kommas getrennt werden (z.B.
-                <code>Code123/Label [P:M:123:@, &amp;Gruppe:A1, #]</code>).
+                <code>Code123/Label [P:M:123:@, &amp;Gruppe:AX, #]</code>).
               </li>
             </ul>
           </li>
@@ -5483,6 +5719,13 @@
               <li><code>␍</code> = Enter (CR / Carriage Return)</li>
               <li><code>␊</code> = Zeilenumbruch (LF / Line Feed)</li>
               <li><code>␍␊</code> = Windows-Enter (CRLF)</li>
+              <li>
+                Die sichtbaren Zeichen werden im Editor nur als gut erkennbare
+                Platzhalter dargestellt. Beim Speichern/Scannen werden daraus
+                die echten Steuerzeichen. Die Sonderzeichen gehören in den
+                Barcode-Teil <strong>vor</strong> dem Schrägstrich
+                <code>/</code>.
+              </li>
               <li>
                 <strong>Beispiele:</strong>
                 <ul>
@@ -14571,8 +14814,104 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="91">
-      <span>Entwickler: Bachner Gerhard - Ver.<span id="footerVersion">91</span></span>
+    <div
+      id="developerInfoOverlay"
+      class="hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="developerInfoTitle"
+      aria-hidden="true"
+    >
+      <div id="developerInfoContent">
+        <button
+          type="button"
+          id="developerInfoCloseButton"
+          aria-label="Entwickler-Information schließen"
+          title="Schließen"
+        >×</button>
+        <h3 id="developerInfoTitle">Bachner Gerhard</h3>
+        <p class="developer-subtitle">Entwickler · Audi Barcode Scanner</p>
+        <p class="developer-intro">
+          Der Audi Barcode Scanner ist ein privates Praxisprojekt, das über
+          viele Versionen gewachsen ist. Neben diesem Projekt entwickle ich
+          weitere Anwendungen und Steuerungsprojekte – darunter auch deutlich
+          umfangreichere Lösungen. Hier sind einige Projekte direkt verlinkt:
+        </p>
+
+        <div class="developer-project-grid">
+          <a
+            class="developer-project-card"
+            href="https://fingerscanner.gerhardbachner.chatgpt.site/?teilen=8"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Bachner Gerhard Fingerscanner öffnen"
+          >
+            <img
+              src="data:image/webp;base64,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"
+              alt="Vorschau Bachner Gerhard Fingerscanner"
+            />
+            <span class="project-card-body">
+              <span class="project-card-title">Bachner Gerhard Fingerscanner</span>
+              <span class="project-card-text">
+                ESP32-Fingerscanner mit Weboberfläche, mehreren Ausgängen und
+                umfangreicher Steuerungslogik.
+              </span>
+            </span>
+          </a>
+
+          <a
+            class="developer-project-card"
+            href="https://lianas-backwelt.gerhardbachner.chatgpt.site/teilen?v=1"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Lianas Backwelt öffnen"
+          >
+            <img
+              src="data:image/webp;base64,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"
+              alt="Vorschau Lianas Backwelt"
+            />
+            <span class="project-card-body">
+              <span class="project-card-title">Lianas Backwelt</span>
+              <span class="project-card-text">
+                Back- und Rezeptprojekt mit Produkten, Verwaltung und
+                Präsentationsseite.
+              </span>
+            </span>
+          </a>
+
+          <a
+            class="developer-project-card math-card"
+            href="https://parip69.github.io/RechenGuruLGI_AndroidAPK/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="RechenGuru LGI öffnen"
+          >
+            <span class="math-card-inner">
+              <span class="math-card-icon" aria-hidden="true">∑</span>
+              <span>
+                <span class="project-card-title">RechenGuru LGI</span>
+                <span class="project-card-text">
+                  Mathe-App zum Üben verschiedener Rechenarten mit
+                  individuellen Einstellungen und Aufgaben.
+                </span>
+              </span>
+            </span>
+          </a>
+        </div>
+
+        <p class="developer-contact-note">
+          Wer Interesse an einem Projekt oder an einem technischen Austausch
+          hat, kann mich gerne anfragen.
+        </p>
+      </div>
+    </div>
+
+    <footer id="appFooter" data-app-version="93">
+      <span>
+        Entwickler:
+        <a href="#" id="developerInfoLink">Bachner Gerhard</a>
+        - Ver.<span id="footerVersion">93</span>
+      </span>
       <button
         type="button"
         id="appShareButton"
@@ -14607,6 +14946,22 @@ In den App-Namensraum importieren?`)
         function closeAppShareMenu() {
           const overlay = document.getElementById("appShareOverlay");
           if (overlay) overlay.classList.add("hidden");
+        }
+
+        function openDeveloperInfo() {
+          const overlay = document.getElementById("developerInfoOverlay");
+          if (!overlay) return;
+          overlay.classList.remove("hidden");
+          overlay.setAttribute("aria-hidden", "false");
+          document.getElementById("developerInfoCloseButton")?.focus();
+        }
+
+        function closeDeveloperInfo() {
+          const overlay = document.getElementById("developerInfoOverlay");
+          if (!overlay) return;
+          overlay.classList.add("hidden");
+          overlay.setAttribute("aria-hidden", "true");
+          document.getElementById("developerInfoLink")?.focus();
         }
 
         function bytesToBase64Url(bytes) {
@@ -15429,6 +15784,21 @@ In den App-Namensraum importieren?`)
           document.getElementById("appShareStartButton")?.addEventListener("click", shareAppNow);
           document.getElementById("appShareOverlay")?.addEventListener("click", function (event) {
             if (event.target === this) closeAppShareMenu();
+          });
+
+          document.getElementById("developerInfoLink")?.addEventListener("click", function (event) {
+            event.preventDefault();
+            openDeveloperInfo();
+          });
+          document.getElementById("developerInfoCloseButton")?.addEventListener("click", closeDeveloperInfo);
+          document.getElementById("developerInfoOverlay")?.addEventListener("click", function (event) {
+            if (event.target === this) closeDeveloperInfo();
+          });
+          document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+              const overlay = document.getElementById("developerInfoOverlay");
+              if (overlay && !overlay.classList.contains("hidden")) closeDeveloperInfo();
+            }
           });
 
           // Falls die App über einen Share-Link geöffnet wurde, Daten anbieten.
