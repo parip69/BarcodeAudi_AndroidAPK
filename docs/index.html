@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Barcode Audi Scanner - Ver. 103 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="101">
+<html lang="de" data-app-version="102">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -4024,7 +4024,7 @@
         cursor: pointer;
       }
 
-      /* Ver. 103: Bei gleicher/älterer Online-Version bewusst bestätigen.
+      /* Bei einer älteren Online-Version bewusst bestätigen.
          Ja links, Nein rechts, damit die sichere Ablehnung rechts bleibt. */
       #appUpdateAvailableContent .app-update-buttons.force-update-choice {
         justify-content: space-between;
@@ -5670,7 +5670,7 @@
                 bisherigen lokalen Daten ersetzt.
               </li>
               <li>
-                <code>↻ Update</code> kurz drücken: nach einer neuen Version
+                <code>↻</code> kurz drücken: nach einer neuen Version
                 suchen. Lange drücken: Update-Link und Update-Modus einstellen.
                 Der Standard-Link zeigt auf
                 <code>https://parip69.github.io/BarcodeAudi_AndroidAPK/</code>.
@@ -14960,7 +14960,7 @@ In den App-Namensraum importieren?`)
         id="appUpdateButton"
         title="Kurz drücken: Update prüfen · Lang drücken: Update-Einstellungen"
         aria-label="Update prüfen. Lange drücken, um die Update-Einstellungen zu öffnen."
-      >↻ Update</button>
+      >↻</button>
     </footer>
 
     <script>
@@ -15252,7 +15252,7 @@ In den App-Namensraum importieren?`)
           if (!button) return;
           const version = String(remoteVersion || "").trim();
           button.dataset.availableVersion = version;
-          button.textContent = version ? `↻ Update → ${version}` : "↻ Update";
+          button.textContent = version ? `↻ → ${version}` : "↻";
           button.classList.toggle("update-available", !!version);
           button.title = version
             ? `Neue Version ${version} verfügbar · Kurz drücken zum Aktualisieren · Lang drücken für Einstellungen`
@@ -15460,7 +15460,7 @@ In den App-Namensraum importieren?`)
           }, 30);
         }
 
-        function showAppUpdateReinstallPrompt(currentVersion, remoteVersion, comparison) {
+        function showAppUpdateDowngradePrompt(currentVersion, remoteVersion) {
           const overlay = document.getElementById("appUpdateAvailableOverlay");
           const status = document.getElementById("appUpdateAvailableStatus");
           const title = document.getElementById("appUpdateAvailableTitle");
@@ -15469,15 +15469,10 @@ In den App-Namensraum importieren?`)
           const buttonRow = startButton?.parentElement;
           if (!overlay || !status || !startButton || !cancelButton || !buttonRow) return;
 
-          const isSame = comparison === 0;
-          if (title) {
-            title.textContent = isSame
-              ? "Version bereits installiert"
-              : "Ältere Version gefunden";
-          }
-          status.textContent = isSame
-            ? `Installiert: Ver.${currentVersion} · Online: Ver.${remoteVersion}\nDiese Version ist bereits installiert. Wollen Sie Ver.${remoteVersion} trotzdem noch einmal installieren?`
-            : `Installiert: Ver.${currentVersion} · Online: Ver.${remoteVersion}\nDie Online-Version ist älter als die installierte Version. Wollen Sie Ver.${remoteVersion} trotzdem installieren?`;
+          if (title) title.textContent = "Ältere Version gefunden";
+          status.textContent =
+            `Installiert: Ver.${currentVersion} · Online: Ver.${remoteVersion}\n` +
+            `Die Online-Version ist älter als die installierte Version. Wollen Sie Ver.${remoteVersion} trotzdem installieren?`;
           status.style.whiteSpace = "pre-line";
 
           // Gewünschte Anordnung: JA links, NEIN rechts.
@@ -15489,7 +15484,7 @@ In den App-Namensraum importieren?`)
 
           overlay.dataset.currentVersion = String(currentVersion || "");
           overlay.dataset.remoteVersion = String(remoteVersion || "");
-          overlay.dataset.updateChoice = isSame ? "reinstall" : "downgrade";
+          overlay.dataset.updateChoice = "downgrade";
           placeUpdateOverlayOnScreen(overlay);
           overlay.classList.remove("hidden");
           overlay.setAttribute("aria-hidden", "false");
@@ -15618,7 +15613,7 @@ In den App-Namensraum importieren?`)
             return null;
           }
 
-          const oldText = button?.textContent || "↻ Update";
+          const oldText = button?.textContent || "↻";
           if (button && !silent) {
             button.disabled = true;
             button.textContent = "Prüfe…";
@@ -15646,10 +15641,10 @@ In den App-Namensraum importieren?`)
             }
 
             setUpdateButtonVersion("");
-            if (!silent) {
-              // Bei gleicher oder älterer Online-Version nicht nur grün melden,
-              // sondern bewusst fragen, ob diese Version trotzdem installiert werden soll.
-              showAppUpdateReinstallPrompt(currentVersion, remoteVersion, comparison);
+            if (!silent && comparison === 0) {
+              showAppUpdateMessage(`Version ist gleich: Ver.${currentVersion}`, "success");
+            } else if (!silent) {
+              showAppUpdateDowngradePrompt(currentVersion, remoteVersion);
             }
             return { available: false, currentVersion, remoteVersion, comparison };
           } catch (error) {
@@ -15665,7 +15660,7 @@ In den App-Namensraum importieren?`)
             if (button && !silent) {
               button.disabled = false;
               const available = button.dataset.availableVersion || "";
-              button.textContent = available ? `↻ Update → ${available}` : "↻ Update";
+              button.textContent = available ? `↻ → ${available}` : "↻";
             } else if (button && silent && button.textContent === "Prüfe…") {
               button.textContent = oldText;
             }
