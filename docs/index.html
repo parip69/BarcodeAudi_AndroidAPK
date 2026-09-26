@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Barcode Audi Scanner - Ver. 103 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="102">
+<html lang="de" data-app-version="103">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3688,10 +3688,32 @@
       }
 
       #appShareButton {
+        margin-left: auto;
         min-width: 27px;
         padding-left: 6px;
         padding-right: 6px;
         font-size: 14px;
+      }
+
+      #appShareButton .share-icon {
+        display: block;
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+      }
+
+      #appShareButton .share-icon circle {
+        fill: currentColor;
+        stroke: none;
+      }
+
+      .version-text .help-share-row {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        margin: 2px 0;
       }
       #appShareButton:active,
       #appUpdateButton:active { transform: translateY(1px); }
@@ -5448,7 +5470,7 @@
           color: #8a8a8a;
         "
       >
-        <p style="margin: 2px 0">
+        <p class="help-share-row">
           Hilfe
           <span
             id="legendToggle"
@@ -5460,6 +5482,19 @@
             "
             >📖</span
           >
+          <button
+            type="button"
+            id="appShareButton"
+            title="App oder App mit Daten/Einstellungen teilen"
+            aria-label="App teilen"
+          >
+            <svg class="share-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M8.2 10.8 15.8 6.4M8.2 13.2l7.6 4.4" fill="none"></path>
+              <circle cx="18" cy="5" r="2.5"></circle>
+              <circle cx="6" cy="12" r="2.5"></circle>
+              <circle cx="18" cy="19" r="2.5"></circle>
+            </svg>
+          </button>
         </p>
       </div>
       <!-- Legend / Handbuch -->
@@ -14949,12 +14984,6 @@ In den App-Namensraum importieren?`)
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
         - Ver.<span id="footerVersion">103</span>
       </span>
-      <button
-        type="button"
-        id="appShareButton"
-        title="App oder App mit Daten/Einstellungen teilen"
-        aria-label="App teilen"
-      >↗</button>
       <button
         type="button"
         id="appUpdateButton"
