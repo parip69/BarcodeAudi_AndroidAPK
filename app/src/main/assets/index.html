@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- Barcode Audi Scanner - Ver. 103 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="105">
+<html lang="de" data-app-version="106">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3696,16 +3696,16 @@
 
       #appShareButton {
         margin-left: auto;
-        margin-right: -9px;
+        margin-right: 2px;
         width: 23px;
         min-width: 23px;
         height: 18px;
         min-height: 18px;
         padding: 0;
-        border-color: #858d94;
+        border-color: #7aa7c7;
         border-radius: 5px;
-        background: #b8bec3;
-        color: #344550;
+        background: #eef7ff;
+        color: #165b87;
         font-size: 10px;
       }
 
@@ -3723,11 +3723,15 @@
         stroke: none;
       }
 
+      .version-text {
+        margin-top: auto !important;
+      }
+
       .version-text .help-share-row {
         display: flex;
         align-items: center;
         width: 100%;
-        margin: 2px 0;
+        margin: 2px 0 1px;
       }
       #appShareButton:active,
       #appUpdateButton:active { transform: translateY(1px); }
@@ -5479,42 +5483,6 @@
         </div>
       </div>
       <div id="toast" class="toast hidden"></div>
-      <div
-        class="version-text"
-        style="
-          text-align: left;
-          margin-top: 10px;
-          font-size: 0.6em;
-          color: #8a8a8a;
-        "
-      >
-        <p class="help-share-row">
-          Hilfe
-          <span
-            id="legendToggle"
-            style="
-              cursor: pointer;
-              color: #007bff;
-              text-decoration: underline;
-              font-size: 2em;
-            "
-            >📖</span
-          >
-          <button
-            type="button"
-            id="appShareButton"
-            title="App oder App mit Daten/Einstellungen teilen"
-            aria-label="App teilen"
-          >
-            <svg class="share-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M8.2 10.8 15.8 6.4M8.2 13.2l7.6 4.4" fill="none"></path>
-              <circle cx="18" cy="5" r="2.5"></circle>
-              <circle cx="6" cy="12" r="2.5"></circle>
-              <circle cx="18" cy="19" r="2.5"></circle>
-            </svg>
-          </button>
-        </p>
-      </div>
       <!-- Legend / Handbuch -->
       <div id="legendContent">
         <div class="manual-developer-intro">
@@ -5826,6 +5794,41 @@
             </ul>
           </li>
         </ul>
+      </div>
+      <div
+        class="version-text"
+        style="
+          text-align: left;
+          font-size: 0.6em;
+          color: #8a8a8a;
+        "
+      >
+        <p class="help-share-row">
+          Hilfe
+          <span
+            id="legendToggle"
+            style="
+              cursor: pointer;
+              color: #007bff;
+              text-decoration: underline;
+              font-size: 2em;
+            "
+            >📖</span
+          >
+          <button
+            type="button"
+            id="appShareButton"
+            title="App oder App mit Daten/Einstellungen teilen"
+            aria-label="App teilen"
+          >
+            <svg class="share-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M8.2 10.8 15.8 6.4M8.2 13.2l7.6 4.4" fill="none"></path>
+              <circle cx="18" cy="5" r="2.5"></circle>
+              <circle cx="6" cy="12" r="2.5"></circle>
+              <circle cx="18" cy="19" r="2.5"></circle>
+            </svg>
+          </button>
+        </p>
       </div>
     </div>
 
