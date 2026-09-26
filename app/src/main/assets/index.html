@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 110 -->
+<!-- Barcode Audi Scanner - Ver. 111 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="110">
+<html lang="de" data-app-version="111">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3764,8 +3764,11 @@
       }
       #appShareOverlay.hidden { display: none !important; }
       #appShareContent {
-        width: min(94vw, 520px);
-        max-height: calc(100dvh - 24px);
+        display: flex;
+        flex-direction: column;
+        width: min(calc(100vw - 12px), 760px);
+        height: min(calc(100dvh - 12px), 1000px);
+        max-height: calc(100dvh - 12px);
         overflow-y: auto;
         background: #fff;
         color: #111;
@@ -3778,9 +3781,11 @@
       #appShareQrPreview {
         display: grid;
         place-items: center;
-        min-height: 220px;
+        flex: 1 1 auto;
+        min-height: 140px;
         margin: 0 auto 14px;
-        padding: 10px;
+        padding: 6px;
+        width: 100%;
         border: 1px solid #d7d7d7;
         border-radius: 10px;
         background: #fff;
@@ -3788,9 +3793,12 @@
       }
       #appShareQrCanvas {
         display: block;
-        width: min(68vw, 300px);
-        height: min(68vw, 300px);
+        width: min(100%, 700px);
+        height: auto;
         max-width: 100%;
+        max-height: 100%;
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
         image-rendering: pixelated;
       }
       #appShareQrStatus {
@@ -6716,7 +6724,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "110";
+      const APP_VERSION_FALLBACK = "111";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -15101,11 +15109,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="110">
+    <footer id="appFooter" data-app-version="111">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">110</span>
+        - Ver.<span id="footerVersion">111</span>
       </span>
       <button
         type="button"
