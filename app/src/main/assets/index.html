@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 103 -->
+<!-- Barcode Audi Scanner - Ver. 109 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="108">
+<html lang="de" data-app-version="109">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3976,7 +3976,8 @@
       }
 
       #appUpdateSettingsContent,
-      #appUpdateAvailableContent {
+      #appUpdateAvailableContent,
+      #sharedDataImportContent {
         width: min(92vw, 430px);
         max-width: 430px;
         max-height: min(88vh, 620px);
@@ -4017,7 +4018,8 @@
       }
 
       #appUpdateSettingsContent h3,
-      #appUpdateAvailableContent h3 {
+      #appUpdateAvailableContent h3,
+      #sharedDataImportContent h3 {
         margin: 0 0 12px 0;
         text-align: center;
         color: #000;
@@ -4091,7 +4093,8 @@
       /* Update-Dialoge immer am sichtbaren Bildschirm fixieren – Ver. 82 */
       #appUpdateSettingsOverlay,
       #appUpdateAvailableOverlay,
-      #appUpdateSuccessOverlay {
+      #appUpdateSuccessOverlay,
+      #sharedDataImportOverlay {
         position: fixed !important;
         inset: 0 !important;
         width: 100vw !important;
@@ -4113,12 +4116,14 @@
       }
       #appUpdateSettingsOverlay.hidden,
       #appUpdateAvailableOverlay.hidden,
-      #appUpdateSuccessOverlay.hidden {
+      #appUpdateSuccessOverlay.hidden,
+      #sharedDataImportOverlay.hidden {
         display: none !important;
       }
       #appUpdateSettingsContent,
       #appUpdateAvailableContent,
-      #appUpdateSuccessContent {
+      #appUpdateSuccessContent,
+      #sharedDataImportContent {
         position: relative !important;
         margin: 0 !important;
         max-height: calc(100dvh - 32px) !important;
@@ -4137,6 +4142,28 @@
         text-align: left;
         color-scheme: light;
       }
+      #sharedDataImportContent {
+        width: min(92vw, 430px);
+        max-width: 430px;
+        background: #fff;
+        color: #000;
+        border-radius: 12px;
+        padding: 18px;
+        box-sizing: border-box;
+        box-shadow: 0 12px 35px rgba(0,0,0,.35);
+        color-scheme: light;
+      }
+      #sharedDataImportStatus {
+        white-space: pre-line;
+        line-height: 1.45;
+      }
+      #sharedDataImportWarning {
+        margin-top: 12px;
+        color: #9b1c1c;
+        font-weight: 700;
+      }
+      #sharedDataImportAcceptButton { background: #4caf50; }
+      #sharedDataImportSkipButton { background: #e7e7e7; color: #111; }
       #appUpdateSuccessContent h3 {
         margin: 0 0 12px 0;
         text-align: center;
@@ -6620,6 +6647,19 @@
       </div>
     </div>
 
+    <!-- Share-Daten werden niemals ohne ausdrueckliche Zustimmung importiert. -->
+    <div id="sharedDataImportOverlay" class="popup-container hidden" aria-hidden="true">
+      <div id="sharedDataImportContent" role="dialog" aria-modal="true" aria-labelledby="sharedDataImportTitle" tabindex="-1">
+        <h3 id="sharedDataImportTitle">Vorhandene Daten erkannt</h3>
+        <div id="sharedDataImportStatus"></div>
+        <div id="sharedDataImportWarning" hidden></div>
+        <div class="app-update-buttons">
+          <button type="button" id="sharedDataImportSkipButton">Ohne Daten fortfahren</button>
+          <button type="button" id="sharedDataImportAcceptButton">Übernehmen</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Consent-Popup (zunaechst verborgen) -->
     <div id="consentPopupOverlay" class="popup-container hidden">
       <div class="popup-content">
@@ -6647,13 +6687,34 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "79";
+      const APP_VERSION_FALLBACK = "109";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
+      const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
       function getAndroidBridge() {
         if (window.AndroidInterface) return window.AndroidInterface;
         if (window.AndroidDownload) return window.AndroidDownload;
         return null;
+      }
+
+      function getAndroidApplicationId() {
+        const androidBridge = getAndroidBridge();
+        if (!androidBridge) return "";
+
+        for (const methodName of ["getAppId", "getPackageName"]) {
+          try {
+            if (typeof androidBridge[methodName] !== "function") continue;
+            const appId = String(androidBridge[methodName]() || "").trim();
+            if (appId) return appId;
+          } catch (error) {
+            console.warn("Android Application-ID konnte nicht gelesen werden", error);
+          }
+        }
+        return "";
+      }
+
+      function isExpectedAndroidApplication() {
+        return getAndroidApplicationId() === EXPECTED_ANDROID_APPLICATION_ID;
       }
 
       function supportsBundledIndexHtmlExport() {
@@ -6767,6 +6828,8 @@
         "mainBarcodeHidden",
         "characterReplacementRules",
         "updateSourceUrl",
+        "updateCheckMode",
+        "editorGroupsV74",
       ];
       const APP_STORAGE_PREFIX_KEYS = ["groupOrdering_", "languageMode_"];
       const LOCAL_STORAGE_IMPORT_METADATA_KEYS = new Set([
@@ -6776,6 +6839,7 @@
         "exportedAt",
         "entryCount",
         "selectedKeys",
+        "applicationId",
       ]);
 
       const rawLocalStorage = window.localStorage;
@@ -8976,6 +9040,7 @@
         return {
           app: "BarcodeScannerAudi",
           version: getCurrentAppVersion(),
+          applicationId: getAndroidApplicationId(),
           namespace: APP_STORAGE_PREFIX,
           exportedAt: getDeviceNow().toISOString(),
           entryCount: Object.keys(storageData).length,
@@ -15003,11 +15068,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="103">
+    <footer id="appFooter" data-app-version="109">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">103</span>
+        - Ver.<span id="footerVersion">109</span>
       </span>
       <button
         type="button"
@@ -15139,13 +15204,82 @@ In den App-Namensraum importieren?`)
           const url = new URL(getShareBaseUrl());
           if (!includeData) return url.toString();
 
+          return appendCurrentAppDataToUrl(url.toString());
+        }
+
+        async function appendCurrentAppDataToUrl(targetUrl) {
+          const url = new URL(targetUrl, window.location.href);
+
           const keys = appStorage
             .keys()
             .filter((key) => !String(key).startsWith("__"));
+          if (keys.length === 0) return url.toString();
+
           const payload = buildLocalExportPayload(keys);
           const encoded = await gzipTextToBase64Url(JSON.stringify(payload));
           url.searchParams.set("share", encoded);
           return url.toString();
+        }
+
+        function countSharedBarcodes(entries) {
+          const barcodeEntry = entries.find(([key]) => key === "barcodes");
+          if (!barcodeEntry) return 0;
+          try {
+            const barcodes = JSON.parse(barcodeEntry[1]);
+            return Array.isArray(barcodes) ? barcodes.length : 0;
+          } catch (_) {
+            return 0;
+          }
+        }
+
+        function hasExistingImportableAppData() {
+          return appStorage
+            .keys()
+            .some((key) => !String(key).startsWith("__") && appStorage.getItem(key) !== null);
+        }
+
+        function confirmSharedDataImport(entries) {
+          return new Promise((resolve) => {
+            const overlay = document.getElementById("sharedDataImportOverlay");
+            const status = document.getElementById("sharedDataImportStatus");
+            const warning = document.getElementById("sharedDataImportWarning");
+            const acceptButton = document.getElementById("sharedDataImportAcceptButton");
+            const skipButton = document.getElementById("sharedDataImportSkipButton");
+            if (!overlay || !status || !warning || !acceptButton || !skipButton) {
+              resolve(false);
+              return;
+            }
+
+            const barcodeCount = countSharedBarcodes(entries);
+            status.textContent =
+              `${barcodeCount} ${barcodeCount === 1 ? "Barcode" : "Barcodes"} sowie Einstellungen aus der bisherigen App können übernommen werden.`;
+
+            const existingData = hasExistingImportableAppData();
+            warning.hidden = !existingData;
+            warning.textContent = existingData
+              ? "Achtung: In dieser App sind bereits Daten vorhanden. Diese können durch den Import ersetzt werden."
+              : "";
+
+            let settled = false;
+            const finish = (accepted) => {
+              if (settled) return;
+              settled = true;
+              acceptButton.onclick = null;
+              skipButton.onclick = null;
+              overlay.classList.add("hidden");
+              overlay.setAttribute("aria-hidden", "true");
+              unlockAppUpdateViewport();
+              resolve(accepted);
+            };
+
+            acceptButton.onclick = () => finish(true);
+            skipButton.onclick = () => finish(false);
+            placeUpdateOverlayOnScreen(overlay);
+            overlay.classList.remove("hidden");
+            overlay.setAttribute("aria-hidden", "false");
+            lockAppUpdateViewport();
+            window.setTimeout(() => acceptButton.focus(), 30);
+          });
         }
 
         async function shareAppNow() {
@@ -15222,13 +15356,7 @@ In den App-Namensraum importieren?`)
           try {
             const payload = await decodeSharedPayload(shared);
             const entries = parseLocalStorageImportPayload(JSON.stringify(payload));
-            const confirmed = confirm(
-              "Dieser Link enthält " +
-                entries.length +
-                " Barcode-/Einstellungs-Einträge.\n\n" +
-                "Übernehmen?\n\n" +
-                "Achtung: Die bisherigen lokalen Daten dieser App werden dabei ersetzt."
-            );
+            const confirmed = await confirmSharedDataImport(entries);
 
             if (!confirmed) {
               showAppUpdateMessage("Geteilte Daten wurden nicht übernommen.", "success");
@@ -15901,7 +16029,14 @@ In den App-Namensraum importieren?`)
             }
 
             // Fallback für die native/local-file Variante ohne Service Worker.
-            const installTarget = new URL(normalized);
+            let installUrl = normalized;
+            if (!isExpectedAndroidApplication()) {
+              // Unbekannte Umgebung, Browser oder andere Package-ID: Bestehende
+              // Daten mit dem bereits vorhandenen Share-Format sicher anbieten.
+              installUrl = await appendCurrentAppDataToUrl(normalized);
+            }
+
+            const installTarget = new URL(installUrl);
             installTarget.searchParams.set("_barcodeUpdateInstall", String(Date.now()));
             if (targetVersion) installTarget.searchParams.set("_barcodeUpdatedTo", targetVersion);
             appUpdateAvailableHistoryActive = false;

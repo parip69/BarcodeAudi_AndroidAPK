@@ -161,6 +161,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         @android.webkit.JavascriptInterface
+        fun getPackageName(): String {
+            return this@MainActivity.packageName
+        }
+
+        @android.webkit.JavascriptInterface
+        fun getAppId(): String {
+            return this@MainActivity.packageName
+        }
+
+        @android.webkit.JavascriptInterface
         fun setSystemThemeMode(mode: String?) {
             runOnUiThread {
                 applyAppChromeForTheme(mode)

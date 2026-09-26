@@ -251,15 +251,39 @@ Write-Host "[INFO] Neue Version fuer Build und index.html: ""$newVersion"""
 
 if (Test-Path -LiteralPath $indexFile) {
     $indexData = Read-TextFilePreserveEncoding -Path $indexFile
-    $pattern = '<html lang="de" data-app-version="[^"]*"'
-    $replacement = '<html lang="de" data-app-version="' + $newVersion + '"'
+    $htmlPattern = '<html lang="de" data-app-version="[^"]*"'
+    $htmlReplacement = '<html lang="de" data-app-version="' + $newVersion + '"'
 
-    if ([regex]::IsMatch($indexData.Text, $pattern)) {
-        $updatedText = [regex]::Replace($indexData.Text, $pattern, $replacement, 1)
+    if ([regex]::IsMatch($indexData.Text, $htmlPattern)) {
+        $updatedText = [regex]::Replace($indexData.Text, $htmlPattern, $htmlReplacement, 1)
+        $updatedText = [regex]::Replace(
+            $updatedText,
+            '(?m)^(<!-- Barcode Audi Scanner - Ver\. )[^\r\n ]+( -->)\r?$',
+            ('${1}' + $newVersion + '${2}'),
+            1
+        )
+        $updatedText = [regex]::Replace(
+            $updatedText,
+            '(const APP_VERSION_FALLBACK = ")[^"]+(";)',
+            ('${1}' + $newVersion + '${2}'),
+            1
+        )
+        $updatedText = [regex]::Replace(
+            $updatedText,
+            '(<footer id="appFooter" data-app-version=")[^"]+("[^>]*>)',
+            ('${1}' + $newVersion + '${2}'),
+            1
+        )
+        $updatedText = [regex]::Replace(
+            $updatedText,
+            '(<span id="footerVersion">)[^<]+(</span>)',
+            ('${1}' + $newVersion + '${2}'),
+            1
+        )
         if ($updatedText -ne $indexData.Text) {
             Write-TextFilePreserveEncoding -Path $indexFile -Text $updatedText -Encoding $indexData.Encoding
         }
-        Write-Host "[INFO] data-app-version in index.html auf ""$newVersion"" gesetzt."
+        Write-Host "[INFO] Versionsangaben in index.html auf ""$newVersion"" gesetzt."
     } else {
         Write-Host "[WARNUNG] data-app-version Marker in index.html nicht gefunden."
     }
