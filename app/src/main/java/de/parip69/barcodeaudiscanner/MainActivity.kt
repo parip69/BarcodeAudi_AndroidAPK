@@ -8,6 +8,7 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Base64
 import android.view.View
 import android.view.WindowManager
 import android.webkit.ConsoleMessage
@@ -199,6 +200,45 @@ class MainActivity : AppCompatActivity() {
                     android.widget.Toast.makeText(
                         this@MainActivity,
                         "Fehler beim Teilen: ${e.message}",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        fun shareQrCode(fileName: String, dataUrl: String, text: String, url: String) {
+            try {
+                val encodedImage = dataUrl.substringAfter("base64,", "")
+                require(encodedImage.isNotEmpty()) { "Ungültige QR-Code-Bilddaten." }
+                val imageBytes = Base64.decode(encodedImage, Base64.DEFAULT)
+                val shareDirectory = java.io.File(cacheDir, "shared_qr_codes").apply { mkdirs() }
+                val safeFileName = fileName
+                    .replace(Regex("[^A-Za-z0-9._-]"), "_")
+                    .ifBlank { "Audi-Barcode-Scanner-QR.png" }
+                val imageFile = java.io.File(shareDirectory, safeFileName)
+                imageFile.writeBytes(imageBytes)
+                val uri = androidx.core.content.FileProvider.getUriForFile(
+                    this@MainActivity,
+                    "${packageName}.provider",
+                    imageFile
+                )
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "image/png"
+                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    putExtra(android.content.Intent.EXTRA_SUBJECT, "Audi Barcode-Scanner")
+                    putExtra(
+                        android.content.Intent.EXTRA_TEXT,
+                        listOf(text.trim(), url.trim()).filter { it.isNotEmpty() }.joinToString("\n")
+                    )
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                startActivity(android.content.Intent.createChooser(intent, "QR-Code teilen"))
+            } catch (e: Exception) {
+                runOnUiThread {
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        "Fehler beim Teilen des QR-Codes: ${e.message}",
                         android.widget.Toast.LENGTH_LONG
                     ).show()
                 }

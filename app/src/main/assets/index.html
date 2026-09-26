@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 109 -->
+<!-- Barcode Audi Scanner - Ver. 110 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="109">
+<html lang="de" data-app-version="110">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3764,7 +3764,9 @@
       }
       #appShareOverlay.hidden { display: none !important; }
       #appShareContent {
-        width: min(92vw, 410px);
+        width: min(94vw, 520px);
+        max-height: calc(100dvh - 24px);
+        overflow-y: auto;
         background: #fff;
         color: #111;
         border-radius: 12px;
@@ -3773,6 +3775,33 @@
         box-shadow: 0 12px 35px rgba(0,0,0,.28);
       }
       #appShareContent h3 { margin: 0 0 12px; font-size: 18px; }
+      #appShareQrPreview {
+        display: grid;
+        place-items: center;
+        min-height: 220px;
+        margin: 0 auto 14px;
+        padding: 10px;
+        border: 1px solid #d7d7d7;
+        border-radius: 10px;
+        background: #fff;
+        box-sizing: border-box;
+      }
+      #appShareQrCanvas {
+        display: block;
+        width: min(68vw, 300px);
+        height: min(68vw, 300px);
+        max-width: 100%;
+        image-rendering: pixelated;
+      }
+      #appShareQrStatus {
+        margin: -6px 0 10px;
+        color: #555;
+        font-size: 12px;
+        line-height: 1.35;
+        text-align: center;
+        overflow-wrap: anywhere;
+      }
+      #appShareQrStatus.error { color: #a01818; font-weight: 700; }
       .appShareChoice {
         display: flex;
         gap: 10px;
@@ -6687,7 +6716,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "109";
+      const APP_VERSION_FALLBACK = "110";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -14960,6 +14989,10 @@ In den App-Namensraum importieren?`)
     <div id="appShareOverlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="appShareTitle">
       <div id="appShareContent">
         <h3 id="appShareTitle">Teilen</h3>
+        <div id="appShareQrPreview">
+          <canvas id="appShareQrCanvas" width="1024" height="1024" aria-label="QR-Code des ausgewählten Links"></canvas>
+        </div>
+        <div id="appShareQrStatus" role="status" aria-live="polite">QR-Code wird erstellt…</div>
         <label class="appShareChoice">
           <input type="radio" name="appShareMode" value="app" checked>
           <span><strong>Nur App senden</strong><small>Teilt nur den normalen Link zur aktuellen Web-App.</small></span>
@@ -15068,11 +15101,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="109">
+    <footer id="appFooter" data-app-version="110">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">109</span>
+        - Ver.<span id="footerVersion">110</span>
       </span>
       <button
         type="button"
@@ -15082,6 +15115,7 @@ In den App-Namensraum importieren?`)
       >↻</button>
     </footer>
 
+    <script src="qrcode-generator.js"></script>
     <script>
       // Footer-Version, Update-Prüfung und Teilen (Ver. 73)
       (function () {
@@ -15093,6 +15127,8 @@ In den App-Namensraum importieren?`)
         let appUpdateLongPressTriggered = false;
         let appUpdateAvailableHistoryActive = false;
         let appUpdateModalLockCount = 0;
+        let appShareQrRenderId = 0;
+        let currentAppShareQr = null;
 
         function openAppShareMenu() {
           const overlay = document.getElementById("appShareOverlay");
@@ -15106,6 +15142,7 @@ In den App-Namensraum importieren?`)
           overlay.classList.remove("hidden");
           overlay.setAttribute("aria-hidden", "false");
           if (wasHidden) lockAppUpdateViewport();
+          updateAppShareQrPreview();
         }
 
         function closeAppShareMenu() {
@@ -15207,6 +15244,92 @@ In den App-Namensraum importieren?`)
           return appendCurrentAppDataToUrl(url.toString());
         }
 
+        function createAppShareQrCanvas(value) {
+          if (typeof qrcode !== "function") {
+            throw new Error("QR-Code-Modul ist nicht verfügbar.");
+          }
+
+          const qr = qrcode(0, "L");
+          qr.addData(String(value || ""), "Byte");
+          qr.make();
+
+          const moduleCount = qr.getModuleCount();
+          const quietZone = 4;
+          const totalModules = moduleCount + quietZone * 2;
+          const moduleSize = Math.max(2, Math.floor(1024 / totalModules));
+          const pixelSize = totalModules * moduleSize;
+          const canvas = document.createElement("canvas");
+          canvas.width = pixelSize;
+          canvas.height = pixelSize;
+          const context = canvas.getContext("2d", { alpha: false });
+          context.fillStyle = "#ffffff";
+          context.fillRect(0, 0, pixelSize, pixelSize);
+          context.fillStyle = "#000000";
+
+          for (let row = 0; row < moduleCount; row++) {
+            for (let column = 0; column < moduleCount; column++) {
+              if (!qr.isDark(row, column)) continue;
+              context.fillRect(
+                (column + quietZone) * moduleSize,
+                (row + quietZone) * moduleSize,
+                moduleSize,
+                moduleSize,
+              );
+            }
+          }
+          return canvas;
+        }
+
+        async function canvasToPngBlob(canvas) {
+          return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error("QR-Code konnte nicht als PNG erstellt werden."));
+            }, "image/png");
+          });
+        }
+
+        async function updateAppShareQrPreview() {
+          const renderId = ++appShareQrRenderId;
+          const mode = document.querySelector('input[name="appShareMode"]:checked')?.value || "app";
+          const includeData = mode === "data";
+          const preview = document.getElementById("appShareQrCanvas");
+          const status = document.getElementById("appShareQrStatus");
+          const shareButton = document.getElementById("appShareStartButton");
+          if (!preview || !status) return;
+
+          currentAppShareQr = null;
+          status.classList.remove("error");
+          status.textContent = "QR-Code wird erstellt…";
+          if (shareButton) shareButton.disabled = true;
+
+          try {
+            const url = await buildAppShareUrl(includeData);
+            const qrCanvas = createAppShareQrCanvas(url);
+            if (renderId !== appShareQrRenderId) return;
+
+            preview.width = qrCanvas.width;
+            preview.height = qrCanvas.height;
+            preview.getContext("2d", { alpha: false }).drawImage(qrCanvas, 0, 0);
+            currentAppShareQr = { url, canvas: qrCanvas, includeData };
+            status.textContent = includeData
+              ? "QR-Code enthält App, Barcodes und Einstellungen."
+              : "QR-Code enthält nur den App-Link.";
+          } catch (error) {
+            if (renderId !== appShareQrRenderId) return;
+            preview.width = 1;
+            preview.height = 1;
+            status.classList.add("error");
+            status.textContent = /code length overflow/i.test(String(error?.message || error))
+              ? "Die Datenmenge ist zu groß für einen QR-Code. Bitte reduzieren oder nur den App-Link wählen."
+              : "QR-Code konnte nicht erstellt werden: " + (error?.message || "Unbekannter Fehler");
+          } finally {
+            if (renderId === appShareQrRenderId && shareButton) {
+              shareButton.disabled = !currentAppShareQr;
+            }
+          }
+        }
+
         async function appendCurrentAppDataToUrl(targetUrl) {
           const url = new URL(targetUrl, window.location.href);
 
@@ -15293,8 +15416,11 @@ In den App-Namensraum importieren?`)
               button.textContent = "Wird erstellt…";
             }
 
-            const shareUrl = await buildAppShareUrl(includeData);
-            closeAppShareMenu();
+            const preparedQr = currentAppShareQr && currentAppShareQr.includeData === includeData
+              ? currentAppShareQr
+              : null;
+            const shareUrl = preparedQr?.url || await buildAppShareUrl(includeData);
+            const qrCanvas = preparedQr?.canvas || createAppShareQrCanvas(shareUrl);
 
             if (includeData && shareUrl.length > 60000) {
               const proceed = confirm(
@@ -15313,8 +15439,28 @@ In den App-Namensraum importieren?`)
               url: shareUrl,
             };
 
-            if (navigator.share) {
-              await navigator.share(shareData);
+            const qrBlob = await canvasToPngBlob(qrCanvas);
+            const qrFileName = includeData
+              ? "Audi-Barcode-Scanner-mit-Daten-QR.png"
+              : "Audi-Barcode-Scanner-App-QR.png";
+
+            if (window.AndroidInterface && typeof window.AndroidInterface.shareQrCode === "function") {
+              window.AndroidInterface.shareQrCode(
+                qrFileName,
+                qrCanvas.toDataURL("image/png"),
+                shareData.text,
+                shareUrl,
+              );
+              closeAppShareMenu();
+            } else if (navigator.share) {
+              const qrFile = new File([qrBlob], qrFileName, { type: "image/png" });
+              const shareWithQr = { ...shareData, files: [qrFile] };
+              if (!navigator.canShare || navigator.canShare(shareWithQr)) {
+                await navigator.share(shareWithQr);
+              } else {
+                await navigator.share(shareData);
+              }
+              closeAppShareMenu();
             } else if (navigator.clipboard && window.isSecureContext) {
               await navigator.clipboard.writeText(shareUrl);
               showAppUpdateMessage("Share-Link wurde in die Zwischenablage kopiert.", "success");
@@ -16093,6 +16239,9 @@ In den App-Namensraum importieren?`)
           shareButton?.addEventListener("click", openAppShareMenu);
           document.getElementById("appShareCancelButton")?.addEventListener("click", closeAppShareMenu);
           document.getElementById("appShareStartButton")?.addEventListener("click", shareAppNow);
+          document.querySelectorAll('input[name="appShareMode"]').forEach((input) => {
+            input.addEventListener("change", updateAppShareQrPreview);
+          });
           document.getElementById("appShareOverlay")?.addEventListener("click", function (event) {
             if (event.target === this) closeAppShareMenu();
           });

@@ -1,11 +1,12 @@
-const APP_SHELL_CACHE = "barcode-audi-shell-installed-v109";
-const RUNTIME_CACHE = "barcode-audi-runtime-v109";
+const APP_SHELL_CACHE = "barcode-audi-shell-installed-v110";
+const RUNTIME_CACHE = "barcode-audi-runtime-v110";
 const SETTINGS_CACHE = "barcode-audi-settings-v1";
 const UPDATE_MODE_URL = new URL("__update_mode__", self.registration.scope).toString();
 
 const PRECACHE_URLS = [
   "./",
   "./index.html",
+  "./qrcode-generator.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
