@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 112 -->
+<!-- Barcode Audi Scanner - Ver. 113 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="112">
+<html lang="de" data-app-version="113">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -4665,6 +4665,15 @@
         white-space: nowrap;
       }
 
+      .edit-code-special-char-label {
+        display: block;
+        margin: -5px 1px 1px 1px;
+        font-size: 0.66em;
+        color: #555 !important;
+        -webkit-text-fill-color: #555 !important;
+        font-weight: 600;
+      }
+
       .special-char-toolbar button {
         flex: 0 0 auto;
         min-width: 32px;
@@ -6445,12 +6454,12 @@
             style="width: 95%; padding: 8px 12px; margin-bottom: 10px"
           />
         </div>
+        <span class="edit-code-special-char-label">Sonderzeichen:</span>
         <div
           class="special-char-toolbar"
           id="editCodeSpecialCharToolbar"
           aria-label="Sonderzeichen in Barcode-Code einfuegen"
         >
-          <span class="special-char-label">Sonderzeichen:</span>
           <button type="button" data-special-marker="␠" title="Leerzeichen (Space)">␠ Leer</button>
           <button type="button" data-special-marker="␉" title="Tabulator (HT / TAB)">␉ TAB</button>
           <button type="button" data-special-marker="␍" title="Enter (CR)">␍ CR</button>
@@ -6720,7 +6729,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "112";
+      const APP_VERSION_FALLBACK = "113";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -15105,11 +15114,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="112">
+    <footer id="appFooter" data-app-version="113">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">112</span>
+        - Ver.<span id="footerVersion">113</span>
       </span>
       <button
         type="button"
