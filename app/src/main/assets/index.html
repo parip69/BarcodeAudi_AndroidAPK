@@ -15016,7 +15016,7 @@ In den App-Namensraum importieren?`)
         <div id="appShareQrStatus" role="status" aria-live="polite">QR-Code wird erstellt…</div>
         <label class="appShareChoice">
           <input type="radio" name="appShareMode" value="app" checked>
-          <span><strong>Nur App senden</strong><small>Sendet den anklickbaren App-Link mit Kärtchen-Vorschau, keinen QR-Code.</small></span>
+          <span><strong>Nur App senden</strong><small>Sendet das App-Kärtchen als Bild zusammen mit dem anklickbaren Link, keinen QR-Code.</small></span>
         </label>
         <label class="appShareChoice">
           <input type="radio" name="appShareMode" value="data">
@@ -15150,6 +15150,23 @@ In den App-Namensraum importieren?`)
         let appUpdateModalLockCount = 0;
         let appShareQrRenderId = 0;
         let currentAppShareQr = null;
+        let appShareCardFilePromise = null;
+
+        function prepareAppShareCardFile() {
+          if (!appShareCardFilePromise) {
+            appShareCardFilePromise = fetch("./icons/share-card.png")
+              .then(async (response) => {
+                if (!response.ok) throw new Error("Das App-Kärtchen konnte nicht geladen werden.");
+                const blob = await response.blob();
+                return new File([blob], "Audi-Barcode-Scanner-Kaertchen.png", { type: "image/png" });
+              })
+              .catch((error) => {
+                appShareCardFilePromise = null;
+                throw error;
+              });
+          }
+          return appShareCardFilePromise;
+        }
 
         function openAppShareMenu() {
           const overlay = document.getElementById("appShareOverlay");
@@ -15164,6 +15181,11 @@ In den App-Namensraum importieren?`)
           overlay.setAttribute("aria-hidden", "false");
           if (wasHidden) lockAppUpdateViewport();
           updateAppShareQrPreview();
+          // Vor dem eigentlichen Senden laden, damit der Browser-Teilen-Dialog
+          // unmittelbar nach dem Klick geöffnet werden kann.
+          if (!window.isBarcodeAndroidApk()) {
+            prepareAppShareCardFile().catch((error) => console.warn("App-Kärtchen", error));
+          }
         }
 
         function closeAppShareMenu() {
@@ -15442,20 +15464,28 @@ In den App-Namensraum importieren?`)
               url: shareUrl,
             };
 
-            // Der QR-Code ist nur für ein zweites Gerät sichtbar. Gesendet wird
-            // der anklickbare Link; Messenger verwenden die Open-Graph-Kärtchen-Vorschau.
-            if (window.AndroidInterface && typeof window.AndroidInterface.shareAppLink === "function") {
-              window.AndroidInterface.shareAppLink(
+            // QR-Code nur anzeigen. Beim Senden das Visitenkärtchen als Bild
+            // zusammen mit dem anklickbaren Link weitergeben.
+            if (window.AndroidInterface && typeof window.AndroidInterface.shareAppCard === "function") {
+              window.AndroidInterface.shareAppCard(
                 shareData.text,
                 shareUrl,
               );
               closeAppShareMenu();
             } else if (navigator.share) {
-              await navigator.share(shareData);
+              const cardFile = await prepareAppShareCardFile();
+              const cardShareData = { ...shareData, files: [cardFile] };
+              if (navigator.canShare && !navigator.canShare(cardShareData)) {
+                showAppUpdateMessage("Dieser Browser kann das Kärtchen nicht als Bild senden. Bitte einen Browser mit Bildfreigabe verwenden.", "error");
+                return;
+              }
+              await navigator.share(cardShareData);
               closeAppShareMenu();
+            } else if (window.AndroidInterface && typeof window.AndroidInterface.shareAppLink === "function") {
+              showAppUpdateMessage("Für das Senden des Kärtchens bitte die Android-App aktualisieren oder die Webseite in Chrome öffnen.", "error");
             } else if (navigator.clipboard && window.isSecureContext) {
               await navigator.clipboard.writeText(shareUrl);
-              showAppUpdateMessage("Share-Link wurde in die Zwischenablage kopiert.", "success");
+              showAppUpdateMessage("Bildfreigabe ist hier nicht verfügbar. Der App-Link wurde zum Weitergeben kopiert.");
             } else {
               window.prompt("Diesen Link kopieren und senden:", shareUrl);
             }

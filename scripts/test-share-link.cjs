@@ -18,6 +18,8 @@ async function check(mode, target) {
   const sent = [];
   let closed = 0;
   const button = {};
+  const cardFile = { name: 'Audi-Barcode-Scanner-Kaertchen.png', type: 'image/png' };
+  const messages = [];
   const context = {
     DEFAULT_APP_UPDATE_URL: canonical,
     document: {
@@ -28,18 +30,22 @@ async function check(mode, target) {
       toDataURL() { throw new Error('QR-Code darf nicht gesendet werden'); },
     } },
     buildAppShareUrl: async () => url,
+    prepareAppShareCardFile: async () => cardFile,
     closeAppShareMenu() { closed++; },
-    showAppUpdateMessage(message, type) { assert.notEqual(type, 'error', message); },
+    showAppUpdateMessage(message, type) { messages.push({ message, type }); },
     console,
     window: { isSecureContext: true, AndroidInterface: {} },
     navigator: {},
   };
   if (target === 'native') {
-    context.window.AndroidInterface.shareAppLink = (text, link) => sent.push({ text, url: link });
+    context.window.AndroidInterface.shareAppCard = (text, link) => sent.push({ text, url: link });
+  } else if (target === 'old-native') {
+    context.window.AndroidInterface.shareAppLink = () => { throw new Error('Keinen stillen Linkversand statt Kärtchen'); };
   } else if (target === 'clipboard') {
     context.navigator.clipboard = { writeText: async link => sent.push({ url: link }) };
   } else {
     context.navigator.share = async payload => sent.push(payload);
+    context.navigator.canShare = () => target !== 'no-files';
   }
   // An old bridge must never be used to send a QR image.
   context.window.AndroidInterface.shareQrCode = () => { throw new Error('QR-Dateiversand aufgerufen'); };
@@ -47,18 +53,29 @@ async function check(mode, target) {
   vm.runInContext(baseFunction + shareFunction, context);
   assert.equal(vm.runInContext('getShareBaseUrl()', context), canonical);
   await vm.runInContext('shareAppNow()', context);
+  if (target === 'no-files' || target === 'old-native') {
+    assert.equal(sent.length, 0);
+    assert.equal(messages[0].type, 'error');
+    assert.equal(button.disabled, false);
+    assert.equal(closed, 0);
+    return;
+  }
   assert.equal(sent.length, 1);
   assert.equal(sent[0].url, url);
-  assert.equal('files' in sent[0], false);
+  if (target === 'browser') {
+    assert.equal(sent[0].files.length, 1);
+    assert.equal(sent[0].files[0], cardFile);
+  }
+  assert.equal(messages.some(message => message.type === 'error'), false);
   assert.equal(button.disabled, false);
   assert.equal(closed, target === 'clipboard' ? 0 : 1);
 }
 
 (async () => {
   for (const mode of ['app', 'data']) {
-    for (const target of ['browser', 'native', 'clipboard']) await check(mode, target);
+    for (const target of ['browser', 'native', 'clipboard', 'no-files', 'old-native']) await check(mode, target);
   }
   assert.match(html, /og:image" content="https:\/\/parip69.github.io\/BarcodeAudi_AndroidAPK\/icons\/share-card.png/);
   assert.match(html, /id="appShareQrCanvas"/);
-  console.log('OK: 6 Teilen-Fälle, QR-Vorschau, Kärtchen-Metadaten und JavaScript-Syntax.');
+  console.log('OK: 10 Teilen-Fälle: Kärtchen + Link, keine QR-Datei, Datenlink, Browser ohne Bildfreigabe und alte APK.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

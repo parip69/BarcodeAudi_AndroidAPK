@@ -311,10 +311,35 @@ class MainActivity : AppCompatActivity() {
         }
 
         @android.webkit.JavascriptInterface
+        fun shareAppCard(text: String, url: String) {
+            try {
+                val parsed = android.net.Uri.parse(url)
+                require(parsed.scheme == "https" && parsed.host == "parip69.github.io") {
+                    "Ungültiger App-Link."
+                }
+                val image = assets.open("icons/share-card.png").use { it.readBytes() }
+                shareQrCode(
+                    "Audi-Barcode-Scanner-Kaertchen.png",
+                    "data:image/png;base64," + Base64.encodeToString(image, Base64.NO_WRAP),
+                    text,
+                    url
+                )
+            } catch (e: Exception) {
+                runOnUiThread {
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        "App-Kärtchen konnte nicht geteilt werden: ${e.message}",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+
+        @android.webkit.JavascriptInterface
         fun shareQrCode(fileName: String, dataUrl: String, text: String, url: String) {
             try {
                 val encodedImage = dataUrl.substringAfter("base64,", "")
-                require(encodedImage.isNotEmpty()) { "Ungültige QR-Code-Bilddaten." }
+                require(encodedImage.isNotEmpty()) { "Ungültige Bilddaten." }
                 val imageBytes = Base64.decode(encodedImage, Base64.DEFAULT)
                 val shareDirectory = java.io.File(cacheDir, "shared_qr_codes").apply { mkdirs() }
                 val safeFileName = fileName
@@ -337,12 +362,18 @@ class MainActivity : AppCompatActivity() {
                     )
                     addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                startActivity(android.content.Intent.createChooser(intent, "QR-Code teilen"))
+                runOnUiThread {
+                    try {
+                        startActivity(android.content.Intent.createChooser(intent, "App-Kärtchen teilen"))
+                    } catch (e: Exception) {
+                        android.widget.Toast.makeText(this@MainActivity, "Teilen nicht möglich: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
             } catch (e: Exception) {
                 runOnUiThread {
                     android.widget.Toast.makeText(
                         this@MainActivity,
-                        "Fehler beim Teilen des QR-Codes: ${e.message}",
+                        "Fehler beim Teilen des Bildes: ${e.message}",
                         android.widget.Toast.LENGTH_LONG
                     ).show()
                 }
