@@ -13,15 +13,16 @@
     <meta property="og:title" content="Audi Barcode Scanner" />
     <meta property="og:description" content="App mit Barcodes &amp; Einstellungen öffnen" />
     <meta property="og:url" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/" />
-    <meta property="og:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card.png" />
-    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg" />
+    <meta property="og:image:secure_url" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Audi Barcode Scanner" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Audi Barcode Scanner" />
     <meta name="twitter:description" content="App mit Barcodes &amp; Einstellungen öffnen" />
-    <meta name="twitter:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card.png" />
+    <meta name="twitter:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg" />
     <script>
       !(function (t) {
         function e(r) {
@@ -15016,7 +15017,7 @@ In den App-Namensraum importieren?`)
         <div id="appShareQrStatus" role="status" aria-live="polite">QR-Code wird erstellt…</div>
         <label class="appShareChoice">
           <input type="radio" name="appShareMode" value="app" checked>
-          <span><strong>Nur App senden</strong><small>Sendet das App-Kärtchen als Bild zusammen mit dem anklickbaren Link, keinen QR-Code.</small></span>
+          <span><strong>Nur App senden</strong><small>Sendet den App-Link mit Kärtchen-Vorschau. WhatsApp und Telegram laden das Bild zum Link.</small></span>
         </label>
         <label class="appShareChoice">
           <input type="radio" name="appShareMode" value="data">
@@ -15150,23 +15151,6 @@ In den App-Namensraum importieren?`)
         let appUpdateModalLockCount = 0;
         let appShareQrRenderId = 0;
         let currentAppShareQr = null;
-        let appShareCardFilePromise = null;
-
-        function prepareAppShareCardFile() {
-          if (!appShareCardFilePromise) {
-            appShareCardFilePromise = fetch("./icons/share-card.png")
-              .then(async (response) => {
-                if (!response.ok) throw new Error("Das App-Kärtchen konnte nicht geladen werden.");
-                const blob = await response.blob();
-                return new File([blob], "Audi-Barcode-Scanner-Kaertchen.png", { type: "image/png" });
-              })
-              .catch((error) => {
-                appShareCardFilePromise = null;
-                throw error;
-              });
-          }
-          return appShareCardFilePromise;
-        }
 
         function openAppShareMenu() {
           const overlay = document.getElementById("appShareOverlay");
@@ -15181,11 +15165,6 @@ In den App-Namensraum importieren?`)
           overlay.setAttribute("aria-hidden", "false");
           if (wasHidden) lockAppUpdateViewport();
           updateAppShareQrPreview();
-          // Vor dem eigentlichen Senden laden, damit der Browser-Teilen-Dialog
-          // unmittelbar nach dem Klick geöffnet werden kann.
-          if (!window.isBarcodeAndroidApk()) {
-            prepareAppShareCardFile().catch((error) => console.warn("App-Kärtchen", error));
-          }
         }
 
         function closeAppShareMenu() {
@@ -15269,7 +15248,7 @@ In den App-Namensraum importieren?`)
         }
 
         function getShareBaseUrl() {
-          return DEFAULT_APP_UPDATE_URL;
+          return new URL("teilen.html", DEFAULT_APP_UPDATE_URL).toString();
         }
 
         async function buildAppShareUrl(includeData) {
@@ -15464,28 +15443,20 @@ In den App-Namensraum importieren?`)
               url: shareUrl,
             };
 
-            // QR-Code nur anzeigen. Beim Senden das Visitenkärtchen als Bild
-            // zusammen mit dem anklickbaren Link weitergeben.
-            if (window.AndroidInterface && typeof window.AndroidInterface.shareAppCard === "function") {
-              window.AndroidInterface.shareAppCard(
+            // Text-Link senden: Der Messenger lädt die Open-Graph-Vorschau
+            // von der kleinen Teilen-Seite. Ein Bildanhang ist keine Link-Karte.
+            if (window.AndroidInterface && typeof window.AndroidInterface.shareAppLink === "function") {
+              window.AndroidInterface.shareAppLink(
                 shareData.text,
                 shareUrl,
               );
               closeAppShareMenu();
             } else if (navigator.share) {
-              const cardFile = await prepareAppShareCardFile();
-              const cardShareData = { ...shareData, files: [cardFile] };
-              if (navigator.canShare && !navigator.canShare(cardShareData)) {
-                showAppUpdateMessage("Dieser Browser kann das Kärtchen nicht als Bild senden. Bitte einen Browser mit Bildfreigabe verwenden.", "error");
-                return;
-              }
-              await navigator.share(cardShareData);
+              await navigator.share(shareData);
               closeAppShareMenu();
-            } else if (window.AndroidInterface && typeof window.AndroidInterface.shareAppLink === "function") {
-              showAppUpdateMessage("Für das Senden des Kärtchens bitte die Android-App aktualisieren oder die Webseite in Chrome öffnen.", "error");
             } else if (navigator.clipboard && window.isSecureContext) {
               await navigator.clipboard.writeText(shareUrl);
-              showAppUpdateMessage("Bildfreigabe ist hier nicht verfügbar. Der App-Link wurde zum Weitergeben kopiert.");
+              showAppUpdateMessage("Der App-Link mit Kärtchen-Vorschau wurde zum Weitergeben kopiert.");
             } else {
               window.prompt("Diesen Link kopieren und senden:", shareUrl);
             }
