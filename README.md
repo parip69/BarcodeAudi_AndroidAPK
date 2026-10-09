@@ -226,3 +226,22 @@ Nicht mit ins Repository gehoeren und werden ignoriert:
 - `local.properties`
 
 Damit bleibt das Repository beim Hochladen auf die wirklich relevanten Projektdateien reduziert.
+
+## Updates ab Version 116
+
+Der bestehende GitHub-Pages-Link und die Android-Package-ID bleiben erhalten.
+Der Update-Button aktualisiert eine installierte Web-App im eigenen Fenster:
+Web-App-Dateien und Icons werden erneuert, lokale Barcode-Daten bleiben erhalten.
+Auf Android im Browser wird Installation oder weitere Nutzung in Chrome angeboten;
+der echte Installationsdialog ist nur verfügbar, wenn Chrome ihn bereitstellt.
+
+In der nativen APK ab Version 116 lädt der Update-Button die passende APK aus
+`Privat/` und öffnet den Android-Installationsdialog. Falls erforderlich, muss die
+Installation aus dieser Quelle erlaubt werden. Android prüft die Signatur; ein
+Update benötigt denselben Signaturschlüssel wie die installierte APK. Abbrechen
+oder ein fehlgeschlagener Download wird nicht als erfolgreiches Update gemeldet.
+Ältere APKs benötigen einmalig den manuellen APK-Download, um diese native
+Update-Funktion zu erhalten. Ein Wechsel zur Website aktualisiert keine APK.
+Der ursprüngliche Schlüssel archivierter APKs ist in der Cloud nicht vorhanden;
+Cloud-APKs ab Version 115 verwenden einen anderen, außerhalb von Git gespeicherten
+Debug-Schlüssel und können ursprüngliche Installationen nicht direkt ersetzen.

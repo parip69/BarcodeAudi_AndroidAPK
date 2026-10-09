@@ -107,8 +107,88 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val apkUpdateRunning = java.util.concurrent.atomic.AtomicBoolean(false)
+    private var pendingUpdateApk: java.io.File? = null
+    private val installPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        val apk = pendingUpdateApk
+        if (apk != null && (Build.VERSION.SDK_INT < 26 || packageManager.canRequestPackageInstalls())) {
+            launchApkInstaller(apk)
+        } else {
+            android.widget.Toast.makeText(this, "Zum Aktualisieren bitte die Installation für diese App erlauben und erneut auf Update drücken.", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun launchApkInstaller(apk: java.io.File) {
+        pendingUpdateApk = apk
+        try {
+            if (Build.VERSION.SDK_INT >= 26 && !packageManager.canRequestPackageInstalls()) {
+                installPermissionLauncher.launch(android.content.Intent(
+                    android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:$packageName")
+                ))
+                return
+            }
+            val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.provider", apk)
+            startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            })
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(this, "Installation konnte nicht geöffnet werden: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
     // Native Schnittstelle fuer Download/Senden/Export.
     inner class AndroidInterface {
+        @android.webkit.JavascriptInterface
+        fun installAppUpdate(version: String): Boolean {
+            if (!version.matches(Regex("[1-9][0-9]{0,8}"))) return false
+            if (!apkUpdateRunning.compareAndSet(false, true)) return false
+            Thread {
+                var downloaded: java.io.File? = null
+                try {
+                    val url = java.net.URL("https://raw.githubusercontent.com/parip69/BarcodeAudi_AndroidAPK/main/Privat/BarcodeAudiScanner_ver${version}.apk")
+                    val connection = url.openConnection() as javax.net.ssl.HttpsURLConnection
+                    connection.connectTimeout = 15000
+                    connection.readTimeout = 30000
+                    try {
+                        check(connection.responseCode == 200) { "Download: HTTP ${connection.responseCode}" }
+                        val apk = java.io.File.createTempFile("barcode-update-", ".apk", cacheDir)
+                        downloaded = apk
+                        connection.inputStream.use { input ->
+                            apk.outputStream().use { output ->
+                                val buffer = ByteArray(8192)
+                                var total = 0L
+                                while (true) {
+                                    val count = input.read(buffer)
+                                    if (count < 0) break
+                                    total += count
+                                    check(total <= 100L * 1024 * 1024) { "APK ist zu groß." }
+                                    output.write(buffer, 0, count)
+                                }
+                            }
+                        }
+                        @Suppress("DEPRECATION")
+                        val info = packageManager.getPackageArchiveInfo(apk.absolutePath, 0)
+                        check(info?.packageName == packageName && info.versionName == version) { "APK gehört nicht zu dieser App-Version." }
+                        runOnUiThread { launchApkInstaller(apk) }
+                    } finally {
+                        connection.disconnect()
+                    }
+                } catch (e: Exception) {
+                    downloaded?.delete()
+                    runOnUiThread {
+                        android.widget.Toast.makeText(this@MainActivity, "Update fehlgeschlagen: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    apkUpdateRunning.set(false)
+                }
+            }.start()
+            return true
+        }
+
         @android.webkit.JavascriptInterface
         fun setBarcodeFullscreenRotationEnabled(enabled: Boolean) {
             runOnUiThread {

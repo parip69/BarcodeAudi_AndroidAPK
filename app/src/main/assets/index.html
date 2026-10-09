@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 115 -->
+<!-- Barcode Audi Scanner - Ver. 116 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="115">
+<html lang="de" data-app-version="116">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -2478,7 +2478,7 @@
             return {
               mode: "android-manual",
               showButton: true,
-              buttonLabel: "Zum Startbildschirm",
+              buttonLabel: "App installieren",
               hint: "Browser-Menue oeffnen -> Zum Startbildschirm",
             };
           }
@@ -6729,7 +6729,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "115";
+      const APP_VERSION_FALLBACK = "116";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -14769,7 +14769,7 @@ In den App-Namensraum importieren?`)
 
       (function () {
         const APP_STATE_KEY = "BarcodeScannerAudiAppState";
-        const APP_STATE_HINT_FIELD = "installHintDismissed_v2";
+        const APP_STATE_HINT_FIELD = "installHintDismissed_v3";
         const LEGACY_HINT_KEYS = [];
         let lastKnownScrollY = 0;
         const hintOverlay = document.getElementById("startupFullscreenHint");
@@ -14900,6 +14900,11 @@ In den App-Namensraum importieren?`)
           installHint.textContent = uiState.hint || "";
           installHint.style.display = uiState.hint ? "block" : "none";
           hintText.textContent = DEFAULT_HINT_TEXT;
+          if (window.isBarcodeAndroid() && !isAndroidApk() && !isStandalone()) {
+            hintOverlay.querySelector("h3").textContent = "App installieren oder in Chrome öffnen";
+            closeButton.textContent = "In Chrome öffnen";
+            hintText.textContent = "Installiere den Barcode Scanner als Web-App oder benutze ihn direkt in Chrome.";
+          }
 
           if (hintSmall) {
             hintSmall.textContent = DEFAULT_SMALL_TEXT;
@@ -15114,11 +15119,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="115">
+    <footer id="appFooter" data-app-version="116">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">115</span>
+        - Ver.<span id="footerVersion">116</span>
       </span>
       <button
         type="button"
@@ -15890,7 +15895,9 @@ In den App-Namensraum importieren?`)
             }
           } catch (_) {}
 
-          if (version) window.setTimeout(() => showAppUpdateSuccess(version), 350);
+          if (version && compareAppVersions(getCurrentAppVersion(), version) >= 0) {
+            window.setTimeout(() => showAppUpdateSuccess(getCurrentAppVersion()), 350);
+          }
         }
 
         function extractPublishedVersion(htmlText) {
@@ -16177,6 +16184,23 @@ In den App-Namensraum importieren?`)
 
           const mode = getAppUpdateMode();
           try {
+            if (window.isBarcodeAndroidApk()) {
+              const bridge = getAndroidBridge();
+              if (!/^[1-9][0-9]{0,8}$/.test(targetVersion)) throw new Error("Ungültige APK-Version.");
+              if (automatic) return; // Android updates always need an explicit choice.
+              if (typeof bridge?.installAppUpdate === "function") {
+                if (!bridge.installAppUpdate(targetVersion)) throw new Error("Ein APK-Download läuft bereits oder die Version ist ungültig.");
+                closeAppUpdateAvailable();
+                showAppUpdateMessage("APK wird heruntergeladen. Bitte anschließend das Update im Android-Installationsdialog bestätigen.");
+              } else {
+                // Older APK bridges cannot install; offer the actual APK, never navigate to a web app.
+                const apkUrl = `https://github.com/parip69/BarcodeAudi_AndroidAPK/raw/refs/heads/main/Privat/BarcodeAudiScanner_ver${targetVersion}.apk`;
+                window.open(apkUrl, "_blank", "noopener");
+                closeAppUpdateAvailable();
+                showAppUpdateMessage("APK herunterladen und öffnen, um die Android-App zu aktualisieren.");
+              }
+              return;
+            }
             if (isServiceWorkerContextAvailable()) {
               const applied = await applyServiceWorkerUpdate(mode);
               if (applied) {
@@ -16226,6 +16250,7 @@ In den App-Namensraum importieren?`)
           if (
             modeAtStart === "auto" &&
             result?.available &&
+            !window.isBarcodeAndroidApk() &&
             getAppUpdateMode() === "auto"
           ) {
             await startAppUpdate({ automatic: true, remoteVersion: result.remoteVersion });

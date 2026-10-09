@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = "barcode-audi-shell-installed-v115";
-const RUNTIME_CACHE = "barcode-audi-runtime-v115";
+const APP_SHELL_CACHE = "barcode-audi-shell-installed-v116";
+const RUNTIME_CACHE = "barcode-audi-runtime-v116";
 const SETTINGS_CACHE = "barcode-audi-settings-v1";
 const UPDATE_MODE_URL = new URL("__update_mode__", self.registration.scope).toString();
 
@@ -90,9 +90,10 @@ async function fetchFresh(url) {
 
 async function refreshInstalledShell() {
   const cache = await caches.open(APP_SHELL_CACHE);
-  for (const url of PRECACHE_URLS) {
-    const response = await fetchFresh(url);
-    await cache.put(url, response.clone());
+  // Fetch the complete shell before replacing any installed resource.
+  const responses = await Promise.all(PRECACHE_URLS.map(fetchFresh));
+  for (let i = 0; i < PRECACHE_URLS.length; i++) {
+    await cache.put(PRECACHE_URLS[i], responses[i]);
   }
 }
 
@@ -168,7 +169,7 @@ self.addEventListener("activate", (event) => {
         keys
           .filter(
             (key) =>
-              (/^barcode-audi-shell-v\d+$/i.test(key) || /^barcode-audi-shell-installed-v\d+$/i.test(key) || /^barcode-audi-runtime-v\d+$/i.test(key) || key.startsWith("mathe-guru-")) &&
+              (/^barcode-audi-shell-v\d+$/i.test(key) || /^barcode-audi-shell-installed-v\d+$/i.test(key) || /^barcode-audi-runtime-v\d+$/i.test(key)) &&
               key !== APP_SHELL_CACHE &&
               key !== RUNTIME_CACHE &&
               key !== SETTINGS_CACHE,
@@ -240,7 +241,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (isAppShellRequest(request, url)) {
+  const isPrecachedAsset = PRECACHE_URLS.some((path) =>
+    new URL(path, self.registration.scope).pathname === url.pathname
+  );
+  if (isAppShellRequest(request, url) || isPrecachedAsset) {
     // WICHTIG: Ein normaler Start/Reload darf niemals selbst eine neue
     // index.html installieren. Immer die zuletzt ausdrücklich installierte
     // Version ausliefern. Ob MANUELL nur geprüft oder AUTOMATISCH wirklich
