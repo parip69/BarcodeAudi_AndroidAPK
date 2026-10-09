@@ -18,6 +18,15 @@ function Export-Icon([string]$relativePath, [int]$size, [double]$scale = 1) {
 Export-Icon 'app/src/main/assets/icons/icon-192.png' 192
 Export-Icon 'app/src/main/assets/icons/icon-512.png' 512
 Export-Icon 'app/src/main/assets/icons/apple-touch-icon.png' 180
+Export-Icon 'app/src/main/assets/icons/icon-maskable-192.png' 192 0.82
+Export-Icon 'app/src/main/assets/icons/icon-maskable-512.png' 512 0.82
+# Older Android versions use the complete icon instead of adaptive layers.
+foreach ($density in @(@('mdpi',48), @('hdpi',72), @('xhdpi',96), @('xxhdpi',144), @('xxxhdpi',192))) {
+    $directory = "app/src/main/res/mipmap-$($density[0])"
+    New-Item -ItemType Directory -Force (Join-Path $repoRoot $directory) | Out-Null
+    Export-Icon "$directory/ic_launcher.png" $density[1]
+    Export-Icon "$directory/ic_launcher_round.png" $density[1] 0.82
+}
 # Adaptive icons expose approximately the central 72 of 108 dp.
 Export-Icon 'app/src/main/res/drawable/ic_launcher_foreground.png' 512 0.60
 
