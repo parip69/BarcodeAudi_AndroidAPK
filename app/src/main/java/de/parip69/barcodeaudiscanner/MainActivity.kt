@@ -287,6 +287,30 @@ class MainActivity : AppCompatActivity() {
         }
 
         @android.webkit.JavascriptInterface
+        fun shareAppLink(text: String, url: String) {
+            runOnUiThread {
+                try {
+                    val parsed = android.net.Uri.parse(url)
+                    require(parsed.scheme == "https" && parsed.host == "parip69.github.io") {
+                        "Ungültiger App-Link."
+                    }
+                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_SUBJECT, "Audi Barcode-Scanner")
+                        putExtra(android.content.Intent.EXTRA_TEXT, "${text.trim()}\n${url.trim()}")
+                    }
+                    startActivity(android.content.Intent.createChooser(intent, "App-Link teilen"))
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        "Fehler beim Teilen des App-Links: ${e.message}",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+
+        @android.webkit.JavascriptInterface
         fun shareQrCode(fileName: String, dataUrl: String, text: String, url: String) {
             try {
                 val encodedImage = dataUrl.substringAfter("base64,", "")

@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 121 -->
+<!-- Barcode Audi Scanner - Ver. 122 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="121">
+<html lang="de" data-app-version="122">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -13,12 +13,15 @@
     <meta property="og:title" content="Audi Barcode Scanner" />
     <meta property="og:description" content="App mit Barcodes &amp; Einstellungen öffnen" />
     <meta property="og:url" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/" />
-    <meta property="og:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/icon-192.png" />
+    <meta property="og:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Audi Barcode Scanner" />
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Audi Barcode Scanner" />
     <meta name="twitter:description" content="App mit Barcodes &amp; Einstellungen öffnen" />
-    <meta name="twitter:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/icon-192.png" />
+    <meta name="twitter:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card.png" />
     <script>
       !(function (t) {
         function e(r) {
@@ -6729,7 +6732,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "121";
+      const APP_VERSION_FALLBACK = "122";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -15013,7 +15016,7 @@ In den App-Namensraum importieren?`)
         <div id="appShareQrStatus" role="status" aria-live="polite">QR-Code wird erstellt…</div>
         <label class="appShareChoice">
           <input type="radio" name="appShareMode" value="app" checked>
-          <span><strong>Nur App senden</strong><small>Teilt nur den normalen Link zur aktuellen Web-App.</small></span>
+          <span><strong>Nur App senden</strong><small>Sendet den anklickbaren App-Link mit Kärtchen-Vorschau, keinen QR-Code.</small></span>
         </label>
         <label class="appShareChoice">
           <input type="radio" name="appShareMode" value="data">
@@ -15119,11 +15122,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="121">
+    <footer id="appFooter" data-app-version="122">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">121</span>
+        - Ver.<span id="footerVersion">122</span>
       </span>
       <button
         type="button"
@@ -15244,15 +15247,7 @@ In den App-Namensraum importieren?`)
         }
 
         function getShareBaseUrl() {
-          try {
-            const configured = normalizeUpdateUrl(getAppUpdateUrl());
-            const url = new URL(configured, window.location.href);
-            url.search = "";
-            url.hash = "";
-            return url.toString();
-          } catch (_) {
-            return DEFAULT_APP_UPDATE_URL;
-          }
+          return DEFAULT_APP_UPDATE_URL;
         }
 
         async function buildAppShareUrl(includeData) {
@@ -15296,15 +15291,6 @@ In den App-Namensraum importieren?`)
             }
           }
           return canvas;
-        }
-
-        async function canvasToPngBlob(canvas) {
-          return new Promise((resolve, reject) => {
-            canvas.toBlob((blob) => {
-              if (blob) resolve(blob);
-              else reject(new Error("QR-Code konnte nicht als PNG erstellt werden."));
-            }, "image/png");
-          });
         }
 
         async function updateAppShareQrPreview() {
@@ -15438,7 +15424,6 @@ In den App-Namensraum importieren?`)
               ? currentAppShareQr
               : null;
             const shareUrl = preparedQr?.url || await buildAppShareUrl(includeData);
-            const qrCanvas = preparedQr?.canvas || createAppShareQrCanvas(shareUrl);
 
             if (includeData && shareUrl.length > 60000) {
               const proceed = confirm(
@@ -15457,27 +15442,16 @@ In den App-Namensraum importieren?`)
               url: shareUrl,
             };
 
-            const qrBlob = await canvasToPngBlob(qrCanvas);
-            const qrFileName = includeData
-              ? "Audi-Barcode-Scanner-mit-Daten-QR.png"
-              : "Audi-Barcode-Scanner-App-QR.png";
-
-            if (window.AndroidInterface && typeof window.AndroidInterface.shareQrCode === "function") {
-              window.AndroidInterface.shareQrCode(
-                qrFileName,
-                qrCanvas.toDataURL("image/png"),
+            // Der QR-Code ist nur für ein zweites Gerät sichtbar. Gesendet wird
+            // der anklickbare Link; Messenger verwenden die Open-Graph-Kärtchen-Vorschau.
+            if (window.AndroidInterface && typeof window.AndroidInterface.shareAppLink === "function") {
+              window.AndroidInterface.shareAppLink(
                 shareData.text,
                 shareUrl,
               );
               closeAppShareMenu();
             } else if (navigator.share) {
-              const qrFile = new File([qrBlob], qrFileName, { type: "image/png" });
-              const shareWithQr = { ...shareData, files: [qrFile] };
-              if (!navigator.canShare || navigator.canShare(shareWithQr)) {
-                await navigator.share(shareWithQr);
-              } else {
-                await navigator.share(shareData);
-              }
+              await navigator.share(shareData);
               closeAppShareMenu();
             } else if (navigator.clipboard && window.isSecureContext) {
               await navigator.clipboard.writeText(shareUrl);
