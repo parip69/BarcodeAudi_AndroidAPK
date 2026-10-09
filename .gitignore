@@ -4,6 +4,7 @@
 build/
 local.properties
 *.iml
+__pycache__/
 
 # IDE / Tools
 .idea/

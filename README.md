@@ -44,6 +44,45 @@ Passe den Pfad an dein lokales Android-SDK an.
 
 ## Build
 
+### Codex / Linux-Cloud
+
+Das Projekt wird in einem eigenen Ordner bearbeitet, getrennt von anderen Projekten.
+Voraussetzungen: Java 17 oder 21, Python 3, Bash, curl und unzip.
+Das Android-SDK liegt standardmaessig in `/workspace/android-sdk`; alternativ
+kann `ANDROID_HOME` vor dem Setup gesetzt werden. Lokale SDK-Pfade und
+Zugangsdaten werden nicht ins Repository aufgenommen.
+
+Einmalig die Android-Werkzeuge installieren (akzeptiert die SDK-Lizenzen):
+
+```bash
+bash scripts/setup-cloud.sh
+```
+
+Aktuelle Version ohne Erhoehung bauen:
+
+```bash
+bash scripts/build-apk.sh
+```
+
+Naechste Version bauen und HTML/APK in `Privat/` archivieren:
+
+```bash
+python3 scripts/next-version.py
+```
+
+Dieses Skript erhoeht `versionCode`, `versionName`, die HTML-Versionsangaben
+und beide Service-Worker-Caches gemeinsam. Gradle synchronisiert dabei `docs/`.
+Bei einem fehlgeschlagenen Build werden die Versionsdateien zurueckgesetzt.
+Fuer einen erneuten Build derselben Version `build-apk.sh` verwenden, damit
+die Versionsnummer nicht erneut erhoeht wird.
+
+Nach Pruefung der Aenderungen lassen sich Quellcode und die archivierte APK
+mit `git add`, `git commit` und `git push origin main` hochladen.
+Dafuer wird GitHub-Schreibzugriff benoetigt. Eine Debug-APK kann eine bereits
+installierte App nur ersetzen, wenn beide mit demselben Schluessel signiert sind.
+Der lokale Debug-Schluessel muss fuer spaetere Builds aufbewahrt werden;
+er gehoert nicht ins Repository.
+
 Debug-APK bauen:
 
 ```powershell
