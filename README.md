@@ -266,6 +266,7 @@ Import-Link und fragt vor der Übernahme nach Bestätigung. Ältere APKs unterst
 diesen neuen Import-Link noch nicht. Der kleine Downloadpfeil neben dem Teilen-Button
 lädt die APK auf Android auch ohne Web-App-Installationsangebot herunter.
 
-Cloud-Testbuilds sind nicht die mit dem PC-Schlüssel signierten Veröffentlichungen.
-Die veröffentlichte APK weiterhin auf dem PC bauen und vor dem Hochladen die
-Signatur mit dem bisherigen PC-Zertifikat vergleichen.
+Version 125 wurde in der Cloud gebaut und veröffentlicht. Ihr Signaturschlüssel
+ist derselbe wie bei den Cloud-APKs 115–117, unterscheidet sich aber vom PC-Schlüssel
+der APK 124. APK-Updates zwischen unterschiedlichen Schlüsseln werden von Android
+abgelehnt. Vor jeder Veröffentlichung den Signatur-Fingerabdruck vergleichen.
