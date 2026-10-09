@@ -24,6 +24,7 @@
   <meta name="twitter:description" content="Barcodes erstellen. Scannen. Verwalten. Teilen. Jetzt öffnen und installieren." />
   <meta name="twitter:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg" />
   <style>
+    [hidden] { display: none !important; }
     body { margin: 0; padding: 24px; background: #151515; color: #fff; font: 18px system-ui, sans-serif; text-align: center; }
     main { max-width: 700px; margin: 8vh auto; }
     img { display: block; width: 100%; height: auto; border-radius: 16px; }
@@ -36,17 +37,49 @@
     <a id="cardLink" href="./"><img src="./icons/share-card-preview.jpg" width="1200" height="630" alt="Audi Barcode Scanner" /></a>
     <h1>Audi Barcode Scanner</h1>
     <p>Barcodes erstellen, scannen, verwalten und teilen.</p>
-    <a id="openApp" class="open" href="./">App öffnen</a>
+    <p id="shareInfo">Zuerst öffnen oder installieren, danach die mitgesendeten Daten übernehmen.</p>
+    <a id="openApp" class="open" href="./">Web-App öffnen / installieren</a>
+    <a id="chromeLink" class="open" hidden>In Chrome öffnen</a>
+    <a id="apkDownload" class="open" hidden>Android-APK herunterladen</a>
+    <a id="nativeImport" class="open" hidden>Nach APK-Installation: Daten übernehmen</a>
+    <p id="apkHelp" hidden>Nach dem Download die APK öffnen und die Installation bestätigen. Danach hierher zurückkehren und „Daten übernehmen“ drücken. Falls Chrome fehlt, kannst du die Web-App in deinem Browser nutzen oder die APK installieren.</p>
   </main>
   <script>
-    // Messenger lesen die statischen Metadaten ohne JavaScript.
-    // Beim Öffnen gehen Daten und Einstellungen an die eigentliche App weiter.
+    // Keep the landing card visible. The same link retains its data across browser changes.
     const target = new URL("./", window.location.href);
     target.search = window.location.search;
     target.hash = window.location.hash;
     document.getElementById("cardLink").href = target.href;
     document.getElementById("openApp").href = target.href;
-    window.location.replace(target.href);
+    const android = /android/i.test(navigator.userAgent);
+    const shared = target.searchParams.get("share") || new URLSearchParams(target.hash.slice(1)).get("share");
+    if (!shared) document.getElementById("shareInfo").textContent = "Öffne die Web-App oder installiere die Android-App.";
+    if (android) {
+      const chrome = document.getElementById("chromeLink");
+      chrome.hidden = false;
+      chrome.href = `intent://${target.host}${target.pathname}${target.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(target.href)};end`;
+      // Put fragment data in the query for the Chrome intent; the normal link remains private.
+      if (shared) {
+        const chromeTarget = new URL(target);
+        chromeTarget.searchParams.set("share", shared);
+        chrome.href = `intent://${chromeTarget.host}${chromeTarget.pathname}${chromeTarget.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(target.href)};end`;
+      }
+      document.getElementById("apkHelp").hidden = false;
+      const apk = document.getElementById("apkDownload");
+      apk.hidden = false;
+      apk.href = "https://github.com/parip69/BarcodeAudi_AndroidAPK/raw/refs/heads/main/Privat/BarcodeAudiScanner_ver124.apk";
+      fetch(new URL("./?_barcodeUpdateCheck=share", window.location.href), {cache: "no-store"})
+        .then(r => { if (!r.ok) throw new Error("Version nicht erreichbar"); return r.text(); })
+        .then(html => {
+          const version = html.match(/<html[^>]*data-app-version="(\d+)"/i)?.[1];
+          if (version) apk.href = `https://github.com/parip69/BarcodeAudi_AndroidAPK/raw/refs/heads/main/Privat/BarcodeAudiScanner_ver${version}.apk`;
+        }).catch(() => {});
+      if (shared) {
+        const native = document.getElementById("nativeImport");
+        native.hidden = false;
+        native.href = `intent://import?share=${encodeURIComponent(shared)}#Intent;scheme=barcodeaudi;package=de.parip69.barcodeaudiscanner;S.browser_fallback_url=${encodeURIComponent(target.href)};end`;
+      }
+    }
   </script>
 </body>
 </html>

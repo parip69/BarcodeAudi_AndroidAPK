@@ -53,7 +53,9 @@ async function check(mode, target) {
   assert.equal(vm.runInContext('getShareBaseUrl()', context), sharePage);
   await vm.runInContext('shareAppNow()', context);
   assert.equal(sent.length, 1);
-  assert.equal(sent[0].url, url);
+  if (target === 'browser' || target === 'no-files') {
+    assert.equal(sent[0].text.split('\n')[0], url);
+  } else assert.equal(sent[0].url, url);
   assert.equal(sent[0].files, undefined);
   assert.equal(messages.some(message => message.type === 'error'), false);
   assert.equal(button.disabled, false);
@@ -77,10 +79,40 @@ async function check(mode, target) {
     const links = { cardLink: {}, openApp: {} };
     const location = new URL(sharePage + suffix);
     location.replace = value => { redirected = value; };
-    vm.runInNewContext(redirectScript, { URL, window: { location }, document: { getElementById: id => links[id] } });
-    assert.equal(redirected, canonical + suffix);
-    assert.equal(links.openApp.href, redirected);
-    assert.equal(links.cardLink.href, redirected);
+    vm.runInNewContext(redirectScript, { URL, URLSearchParams, navigator: {userAgent:'Desktop'}, window: { location }, document: { getElementById: id => links[id] || (links[id]={}) } });
+    assert.equal(redirected, undefined);
+    assert.equal(links.openApp.href, canonical + suffix);
+    assert.equal(links.cardLink.href, canonical + suffix);
   }
-  console.log('OK: 10 Link-Teilen-Fälle ohne Bildanhang, kompakte Vorschau und Weiterleitung mit Daten/Fragment.');
+  const importFunction = html.slice(html.indexOf('        async function importSharedDataFromUrl()'), html.indexOf('        function updateFooterVersion()'));
+  const stored = new Map([['userConsent', 'accepted']]);
+  let address = canonical + '#share=b.example';
+  let failDecode = true;
+  const importContext = {
+    URL, URLSearchParams, console: {warn() {}},
+    window: { location: {href: address}, isBarcodeAndroid: () => false },
+    history: { replaceState(_, __, value) { address = value; } },
+    appStorage: {
+      getItem: key => stored.get(key) || null,
+      setItem: (key,value) => stored.set(key,value),
+      removeItem: key => stored.delete(key),
+      clear: () => stored.clear(),
+    },
+    decodeSharedPayload: async () => { if (failDecode) throw new Error('Test failure'); return {storage:{barcodes:'["TEST"]'}}; },
+    parseLocalStorageImportPayload: text => Object.entries(JSON.parse(text).storage),
+    confirmSharedDataImport: async () => true,
+    refreshUiAfterFullLocalImport() {}, applyStoredConsentState() {},
+    showAppUpdateMessage() {}, showToast() {},
+  };
+  vm.createContext(importContext);
+  vm.runInContext(importFunction, importContext);
+  await vm.runInContext('importSharedDataFromUrl()', importContext);
+  assert.equal(stored.get('__pendingSharedData'),'b.example');
+  failDecode = false;
+  importContext.window.location.href = canonical;
+  await vm.runInContext('importSharedDataFromUrl()', importContext);
+  assert.equal(stored.get('barcodes'),'["TEST"]');
+  assert.equal(stored.get('userConsent'),'accepted');
+  assert.equal(stored.has('__pendingSharedData'),false);
+  console.log('OK: 10 Link-Teilen-Fälle ohne Bildanhang, kompakte Vorschau und Karten-Links mit erhaltenen Daten/Fragment.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

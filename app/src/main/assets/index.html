@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 124 -->
+<!-- Barcode Audi Scanner - Ver. 125 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="124">
+<html lang="de" data-app-version="125">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3664,6 +3664,7 @@
         white-space: nowrap;
       }
 
+      #appApkDownloadButton,
       #appShareButton,
       #appUpdateButton {
         display: inline-flex;
@@ -5892,6 +5893,7 @@
             "
             >📖</span
           >
+          <a id="appApkDownloadButton" href="#" title="Android-APK herunterladen" aria-label="Android-APK herunterladen" hidden style="margin-left:auto;display:none;padding:8px;color:inherit;text-decoration:none;font-size:24px">⇩</a>
           <button
             type="button"
             id="appShareButton"
@@ -6733,7 +6735,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "124";
+      const APP_VERSION_FALLBACK = "125";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -14899,6 +14901,12 @@ In den App-Namensraum importieren?`)
 
         function updateInstallButton() {
           const uiState = getInstallUiState();
+          const apkDownload = document.getElementById("appApkDownloadButton");
+          if (apkDownload) {
+            apkDownload.hidden = !window.isBarcodeAndroid() || isAndroidApk();
+            apkDownload.style.display = apkDownload.hidden ? "none" : "inline-flex";
+            apkDownload.href = `https://github.com/parip69/BarcodeAudi_AndroidAPK/raw/refs/heads/main/Privat/BarcodeAudiScanner_ver${document.documentElement.dataset.appVersion}.apk`;
+          }
           installButton.textContent = uiState.buttonLabel || "App installieren";
           installButton.style.display = uiState.showButton ? "" : "none";
           installHint.textContent = uiState.hint || "";
@@ -14941,7 +14949,11 @@ In den App-Namensraum importieren?`)
         function showHint() {
           if (isAndroidApk()) return;
           if (isStandalone()) return;
-          if (getAppStateValue(APP_STATE_HINT_FIELD) === "1") return;
+          if (getAppStateValue(APP_STATE_HINT_FIELD) === "1" && !localStorage.getItem("BarcodesApp___pendingSharedData")) {
+            window.barcodeInstallChoiceMade = true;
+            window.dispatchEvent(new Event("barcodeInstallChoice"));
+            return;
+          }
           lastKnownScrollY = window.scrollY || window.pageYOffset || 0;
           hintOverlay.classList.add("show");
           hintOverlay.setAttribute("aria-hidden", "false");
@@ -14950,6 +14962,8 @@ In den App-Namensraum importieren?`)
         }
 
         function hideHint(remember = false) {
+          window.barcodeInstallChoiceMade = true;
+          window.dispatchEvent(new Event("barcodeInstallChoice"));
           if (remember) setAppStateValue(APP_STATE_HINT_FIELD, "1");
           hintOverlay.classList.remove("show");
           hintOverlay.setAttribute("aria-hidden", "true");
@@ -15123,11 +15137,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="124">
+    <footer id="appFooter" data-app-version="125">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Bachner Gerhard</a>
-        - Ver.<span id="footerVersion">124</span>
+        - Ver.<span id="footerVersion">125</span>
       </span>
       <button
         type="button"
@@ -15345,7 +15359,7 @@ In den App-Namensraum importieren?`)
 
           const payload = buildLocalExportPayload(keys);
           const encoded = await gzipTextToBase64Url(JSON.stringify(payload));
-          url.searchParams.set("share", encoded);
+          url.hash = new URLSearchParams({ share: encoded }).toString();
           return url.toString();
         }
 
@@ -15452,7 +15466,7 @@ In den App-Namensraum importieren?`)
               );
               closeAppShareMenu();
             } else if (navigator.share) {
-              await navigator.share(shareData);
+              await navigator.share({ title: shareData.title, text: shareUrl + "\n" + shareData.text });
               closeAppShareMenu();
             } else if (navigator.clipboard && window.isSecureContext) {
               await navigator.clipboard.writeText(shareUrl);
@@ -15483,10 +15497,18 @@ In den App-Namensraum importieren?`)
             return;
           }
 
-          const shared = url.searchParams.get("share");
+          const fragment = new URLSearchParams(url.hash.slice(1));
+          const shared = url.searchParams.get("share") || fragment.get("share") || appStorage.getItem("__pendingSharedData");
           if (!shared) return;
 
-          // Daten sofort aus der sichtbaren URL entfernen. So werden sie nicht versehentlich erneut geteilt.
+          // Retain the data before cleaning the URL, including failed/restarted first installs.
+          try { appStorage.setItem("__pendingSharedData", shared); }
+          catch (_) { showAppUpdateMessage("Daten konnten nicht zwischengespeichert werden. Bitte den Original-Link behalten.", "error"); }
+          if (fragment.has("share")) {
+            fragment.delete("share");
+            url.hash = fragment.toString();
+          }
+          // Daten aus der sichtbaren URL entfernen; pending storage keeps them recoverable.
           url.searchParams.delete("share");
           try {
             history.replaceState(null, "", url.pathname + (url.search || "") + (url.hash || ""));
@@ -15495,15 +15517,21 @@ In den App-Namensraum importieren?`)
           try {
             const payload = await decodeSharedPayload(shared);
             const entries = parseLocalStorageImportPayload(JSON.stringify(payload));
+            if (window.isBarcodeAndroid() && !window.isBarcodeAndroidApk() && !window.isBarcodeStandaloneMode() && !window.barcodeInstallChoiceMade) {
+              await new Promise(resolve => window.addEventListener("barcodeInstallChoice", resolve, { once: true }));
+            }
             const confirmed = await confirmSharedDataImport(entries);
 
             if (!confirmed) {
+              appStorage.removeItem("__pendingSharedData");
               showAppUpdateMessage("Geteilte Daten wurden nicht übernommen.", "success");
               return;
             }
 
+            const existingConsent = appStorage.getItem("userConsent");
             appStorage.clear();
-            entries.forEach(([key, value]) => appStorage.setItem(key, value));
+            entries.filter(([key]) => !key.startsWith("__")).forEach(([key, value]) => appStorage.setItem(key, value));
+            if (existingConsent && !appStorage.getItem("userConsent")) appStorage.setItem("userConsent", existingConsent);
 
             try {
               refreshUiAfterFullLocalImport();

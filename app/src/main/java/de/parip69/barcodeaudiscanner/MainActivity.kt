@@ -297,7 +297,7 @@ class MainActivity : AppCompatActivity() {
                     val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(android.content.Intent.EXTRA_SUBJECT, "Audi Barcode-Scanner")
-                        putExtra(android.content.Intent.EXTRA_TEXT, "${text.trim()}\n${url.trim()}")
+                        putExtra(android.content.Intent.EXTRA_TEXT, "${url.trim()}\n${text.trim()}")
                     }
                     startActivity(android.content.Intent.createChooser(intent, "App-Link teilen"))
                 } catch (e: Exception) {
@@ -485,6 +485,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
+    private fun loadSharedAppIntent(incoming: android.content.Intent?) {
+        val uri = incoming?.data
+        val shared = if (uri?.scheme == "barcodeaudi" && uri.host == "import") uri.getQueryParameter("share") else null
+        val suffix = if (!shared.isNullOrBlank()) "?share=${Uri.encode(shared)}" else ""
+        binding.webView.loadUrl("file:///android_asset/index.html$suffix")
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        loadSharedAppIntent(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -501,7 +514,7 @@ class MainActivity : AppCompatActivity() {
         scheduleImmersiveFullscreen()
 
         configureWebView(binding.webView)
-        binding.webView.loadUrl("file:///android_asset/index.html")
+        loadSharedAppIntent(intent)
 
         binding.swipeRefresh.setOnRefreshListener {
             binding.webView.reload()

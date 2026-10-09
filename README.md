@@ -245,3 +245,27 @@ Update-Funktion zu erhalten. Ein Wechsel zur Website aktualisiert keine APK.
 Der ursprüngliche Schlüssel archivierter APKs ist in der Cloud nicht vorhanden;
 Cloud-APKs ab Version 115 verwenden einen anderen, außerhalb von Git gespeicherten
 Debug-Schlüssel und können ursprüngliche Installationen nicht direkt ersetzen.
+
+## Teilen und Erstinstallation ab Version 125
+
+Ein geteilter Link zeigt zuerst `teilen.html` mit der Visitenkarte. Mitgesendete
+Daten hängen als URL-Fragment am selben Link; sie werden nicht als zweite Nachricht
+versendet. Alte Links mit `?share=` bleiben lesbar. Der Messenger entscheidet, ob
+und wie er die Open-Graph-Vorschau anzeigt.
+
+Auf Android gibt es eine optionale Chrome-Weiterleitung mit Browser-Fallback und
+einen APK-Download. Eine Webseite kann Chrome nicht erzwingen oder installieren.
+Nach dem Öffnen der Web-App kommt die Installationsauswahl vor dem Datenimport.
+Nicht gelesene Daten bleiben lokal für einen erneuten Versuch gespeichert. Ein
+abgelehnter Import verwirft die vorgemerkten Daten.
+
+Chrome und eine native APK haben getrennte Datenspeicher. Für eine neu installierte
+APK kehrt der Empfänger zum ursprünglichen Karten-Link zurück und drückt
+„Nach APK-Installation: Daten übernehmen“. Die APK ab Version 125 verarbeitet den
+Import-Link und fragt vor der Übernahme nach Bestätigung. Ältere APKs unterstützen
+diesen neuen Import-Link noch nicht. Der kleine Downloadpfeil neben dem Teilen-Button
+lädt die APK auf Android auch ohne Web-App-Installationsangebot herunter.
+
+Cloud-Testbuilds sind nicht die mit dem PC-Schlüssel signierten Veröffentlichungen.
+Die veröffentlichte APK weiterhin auf dem PC bauen und vor dem Hochladen die
+Signatur mit dem bisherigen PC-Zertifikat vergleichen.
