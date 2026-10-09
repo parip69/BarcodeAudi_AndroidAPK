@@ -1,5 +1,5 @@
-const APP_SHELL_CACHE = "barcode-audi-shell-installed-v118";
-const RUNTIME_CACHE = "barcode-audi-runtime-v118";
+const APP_SHELL_CACHE = "barcode-audi-shell-installed-v119";
+const RUNTIME_CACHE = "barcode-audi-runtime-v119";
 const SETTINGS_CACHE = "barcode-audi-settings-v1";
 const UPDATE_MODE_URL = new URL("__update_mode__", self.registration.scope).toString();
 
@@ -45,7 +45,7 @@ async function setUpdateMode(mode) {
 }
 
 function versionFromLegacyCacheName(name) {
-  const match = String(name || "").match(/^barcode-audi-shell-(?:installed-)?v(\d+)$/i);
+  const match = String(name || "").match(/^barcode-audi-shell-(?:installed-)?v(\d+)(?:-r\d+)?$/i);
   return match ? Number(match[1]) : -1;
 }
 
@@ -54,7 +54,7 @@ async function findBestLegacyShellCache() {
   return keys
     .filter((key) =>
       key !== APP_SHELL_CACHE &&
-      /^barcode-audi-shell-(?:installed-)?v\d+$/i.test(key)
+      /^barcode-audi-shell-(?:installed-)?v\d+(?:-r\d+)?$/i.test(key)
     )
     .sort((a, b) => versionFromLegacyCacheName(b) - versionFromLegacyCacheName(a))[0] || "";
 }
@@ -169,7 +169,7 @@ self.addEventListener("activate", (event) => {
         keys
           .filter(
             (key) =>
-              (/^barcode-audi-shell-v\d+$/i.test(key) || /^barcode-audi-shell-installed-v\d+$/i.test(key) || /^barcode-audi-runtime-v\d+$/i.test(key)) &&
+              (/^barcode-audi-shell-v\d+(?:-r\d+)?$/i.test(key) || /^barcode-audi-shell-installed-v\d+(?:-r\d+)?$/i.test(key) || /^barcode-audi-runtime-v\d+(?:-r\d+)?$/i.test(key)) &&
               key !== APP_SHELL_CACHE &&
               key !== RUNTIME_CACHE &&
               key !== SETTINGS_CACHE,
