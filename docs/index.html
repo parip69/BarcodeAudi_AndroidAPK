@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 130 -->
+<!-- Barcode Audi Scanner - Ver. 131 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="130">
+<html lang="de" data-app-version="131">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3683,8 +3683,8 @@
         min-height: 28px;
         border: 1px solid rgba(140, 145, 155, 0.28);
         border-radius: 6px;
-        background: rgba(140, 145, 155, 0.09);
-        color: var(--app-muted, #777);
+        background: #e3e5e7;
+        color: #69717a;
         font-size: 24px;
         line-height: 1;
         font-weight: 500;
@@ -3702,6 +3702,14 @@
         -webkit-touch-callout: none;
         user-select: none;
         -webkit-user-select: none;
+      }
+
+      #appUpdateButton.update-available {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: -0.2px;
+        white-space: nowrap;
+        overflow: hidden;
       }
 
       #appApkDownloadButton {
@@ -6737,7 +6745,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "130";
+      const APP_VERSION_FALLBACK = "131";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -15139,11 +15147,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="130">
+    <footer id="appFooter" data-app-version="131">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Gerhard Bachner</a>
-        - Ver.<span id="footerVersion">130</span>
+        - Ver.<span id="footerVersion">131</span>
       </span>
       <button
         type="button"
@@ -15603,7 +15611,7 @@ In den App-Namensraum importieren?`)
           if (!button) return;
           const version = String(remoteVersion || "").trim();
           button.dataset.availableVersion = version;
-          button.textContent = version ? `↻ → ${version}` : "↻";
+          button.textContent = version ? `→ ${version}` : "↻";
           button.classList.toggle("update-available", !!version);
           button.title = version
             ? `Neue Version ${version} verfügbar · Kurz drücken zum Aktualisieren · Lang drücken für Einstellungen`
@@ -16013,7 +16021,7 @@ In den App-Namensraum importieren?`)
             if (button && !silent) {
               button.disabled = false;
               const available = button.dataset.availableVersion || "";
-              button.textContent = available ? `↻ → ${available}` : "↻";
+              setUpdateButtonVersion(available);
             }
           }
         }
@@ -16369,7 +16377,12 @@ In den App-Namensraum importieren?`)
               event.stopPropagation();
               return;
             }
-            checkForAppUpdate();
+            const availableVersion = updateButton.dataset.availableVersion;
+            if (availableVersion) {
+              startAppUpdate({ remoteVersion: availableVersion });
+            } else {
+              checkForAppUpdate();
+            }
           });
 
           document.getElementById("appUpdateSettingsSaveButton")?.addEventListener("click", function () {
