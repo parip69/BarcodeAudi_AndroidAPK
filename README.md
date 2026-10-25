@@ -270,3 +270,12 @@ Version 125 wurde in der Cloud gebaut und veröffentlicht. Ihr Signaturschlüsse
 ist derselbe wie bei den Cloud-APKs 115–117, unterscheidet sich aber vom PC-Schlüssel
 der APK 124. APK-Updates zwischen unterschiedlichen Schlüsseln werden von Android
 abgelehnt. Vor jeder Veröffentlichung den Signatur-Fingerabdruck vergleichen.
+
+## Gemeinsamer Signaturschlüssel für VS Code und Cloud
+
+Debug-Builds verwenden auf allen Rechnern automatisch den im Repository
+enthaltenen Schlüssel `signing/barcodeaudi-debug.keystore`. Nach dem Klonen ist
+keine Schlüsselübertragung nötig. Details, Fingerabdruck und die Abgrenzung zu
+älteren APK-Signaturen stehen in [signing/README.md](signing/README.md).
+Die früheren Hinweise zu einem ausschließlich lokalen Debug-Schlüssel beschreiben
+den bisherigen Zustand; für neue Debug-Builds gilt diese gemeinsame Konfiguration.

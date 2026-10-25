@@ -29,6 +29,16 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Shared development identity for local, VS Code and cloud debug builds.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("signing/barcodeaudi-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
