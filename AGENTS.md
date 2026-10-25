@@ -22,3 +22,24 @@ in `signing/README.md`. Keep any separate production signing keys outside Git.
 Archive APK and HTML in `Privat/` as the version script does. Include the generated
 `docs/` changes when uploading to GitHub. Never force-push. Do not claim a separate
 Codex UI environment was created merely because this repository was cloned.
+
+## Required signing identity for every debug APK
+
+The authoritative key is the existing GitHub file:
+https://github.com/parip69/BarcodeAudi_AndroidAPK/blob/main/signing/barcodeaudi-debug.keystore
+
+Its checkout path is `signing/barcodeaudi-debug.keystore`; Gradle selects it in
+`app/build.gradle.kts` for VS Code/Codex, Windows, Android Studio and cloud builds.
+Certificate SHA-256 (not the file hash):
+`b46b439e36ed2de248b9085cb4b457b74ba70b5beb823962e9c931ce79104d28`.
+Use alias `androiddebugkey` and the documented development passwords in
+`signing/README.md`. Never generate, replace or rotate this key; never fall back
+to a machine-local debug keystore. If it is missing, recover this exact file from
+GitHub and verify the certificate before building. If the fingerprint differs,
+stop and report the mismatch rather than changing signing identities.
+
+Before publishing any APK (including versions built in VS Code), verify the APK
+certificate matches this fingerprint. Do not infer an APK's signature from its
+filename or version. Fetch current GitHub state before choosing a new version;
+respect versions already built locally by the user and do not overwrite their
+APK or bump a version merely to update these instructions.

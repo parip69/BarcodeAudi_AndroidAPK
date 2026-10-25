@@ -23,3 +23,12 @@ Spätere Debug-Builds mit diesem gemeinsamen Schlüssel haben dieselbe Signatur.
 Die APK-Signatur vor einer Veröffentlichung mit Android SDK `apksigner verify
 --verbose --print-certs <apk>` prüfen. Diese Einrichtung veröffentlicht keine
 neue APK und erhöht keine Versionsnummer.
+
+## Verbindliche Quelle für alle Entwicklungsumgebungen
+
+Die maßgebliche Datei ist der [Schlüssel auf GitHub](https://github.com/parip69/BarcodeAudi_AndroidAPK/blob/main/signing/barcodeaudi-debug.keystore).
+Die projektweite Anweisung steht in `AGENTS.md` im Projektstamm. Genau diese Datei
+verwenden; niemals einen neuen Schlüssel erzeugen oder einen lokalen Standard-
+Debug-Schlüssel als Ersatz benutzen. Falls sie fehlt, dieselbe Datei aus GitHub
+wiederherstellen und den oben genannten Zertifikatsfingerabdruck prüfen.
+Auch in VS Code gebaute APKs müssen vor dem Hochladen diesen Fingerabdruck haben.
