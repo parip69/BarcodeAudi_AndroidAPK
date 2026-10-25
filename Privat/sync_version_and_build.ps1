@@ -26,11 +26,9 @@ function Invoke-GitChecked {
     if ($LASTEXITCODE -ne 0) { throw "Git fehlgeschlagen: git $($GitArguments -join ' ')" }
 }
 
-# Stop before changing versions if Git or the verification tools are unavailable.
-Invoke-GitChecked @("fetch", "origin")
+# Publish the local working state. Fetch/pull belongs to the separate Git Pull button.
 $branch = & git -C $projectRoot branch --show-current
 if ($LASTEXITCODE -ne 0 -or $branch -ne "main") { throw "Bitte zuerst main auschecken." }
-Invoke-GitChecked @("merge", "--ff-only", "origin/main")
 $untracked = & git -C $projectRoot ls-files --others --exclude-standard
 if ($LASTEXITCODE -ne 0 -or $untracked) { throw "Neue Dateien zuerst gezielt zu Git hinzufuegen, dann erneut starten." }
 
