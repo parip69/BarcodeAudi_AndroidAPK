@@ -19,6 +19,9 @@ $swFile = Join-Path $projectRoot "app\src\main\assets\sw.js"
 $gradlewBat = Join-Path $projectRoot "gradlew.bat"
 $privatDir = Join-Path $projectRoot "Privat"
 $apkOutputDir = Join-Path $projectRoot "app\build\outputs\apk\debug"
+if (-not (Test-Path -LiteralPath (Join-Path $projectRoot "signing\barcodeaudi-debug.keystore"))) {
+    throw "Signierungsschluessel fehlt. Originaldatei in signing wiederherstellen; Version bleibt unveraendert."
+}
 
 function Invoke-GitChecked {
     param([string[]]$GitArguments)
@@ -252,6 +255,11 @@ if ([string]::IsNullOrWhiteSpace($currentVersion)) {
     exit 1
 }
 
+$versionOriginals = @{}
+foreach ($path in @($gradleFile, $indexFile, $swFile, (Join-Path $projectRoot "docs\index.html"), (Join-Path $projectRoot "docs\sw.js"))) {
+    if (Test-Path -LiteralPath $path) { $versionOriginals[$path] = [IO.File]::ReadAllBytes($path) }
+}
+
 $newVersionNumber = [int64]$currentVersion + 1
 $newVersion = $newVersionNumber.ToString()
 if ((Test-Path (Join-Path $privatDir "BarcodeAudiScanner_ver$newVersion.apk")) -or
@@ -360,4 +368,6 @@ if ($buildExitCode -eq 0) {
 }
 
 Write-Host "[FEHLER] Fehler beim Build!"
+foreach ($path in $versionOriginals.Keys) { [IO.File]::WriteAllBytes($path, $versionOriginals[$path]) }
+Write-Host "[INFO] Versionsdateien auf den Stand vor dem Versuch zurueckgesetzt. Kein Commit/Push."
 exit $buildExitCode
