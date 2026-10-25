@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 134 -->
+<!-- Barcode Audi Scanner - Ver. 135 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="134">
+<html lang="de" data-app-version="135">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3645,26 +3645,24 @@
         color: #fff;
       }
 
-      /* Footer bündig mit dem übergeordneten Hauptcontainer (Ver. 102) */
+      /* Version links, Entwickler mittig, Update rechts. */
       #appFooter {
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
         align-items: center;
-        justify-content: flex-start;
         gap: 8px;
-        flex-wrap: nowrap;
         width: min(100%, 1126px);
-        margin-top: 7px;
-        margin-left: auto;
-        margin-right: auto;
+        margin: 7px auto 0;
         padding-left: 0;
         padding-right: 0;
         box-sizing: border-box;
       }
 
-      #appFooter > span {
+      #appFooter .footer-version {
         min-width: 0;
-        white-space: normal;
         text-align: left;
+        font-size: 14px;
+        white-space: nowrap;
       }
 
       #appApkDownloadButton,
@@ -3865,16 +3863,39 @@
       }
 
       #developerInfoLink {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        margin: 0;
+        padding: 6px 12px;
+        border: 1px solid rgba(140, 145, 155, 0.32);
+        border-radius: 8px;
+        background: rgba(140, 145, 155, 0.12);
         color: inherit;
-        font-size: 14px;
-        font-weight: 600;
-        text-decoration: underline;
-        text-underline-offset: 2px;
+        font: inherit;
+        line-height: 1.2;
+        text-decoration: none;
         cursor: pointer;
+        touch-action: manipulation;
       }
-      #developerInfoLink:hover,
+      #developerInfoLink .developer-name {
+        font-size: clamp(16px, 4.8vw, 20px);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      #developerInfoLink .developer-hint {
+        font-size: 11px;
+        font-weight: 400;
+        white-space: nowrap;
+      }
+      #developerInfoLink:hover {
+        background: rgba(140, 145, 155, 0.20);
+      }
       #developerInfoLink:focus-visible {
-        color: #165b87;
+        outline: 2px solid currentColor;
+        outline-offset: 3px;
       }
 
       #developerInfoOverlay {
@@ -6745,7 +6766,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "134";
+      const APP_VERSION_FALLBACK = "135";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -15147,12 +15168,12 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="134">
-      <span>
-        Entwickler:
-        <a href="#" id="developerInfoLink">Gerhard Bachner</a>
-        - Ver.<span id="footerVersion">134</span>
-      </span>
+    <footer id="appFooter" data-app-version="135">
+      <span class="footer-version">Ver.<span id="footerVersion">135</span></span>
+      <button type="button" id="developerInfoLink" aria-haspopup="dialog" aria-controls="developerInfoOverlay">
+        <span class="developer-name">Gerhard Bachner</span>
+        <span class="developer-hint">Entwickler · hier klicken</span>
+      </button>
       <button
         type="button"
         id="appUpdateButton"
