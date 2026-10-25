@@ -2,6 +2,25 @@
 
 Work only in this repository; other projects in `/workspace` are independent.
 
+## Commit-Nachrichten und Veroeffentlichung
+
+Commit-Nachrichten auf Deutsch schreiben. Titel und beschreibende Zeilen mit
+thematisch passenden Icons beginnen, z. B. 📤 fuer Veroeffentlichung, 🔄 fuer
+Update-Ablauf, 🔒 fuer Signierung, 💡 fuer neue Funktionen oder ✅ fuer belegte
+Pruefergebnisse. Icons passend zum Inhalt waehlen, nicht zufaellig abwechseln.
+Im Titel die Version nennen, wenn eine Version veroeffentlicht wird. Kurz und
+konkret die tatsaechlichen Aenderungen beschreiben; nicht nur "Publish version"
+schreiben und keine ungetesteten Ergebnisse als erfolgreich darstellen.
+Diese Nachricht vor dem Push erstellen und mit dem Commit hochladen.
+
+Der Button "Version +1 & GitHub" veroeffentlicht ausschliesslich den lokalen
+Arbeitsstand: Version erhoehen, kompilieren, APK pruefen, APK/HTML archivieren,
+committen und pushen. Kein automatisches Fetch, Pull, Merge oder Rebase in diesem
+Ablauf. Zum ausdruecklichen Holen von GitHub dient der separate "Git Pull"-Button.
+Die fertige APK unter `Privat/BarcodeAudiScanner_ver<Version>.apk` und die von
+Gradle erzeugten `docs/`-Dateien mit hochladen, damit der vorhandene Update-Button
+die passende APK auf GitHub findet.
+
 The editable web source is `app/src/main/assets/`. Do not edit `docs/` directly:
 Gradle synchronizes it from the assets during every build.
 
