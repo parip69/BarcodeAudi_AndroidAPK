@@ -23,8 +23,8 @@ android {
         applicationId = "de.parip69.barcodeaudiscanner"
         minSdk = 24
         targetSdk = 35
-        versionCode = 131
-        versionName = "131"
+        versionCode = 132
+        versionName = "132"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -71,6 +71,11 @@ tasks.named("preBuild") {
     dependsOn(syncDocsWebApp)
 }
 
+// Kotlin LSP needs Android test generated sources before reading its Gradle model.
+// https://github.com/Kotlin/kotlin-lsp/issues/253
+tasks.matching { it.name == "prepareKotlinIdeaImport" }.configureEach {
+    dependsOn("javaPreCompileDebugAndroidTest", "dataBindingGenBaseClassesDebugAndroidTest")
+}
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
