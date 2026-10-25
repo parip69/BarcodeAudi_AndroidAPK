@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 129 -->
+<!-- Barcode Audi Scanner - Ver. 130 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="129">
+<html lang="de" data-app-version="130">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -6737,7 +6737,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "129";
+      const APP_VERSION_FALLBACK = "130";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -15139,11 +15139,11 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="129">
+    <footer id="appFooter" data-app-version="130">
       <span>
         Entwickler:
         <a href="#" id="developerInfoLink">Gerhard Bachner</a>
-        - Ver.<span id="footerVersion">129</span>
+        - Ver.<span id="footerVersion">130</span>
       </span>
       <button
         type="button"
@@ -15968,10 +15968,8 @@ In den App-Namensraum importieren?`)
             return null;
           }
 
-          const oldText = button?.textContent || "↻";
           if (button && !silent) {
             button.disabled = true;
-            button.textContent = "Prüfe…";
           }
 
           try {
@@ -16016,8 +16014,6 @@ In den App-Namensraum importieren?`)
               button.disabled = false;
               const available = button.dataset.availableVersion || "";
               button.textContent = available ? `↻ → ${available}` : "↻";
-            } else if (button && silent && button.textContent === "Prüfe…") {
-              button.textContent = oldText;
             }
           }
         }
