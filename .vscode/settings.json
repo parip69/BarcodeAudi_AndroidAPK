@@ -1,0 +1,41 @@
+{
+  "chatgpt.cliExecutable": "",
+  "chat.viewSessions.orientation": "stacked",
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "liveServer.settings.donotShowInfoMsg": true,
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "editor.stickyScroll.enabled": false,
+  "workbench.editorAssociations": {
+    "*.copilotmd": "vscode.markdown.preview.editor"
+  },
+  "workbench.localHistory.maxFileSize": 4096,
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.import.gradle.java.home": "C:/Program Files/Microsoft/jdk-17.0.18.8-hotspot",
+  "statusbar_command.commands": [
+    {
+      "text": "$(package) Build APK",
+      "command": "workbench.action.tasks.runTask",
+      "arguments": ["Build APK"],
+      "tooltip": "APK bauen"
+    },
+    {
+      "text": "$(sync) Sync & Build APK",
+      "command": "workbench.action.tasks.runTask",
+      "arguments": ["Sync Version & Build APK"],
+      "tooltip": "Version synchronisieren & APK bauen"
+    },
+    {
+      "text": "⬇️ Git Pull",
+      "name": "Von GitHub holen",
+      "alignment": "left",
+      "priority": 10001,
+      "color": "#00BFFF",
+      "command": "workbench.action.tasks.runTask",
+      "arguments": ["Git Pull (Von GitHub holen)"],
+      "tooltip": "Git Pull: Neuesten Stand von GitHub (main) holen"
+    }
+  ]
+}
