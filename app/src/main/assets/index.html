@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 137 -->
+<!-- Barcode Audi Scanner - Ver. 138 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="137">
+<html lang="de" data-app-version="138">
   <head>
     <meta charset="UTF-8" />
     <title>Audi Barcode Scanner</title>
@@ -3645,10 +3645,10 @@
         color: #fff;
       }
 
-      /* Eine Zeile: Hinweis links, Name mittig, Version und Update rechts. */
+      /* Entwickler und Version kompakt links; nur Update ganz rechts. */
       #appFooter {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        grid-template-columns: auto auto auto minmax(0, 1fr);
         align-items: center;
         gap: 5px;
         width: min(100%, 1126px);
@@ -3662,13 +3662,6 @@
         font-size: clamp(11px, 2.9vw, 14px);
         white-space: nowrap;
       }
-      .footer-update-controls {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 5px;
-        min-width: 0;
-      }
       #appFooter .footer-version {
         font-size: clamp(11px, 2.9vw, 14px);
         white-space: nowrap;
@@ -3676,7 +3669,6 @@
       @media (max-width: 360px) {
         #appFooter { gap: 3px; }
         #appFooter #developerInfoLink .developer-name { font-size: 13px; }
-        .footer-update-controls { gap: 3px; }
         #appFooter #appUpdateButton.update-available {
           min-width: 49px;
           padding: 0 4px;
@@ -6785,7 +6777,7 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "137";
+      const APP_VERSION_FALLBACK = "138";
       const APP_NAME_FALLBACK = "Barcode Audi Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
@@ -15187,20 +15179,18 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="137">
+    <footer id="appFooter" data-app-version="138">
       <span class="footer-developer-hint">Entwickler →</span>
       <button type="button" id="developerInfoLink" aria-haspopup="dialog" aria-controls="developerInfoOverlay">
         <span class="developer-name">Gerhard Bachner</span>
       </button>
-      <div class="footer-update-controls">
-        <span class="footer-version">Ver.<span id="footerVersion">137</span></span>
+        <span class="footer-version">Ver.<span id="footerVersion">138</span></span>
         <button
           type="button"
           id="appUpdateButton"
           title="Kurz drücken: Update prüfen · Lang drücken: Update-Einstellungen"
           aria-label="Update prüfen. Lange drücken, um die Update-Einstellungen zu öffnen."
         >↻</button>
-      </div>
     </footer>
 
     <script src="qrcode-generator.js"></script>

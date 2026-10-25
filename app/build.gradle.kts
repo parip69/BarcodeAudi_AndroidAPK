@@ -23,8 +23,8 @@ android {
         applicationId = "de.parip69.barcodeaudiscanner"
         minSdk = 24
         targetSdk = 35
-        versionCode = 137
-        versionName = "137"
+        versionCode = 138
+        versionName = "138"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
