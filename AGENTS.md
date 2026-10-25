@@ -59,6 +59,7 @@ stop and report the mismatch rather than changing signing identities.
 
 Before publishing any APK (including versions built in VS Code), verify the APK
 certificate matches this fingerprint. Do not infer an APK's signature from its
-filename or version. Fetch current GitHub state before choosing a new version;
-respect versions already built locally by the user and do not overwrite their
+filename or version. Fetch/pull only when the user explicitly requests getting
+the GitHub state; never do so automatically while publishing local work.
+Respect versions already built locally by the user and do not overwrite their
 APK or bump a version merely to update these instructions.
