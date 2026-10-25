@@ -22,10 +22,10 @@
       "tooltip": "APK bauen"
     },
     {
-      "text": "$(sync) Sync & Build APK",
+      "text": "⬆️ Version +1 & GitHub",
       "command": "workbench.action.tasks.runTask",
       "arguments": ["Sync Version & Build APK"],
-      "tooltip": "Version synchronisieren & APK bauen"
+      "tooltip": "Version +1, APK bauen und pruefen, APK/HTML und docs auf GitHub hochladen"
     },
     {
       "text": "⬇️ Git Pull",

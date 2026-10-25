@@ -169,7 +169,7 @@ Privat/
 - `.vscode/settings.json` enthaelt die lokalen Editor-Einstellungen und die Statusleisten-Buttons.
 - `.vscode/launch.json` ist aktuell nur ein Platzhalter.
 - `Privat/sync_version_and_build.bat` ist der einfache Einstiegspunkt fuer Windows und ruft das PowerShell-Skript auf.
-- `Privat/sync_version_and_build.ps1` macht die eigentliche Arbeit: Version erhoehen, `index.html` synchronisieren, APK bauen und danach die Archivkopien nach `Privat/` schreiben.
+- `Privat/sync_version_and_build.ps1` macht die eigentliche Arbeit: GitHub per Fast-forward synchronisieren, Version erhoehen, Web-Version und Cache synchronisieren, APK bauen, Signatur/Paket/Version pruefen, APK und HTML in `Privat/` archivieren und mit `docs/` und `signing/` committen und auf `main` pushen. Vorhandene Archivversionen werden nicht ueberschrieben.
 - `Privat/VSCode_Vorlage/` enthaelt die kopierbaren Vorlagen fuer neue Projekte.
 
 ### Eingerichtete Tasks
@@ -184,7 +184,7 @@ In `tasks.json` sind aktuell diese Tasks hinterlegt:
 In `settings.json` sind Buttons ueber `statusbar_command.commands` hinterlegt. Dadurch erscheinen unten in VS Code diese Schnellstarter:
 
 - `Build APK`
-- `Sync & Build APK`
+- `⬆️ Version +1 & GitHub` (Version erhoehen, bauen, pruefen und hochladen)
 
 Die Buttons starten intern einfach die beiden VS-Code-Tasks.
 

@@ -20,6 +20,47 @@ $gradlewBat = Join-Path $projectRoot "gradlew.bat"
 $privatDir = Join-Path $projectRoot "Privat"
 $apkOutputDir = Join-Path $projectRoot "app\build\outputs\apk\debug"
 
+function Invoke-GitChecked {
+    param([string[]]$GitArguments)
+    & git -C $projectRoot @GitArguments | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "Git fehlgeschlagen: git $($GitArguments -join ' ')" }
+}
+
+# Stop before changing versions if Git or the verification tools are unavailable.
+Invoke-GitChecked @("fetch", "origin")
+$branch = & git -C $projectRoot branch --show-current
+if ($LASTEXITCODE -ne 0 -or $branch -ne "main") { throw "Bitte zuerst main auschecken." }
+Invoke-GitChecked @("merge", "--ff-only", "origin/main")
+$untracked = & git -C $projectRoot ls-files --others --exclude-standard
+if ($LASTEXITCODE -ne 0 -or $untracked) { throw "Neue Dateien zuerst gezielt zu Git hinzufuegen, dann erneut starten." }
+
+$sdkRoot = $env:ANDROID_HOME
+if (-not $sdkRoot) { $sdkRoot = $env:ANDROID_SDK_ROOT }
+if (-not $sdkRoot) {
+    $localProperties = Get-Content -LiteralPath (Join-Path $projectRoot "local.properties")
+    $sdkLine = $localProperties | Where-Object { $_ -match '^sdk\.dir=' } | Select-Object -First 1
+    if ($sdkLine) { $sdkRoot = $sdkLine.Substring(8).Replace('\\', '\').Replace('\:', ':') }
+}
+$buildTools = Get-ChildItem -LiteralPath (Join-Path $sdkRoot "build-tools") -Directory |
+    Where-Object { (Test-Path (Join-Path $_.FullName "apksigner.bat")) -and (Test-Path (Join-Path $_.FullName "aapt.exe")) } |
+    Sort-Object { [version]$_.Name } -Descending | Select-Object -First 1
+if (-not $buildTools) { throw "Android SDK apksigner/aapt fehlen." }
+$apksigner = Join-Path $buildTools.FullName "apksigner.bat"
+$aapt = Join-Path $buildTools.FullName "aapt.exe"
+$expectedCertificate = "b46b439e36ed2de248b9085cb4b457b74ba70b5beb823962e9c931ce79104d28"
+
+function Test-ApkIdentity {
+    param([string]$Path, [string]$Version)
+    $certificates = & $apksigner verify --print-certs $Path
+    if ($LASTEXITCODE -ne 0) { throw "APK-Signatur ungueltig: $Path" }
+    $fingerprints = @($certificates | Select-String 'certificate SHA-256 digest: (\w+)' | ForEach-Object { $_.Matches[0].Groups[1].Value })
+    if ($fingerprints.Count -ne 1 -or $fingerprints[0] -ne $expectedCertificate) { throw "Abweichender Signierungsschluessel: $Path" }
+    $badging = & $aapt dump badging $Path
+    if ($LASTEXITCODE -ne 0 -or -not ($badging -match "^package: name='de.parip69.barcodeaudiscanner' versionCode='$Version' versionName='$Version' ")) {
+        throw "APK-Paket oder Version stimmt nicht: $Path"
+    }
+}
+
 function Read-TextFilePreserveEncoding {
     param(
         [Parameter(Mandatory = $true)]
@@ -172,19 +213,15 @@ function Copy-BuildArtifactsToPrivat {
     $apkSourcePath = Join-Path $apkOutputDir $expectedApkFileName
 
     if (-not (Test-Path -LiteralPath $apkSourcePath)) {
-        $latestApk = Get-ChildItem -LiteralPath $apkOutputDir -Filter "*.apk" -File -ErrorAction SilentlyContinue |
-            Sort-Object LastWriteTime -Descending |
-            Select-Object -First 1
-
-        if ($null -eq $latestApk) {
-            throw "Keine gebaute APK im Ordner gefunden: $apkOutputDir"
-        }
-
-        $apkSourcePath = $latestApk.FullName
+        throw "Erwartete APK fehlt: $apkSourcePath"
     }
+
+    Test-ApkIdentity -Path $apkSourcePath -Version $Version
 
     $htmlArchivePath = Join-Path $privatDir ("BarcodeAudiScanner_ver{0}.html" -f $Version)
     $apkArchivePath = Join-Path $privatDir ("BarcodeAudiScanner_ver{0}.apk" -f $Version)
+
+    if ((Test-Path $htmlArchivePath) -or (Test-Path $apkArchivePath)) { throw "Archivversion $Version existiert bereits." }
 
     Copy-Item -LiteralPath $indexFile -Destination $htmlArchivePath -Force
     Copy-Item -LiteralPath $apkSourcePath -Destination $apkArchivePath -Force
@@ -219,6 +256,12 @@ if ([string]::IsNullOrWhiteSpace($currentVersion)) {
 
 $newVersionNumber = [int64]$currentVersion + 1
 $newVersion = $newVersionNumber.ToString()
+if ((Test-Path (Join-Path $privatDir "BarcodeAudiScanner_ver$newVersion.apk")) -or
+    (Test-Path (Join-Path $privatDir "BarcodeAudiScanner_ver$newVersion.html"))) {
+    throw "Version $newVersion ist bereits archiviert. Abbruch ohne Ueberschreiben."
+}
+$previousApk = Join-Path $privatDir "BarcodeAudiScanner_ver$currentVersion.apk"
+if (Test-Path $previousApk) { Test-ApkIdentity -Path $previousApk -Version $currentVersion }
 $updatedGradleText = $gradleText
 
 if ([regex]::IsMatch($updatedGradleText, '(?m)^\s*versionCode\s*=')) {
@@ -298,7 +341,7 @@ if (-not (Test-Path -LiteralPath $gradlewBat)) {
     exit 1
 }
 
-& $gradlewBat assembleDebug
+& $gradlewBat -p $projectRoot assembleDebug
 $buildExitCode = $LASTEXITCODE
 
 if ($buildExitCode -eq 0) {
@@ -309,7 +352,12 @@ if ($buildExitCode -eq 0) {
         exit 1
     }
 
-    Write-Host "[SUCCESS] Build und Versionssync erfolgreich! Version: $newVersion"
+    Invoke-GitChecked @("add", "--update")
+    Invoke-GitChecked @("add", "--", "Privat/BarcodeAudiScanner_ver$newVersion.apk", "Privat/BarcodeAudiScanner_ver$newVersion.html", "docs", "signing")
+    Invoke-GitChecked @("commit", "-m", "Publish version $newVersion")
+    Invoke-GitChecked @("push", "origin", "main")
+    Write-Host "[SUCCESS] Version $newVersion gebaut, geprueft und auf GitHub hochgeladen."
+    Write-Host "[INFO] APK: https://raw.githubusercontent.com/parip69/BarcodeAudi_AndroidAPK/main/Privat/BarcodeAudiScanner_ver$newVersion.apk"
     exit 0
 }
 
