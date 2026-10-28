@@ -317,9 +317,9 @@ class MainActivity : AppCompatActivity() {
                 require(parsed.scheme == "https" && parsed.host == "parip69.github.io") {
                     "Ungültiger App-Link."
                 }
-                val image = assets.open("icons/share-card.png").use { it.readBytes() }
+                val image = assets.open("icons/share-card-lgi-v2.png").use { it.readBytes() }
                 shareQrCode(
-                    "LGI-Barcode-Scanner-Kaertchen.png",
+                    "LGI-Barcode-Scanner-v2-Kaertchen.png",
                     "data:image/png;base64," + Base64.encodeToString(image, Base64.NO_WRAP),
                     text,
                     url
