@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LGI Barcode Scanner herunterladen</title>
+<style>body{background:#111;color:#fff;font:18px system-ui;text-align:center;padding:40px 20px}img{width:120px;border-radius:24px}a{color:#ddd}</style>
+<img src="icons/icon-192.png" alt="LGI Barcode Scanner">
+<h1>LGI Barcode Scanner</h1>
+<p id="status" role="status">Die aktuelle APK wird ermittelt …</p>
+<p><a id="download" hidden>APK herunterladen</a></p>
+<script>
+fetch('./?_barcodeUpdateCheck=download', {cache:'no-store'})
+  .then(response => { if (!response.ok) throw Error(); return response.text(); })
+  .then(html => {
+    const version = html.match(/<html[^>]*data-app-version="([1-9]\d*)"/i)?.[1];
+    if (!version) throw Error();
+    const url = `https://raw.githubusercontent.com/parip69/BarcodeAudi_AndroidAPK/main/Privat/BarcodeAudiScanner_ver${version}.apk`;
+    const link = document.getElementById('download');
+    link.href = url;
+    link.hidden = false;
+    document.getElementById('status').textContent = 'Der Download startet. Falls nötig, tippe auf „APK herunterladen“.';
+    window.location.replace(url);
+  }).catch(() => {
+    document.getElementById('status').textContent = 'Die aktuelle APK konnte nicht ermittelt werden. Bitte prüfe die Internetverbindung und lade die Seite erneut.';
+  });
+</script>
+</html>

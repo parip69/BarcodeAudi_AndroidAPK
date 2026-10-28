@@ -296,7 +296,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                         type = "text/plain"
-                        putExtra(android.content.Intent.EXTRA_SUBJECT, "Audi Barcode-Scanner")
+                        putExtra(android.content.Intent.EXTRA_SUBJECT, "LGI Barcode Scanner")
                         putExtra(android.content.Intent.EXTRA_TEXT, "${url.trim()}\n${text.trim()}")
                     }
                     startActivity(android.content.Intent.createChooser(intent, "App-Link teilen"))
@@ -319,7 +319,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 val image = assets.open("icons/share-card.png").use { it.readBytes() }
                 shareQrCode(
-                    "Audi-Barcode-Scanner-Kaertchen.png",
+                    "LGI-Barcode-Scanner-Kaertchen.png",
                     "data:image/png;base64," + Base64.encodeToString(image, Base64.NO_WRAP),
                     text,
                     url
@@ -344,7 +344,7 @@ class MainActivity : AppCompatActivity() {
                 val shareDirectory = java.io.File(cacheDir, "shared_qr_codes").apply { mkdirs() }
                 val safeFileName = fileName
                     .replace(Regex("[^A-Za-z0-9._-]"), "_")
-                    .ifBlank { "Audi-Barcode-Scanner-QR.png" }
+                    .ifBlank { "LGI-Barcode-Scanner-QR.png" }
                 val imageFile = java.io.File(shareDirectory, safeFileName)
                 imageFile.writeBytes(imageBytes)
                 val uri = androidx.core.content.FileProvider.getUriForFile(
@@ -355,7 +355,7 @@ class MainActivity : AppCompatActivity() {
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                     type = "image/png"
                     putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                    putExtra(android.content.Intent.EXTRA_SUBJECT, "Audi Barcode-Scanner")
+                    putExtra(android.content.Intent.EXTRA_SUBJECT, "LGI Barcode Scanner")
                     putExtra(
                         android.content.Intent.EXTRA_TEXT,
                         listOf(text.trim(), url.trim()).filter { it.isNotEmpty() }.joinToString("\n")

@@ -1,4 +1,4 @@
-# BarcodeAudi Android APK
+# LGI Barcode Scanner
 
 Android-Studio-Projekt fuer einen nativen Android-Wrapper um eine lokale HTML-/JavaScript-App. Die App laedt `app/src/main/assets/index.html` in einer `WebView` und bringt die Android-spezifischen Dateifunktionen ueber `MainActivity.kt` mit.
 

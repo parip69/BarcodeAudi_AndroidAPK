@@ -35,7 +35,7 @@ try:
                     r'(<footer id="appFooter" data-app-version=")[^"]+("[^>]*>)',
                     r'(<span id="footerVersion">)[^<]+(</span>)']:
         text = replace(text, pattern, lambda m: m[1] + version + m[2])
-    text = re.sub(r'(<!-- Barcode Audi Scanner - Ver\. )\S+( -->)', lambda m: m[1] + version + m[2], text)
+    text = re.sub(r'(<!-- LGI Barcode Scanner - Ver\. )\S+( -->)', lambda m: m[1] + version + m[2], text)
     html.write_text(text)
     text = sw.read_text()
     for constant in ['APP_SHELL_CACHE', 'RUNTIME_CACHE']:

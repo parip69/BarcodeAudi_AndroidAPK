@@ -307,7 +307,7 @@ if (Test-Path -LiteralPath $indexFile) {
         $updatedText = [regex]::Replace($indexData.Text, $htmlPattern, $htmlReplacement, 1)
         $updatedText = [regex]::Replace(
             $updatedText,
-            '(?m)^(<!-- Barcode Audi Scanner - Ver\. )[^\r\n ]+( -->)\r?$',
+            '(?m)^(<!-- LGI Barcode Scanner - Ver\. )[^\r\n ]+( -->)\r?$',
             ('${1}' + $newVersion + '${2}'),
             1
         )

@@ -1,28 +1,28 @@
 <!doctype html>
-<!-- Barcode Audi Scanner - Ver. 140 -->
+<!-- LGI Barcode Scanner - Ver. 141 -->
 <!-- QUELLE: Nur app/src/main/assets/ bearbeiten. docs/ wird automatisch daraus synchronisiert und direkte Aenderungen dort werden ueberschrieben. -->
-<html lang="de" data-app-version="140">
+<html lang="de" data-app-version="141">
   <head>
     <meta charset="UTF-8" />
-    <title>Audi Barcode Scanner</title>
+    <title>LGI Barcode Scanner</title>
 
     <!-- Link-Vorschau für WhatsApp, Telegram und andere Messenger -->
-    <meta name="description" content="Audi Barcode Scanner – App öffnen und optional Barcodes sowie Einstellungen übernehmen." />
+    <meta name="description" content="LGI Barcode Scanner – App öffnen und optional Barcodes sowie Einstellungen übernehmen." />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Audi Barcode Scanner" />
-    <meta property="og:title" content="Audi Barcode Scanner" />
+    <meta property="og:site_name" content="LGI Barcode Scanner" />
+    <meta property="og:title" content="LGI Barcode Scanner" />
     <meta property="og:description" content="App mit Barcodes &amp; Einstellungen öffnen" />
     <meta property="og:url" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/" />
-    <meta property="og:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg" />
-    <meta property="og:image:secure_url" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg" />
+    <meta property="og:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg?brand=lgi" />
+    <meta property="og:image:secure_url" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg?brand=lgi" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Audi Barcode Scanner" />
+    <meta property="og:image:alt" content="LGI Barcode Scanner" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Audi Barcode Scanner" />
+    <meta name="twitter:title" content="LGI Barcode Scanner" />
     <meta name="twitter:description" content="App mit Barcodes &amp; Einstellungen öffnen" />
-    <meta name="twitter:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg" />
+    <meta name="twitter:image" content="https://parip69.github.io/BarcodeAudi_AndroidAPK/icons/share-card-preview.jpg?brand=lgi" />
     <script>
       !(function (t) {
         function e(r) {
@@ -2407,8 +2407,8 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="apple-mobile-web-app-title" content="Barcode Audi" />
-    <meta name="application-name" content="Barcode Audi" />
+    <meta name="apple-mobile-web-app-title" content="LGI Barcode" />
+    <meta name="application-name" content="LGI Barcode" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" sizes="192x192" />
     <link
@@ -5608,7 +5608,7 @@
         <div class="manual-developer-intro">
           <strong>Über den Entwickler:</strong>
           <p>
-            Der Audi Barcode Scanner ist ein privates Praxisprojekt von
+            Der LGI Barcode Scanner ist ein privates Praxisprojekt von
             <strong>Bachner Gerhard</strong> und wurde über viele Versionen
             Schritt für Schritt erweitert. Daneben entwickle ich weitere,
             teilweise deutlich umfangreichere Projekte – unter anderem einen
@@ -6003,7 +6003,7 @@
           <input
             type="text"
             id="popupFileNameInput"
-            value="BarcodeAudi_ver_16"
+            value="LGI_Barcode_ver_16"
             style="width: 100%; padding: 10px; text-align: center"
           />
         </div>
@@ -6777,8 +6777,8 @@
 
     <script>
       const APP_STORAGE_PREFIX = "BarcodesApp_";
-      const APP_VERSION_FALLBACK = "140";
-      const APP_NAME_FALLBACK = "Barcode Audi Scanner";
+      const APP_VERSION_FALLBACK = "141";
+      const APP_NAME_FALLBACK = "LGI Barcode Scanner";
       const EXPECTED_ANDROID_APPLICATION_ID = "de.parip69.barcodeaudiscanner";
 
       function getAndroidBridge() {
@@ -9099,7 +9099,7 @@
       }
 
       function buildHtmlExportBaseName() {
-        return `BarcodeAudiScanner_ver${getCurrentAppVersion()}`;
+        return `LGI_Barcode_Scanner_ver${getCurrentAppVersion()}`;
       }
 
       function buildHtmlExportFilename() {
@@ -9107,7 +9107,7 @@
       }
 
       function buildBarcodeExportBaseName() {
-        return `BarcodeAudi_ver_${getCurrentAppVersion()}`;
+        return `LGI_Barcode_ver_${getCurrentAppVersion()}`;
       }
 
       function buildLocalExportPayload(selectedKeys) {
@@ -9232,11 +9232,11 @@
       function downloadTextFileRobust(filename, textContent) {
         // Dateiname automatisch aus App-Version generieren, falls gewünscht
         let autoFilename = filename;
-        if (!autoFilename || autoFilename === "" || autoFilename === "BarcodeAudi_ver_AUTO.txt") {
+        if (!autoFilename || autoFilename === "" || autoFilename === "LGI_Barcode_ver_AUTO.txt" || autoFilename === "BarcodeAudi_ver_AUTO.txt") {
           if (typeof getCurrentAppVersion === "function") {
-            autoFilename = `BarcodeAudi_ver_${getCurrentAppVersion()}.txt`;
+            autoFilename = `LGI_Barcode_ver_${getCurrentAppVersion()}.txt`;
           } else {
-            autoFilename = "BarcodeAudi_ver.txt";
+            autoFilename = "LGI_Barcode_ver.txt";
           }
         }
         const safeText =
@@ -9459,7 +9459,7 @@
 
         if (importEntries.length === 0) {
           throw new Error(
-            "Keine gültigen BarcodeScannerAudi-Daten im Import gefunden",
+            "Keine gültigen LGI-Barcode-Scanner-Daten im Import gefunden",
           );
         }
 
@@ -15102,9 +15102,9 @@ In den App-Namensraum importieren?`)
           title="Schließen"
         >×</button>
         <h3 id="developerInfoTitle">Bachner Gerhard</h3>
-        <p class="developer-subtitle">Entwickler · Audi Barcode Scanner</p>
+        <p class="developer-subtitle">Entwickler · LGI Barcode Scanner</p>
         <p class="developer-intro">
-          Der Audi Barcode Scanner ist ein privates Praxisprojekt, das über
+          Der LGI Barcode Scanner ist ein privates Praxisprojekt, das über
           viele Versionen gewachsen ist. Neben diesem Projekt entwickle ich
           weitere Anwendungen und Steuerungsprojekte – darunter auch deutlich
           umfangreichere Lösungen. Hier sind einige Projekte direkt verlinkt:
@@ -15153,7 +15153,7 @@ In den App-Namensraum importieren?`)
 
           <a
             class="developer-project-card"
-            href="https://parip69.github.io/RechenGuruLGI_AndroidAPK"
+            href="https://parip69.github.io/RechenGuruLGI_AndroidAPK/MatheKids-latest.apk"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Mathe Kids öffnen"
@@ -15173,7 +15173,7 @@ In den App-Namensraum importieren?`)
 
           <a
             class="developer-project-card"
-            href="https://parip69.github.io/EasyLauncher-Download/"
+            href="https://parip69.github.io/EasyLauncher-Download/download.html"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Easy Launcher öffnen"
@@ -15198,12 +15198,12 @@ In den App-Namensraum importieren?`)
       </div>
     </div>
 
-    <footer id="appFooter" data-app-version="140">
+    <footer id="appFooter" data-app-version="141">
       <span class="footer-developer-hint">Entwickler →</span>
       <button type="button" id="developerInfoLink" aria-haspopup="dialog" aria-controls="developerInfoOverlay">
         <span class="developer-name">Gerhard Bachner</span>
       </button>
-        <span class="footer-version">Ver.<span id="footerVersion">140</span></span>
+        <span class="footer-version">Ver.<span id="footerVersion">141</span></span>
         <button
           type="button"
           id="appUpdateButton"
@@ -15511,10 +15511,10 @@ In den App-Namensraum importieren?`)
             }
 
             const shareData = {
-              title: "Audi Barcode-Scanner",
+              title: "LGI Barcode Scanner",
               text: includeData
-                ? "Audi Barcode Scanner – App mit Barcodes & Einstellungen öffnen"
-                : "Audi Barcode Scanner – App öffnen",
+                ? "LGI Barcode Scanner – App mit Barcodes & Einstellungen öffnen"
+                : "LGI Barcode Scanner – App öffnen",
               url: shareUrl,
             };
 
