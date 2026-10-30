@@ -143,6 +143,22 @@ class MainActivity : AppCompatActivity() {
     // Native Schnittstelle fuer Download/Senden/Export.
     inner class AndroidInterface {
         @android.webkit.JavascriptInterface
+        fun openExternalLink(url: String): Boolean {
+            val uri = Uri.parse(url)
+            if (uri.scheme != "https" || uri.host.isNullOrBlank()) return false
+            runOnUiThread {
+                try {
+                    startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, uri).apply {
+                        addCategory(android.content.Intent.CATEGORY_BROWSABLE)
+                    })
+                } catch (_: android.content.ActivityNotFoundException) {
+                    android.widget.Toast.makeText(this@MainActivity, "Kein Browser zum Öffnen des Links verfügbar.", android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
+            return true
+        }
+
+        @android.webkit.JavascriptInterface
         fun installAppUpdate(version: String): Boolean {
             if (!version.matches(Regex("[1-9][0-9]{0,8}"))) return false
             if (!apkUpdateRunning.compareAndSet(false, true)) return false
